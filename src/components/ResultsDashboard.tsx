@@ -14,7 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import type { AnalysisReport } from '../types/transaction.types';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 interface ResultsDashboardProps {
   report: AnalysisReport;
@@ -64,6 +64,26 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     name: c.category.length > 15 ? c.category.substring(0, 15) + '...' : c.category,
     amount: c.totalDebit + c.totalCredit
   }));
+
+  // Pie chart data for spending breakdown (debits only)
+  const spendingPieData = report.categoryAnalysis
+    .filter(c => c.totalDebit > 0)
+    .slice(0, 6)
+    .map(c => ({
+      name: c.category.length > 18 ? c.category.substring(0, 18) + '...' : c.category,
+      value: c.totalDebit,
+      fullName: c.category
+    }));
+
+  // Color palette for pie chart
+  const PIE_COLORS = [
+    'hsl(var(--primary))',
+    'hsl(var(--accent))',
+    'hsl(var(--success))',
+    'hsl(210 80% 60%)',
+    'hsl(280 70% 60%)',
+    'hsl(30 80% 55%)'
+  ];
 
   return (
     <motion.div
@@ -214,7 +234,49 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
         </motion.div>
 
-        {/* Category Distribution */}
+        {/* Spending Breakdown Pie Chart */}
+        <motion.div variants={itemVariants} className="card-elevated p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Spending by Category
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPie>
+                <Pie
+                  data={spendingPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  labelLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                >
+                  {spendingPieData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: number, name: string, props: any) => [
+                    `AED ${formatCurrency(value)}`, 
+                    props.payload?.fullName || name
+                  ]}
+                />
+              </RechartsPie>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Second Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Category Distribution Bar */}
         <motion.div variants={itemVariants} className="card-elevated p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">
             Top Transaction Categories
@@ -235,6 +297,47 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 />
                 <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Credits vs Debits Pie */}
+        <motion.div variants={itemVariants} className="card-elevated p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Credits vs Debits
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPie>
+                <Pie
+                  data={[
+                    { name: 'Total Credits', value: summary.totalCredits, color: 'hsl(var(--success))' },
+                    { name: 'Total Debits', value: summary.totalDebits, color: 'hsl(var(--destructive))' }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  <Cell fill="hsl(142 76% 36%)" />
+                  <Cell fill="hsl(0 84% 60%)" />
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, '']}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value) => <span className="text-sm text-foreground">{value}</span>}
+                />
+              </RechartsPie>
             </ResponsiveContainer>
           </div>
         </motion.div>
