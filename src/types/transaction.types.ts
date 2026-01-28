@@ -1,3 +1,5 @@
+import type { CurrencyCode } from '../services/currencyService';
+
 export interface BankStatement {
   month: string;
   year: number;
@@ -10,6 +12,7 @@ export interface BankStatement {
   creditCount: number;
   days: number;
   transactions: Transaction[];
+  currency: CurrencyCode;
 }
 
 export interface Transaction {
@@ -21,6 +24,10 @@ export interface Transaction {
   balance: number;
   category: TransactionCategory;
   reference?: string;
+  currency: CurrencyCode;
+  originalCurrency?: CurrencyCode;
+  originalAmount?: number;
+  exchangeRate?: number;
 }
 
 export enum TransactionCategory {
@@ -58,6 +65,8 @@ export interface AccountInfo {
   iban: string;
   bank: string;
   period: string;
+  currency: CurrencyCode;
+  currencies?: CurrencyCode[]; // All currencies found in statement
 }
 
 export interface SixMonthSummary {
@@ -69,6 +78,15 @@ export interface SixMonthSummary {
   creditCount: number;
   debitCount: number;
   averageMonthlyBalance: number;
+  currency: CurrencyCode;
+  // Multi-currency breakdown
+  currencyBreakdown?: {
+    currency: CurrencyCode;
+    totalCredits: number;
+    totalDebits: number;
+    convertedCredits: number;
+    convertedDebits: number;
+  }[];
 }
 
 export interface MonthlyBalance {

@@ -9,12 +9,14 @@ import {
   Wallet,
   CreditCard,
   PieChart,
-  RefreshCw
+  RefreshCw,
+  Globe
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import type { AnalysisReport } from '../types/transaction.types';
 import { TransactionTable } from './TransactionTable';
+import { CurrencyService, type CurrencyCode } from '../services/currencyService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 interface ResultsDashboardProps {
@@ -29,10 +31,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   onReset
 }) => {
   const { summary, accountInfo } = report;
+  const currency = summary.currency || 'AED';
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-AE', {
-      style: 'decimal',
+  const formatCurrency = (value: number, curr: CurrencyCode = currency) => {
+    return CurrencyService.format(value, curr);
+  };
+
+  const formatCurrencyShort = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
@@ -103,6 +109,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <p className="text-muted-foreground">
               {accountInfo.accountName || 'Bank Account'} • {accountInfo.period || '6 Month Analysis'}
             </p>
+            {accountInfo.currencies && accountInfo.currencies.length > 1 && (
+              <div className="flex items-center gap-2 mt-2">
+                <Globe className="h-4 w-4 text-accent" />
+                <span className="text-sm text-accent">
+                  Multi-currency: {accountInfo.currencies.join(', ')}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <Button
@@ -133,6 +147,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           format="currency"
           iconBg="bg-primary/10"
           iconColor="text-primary"
+          currency={currency}
         />
         <MetricCard
           icon={<DollarSign className="h-5 w-5" />}
@@ -141,6 +156,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           format="currency"
           iconBg="bg-accent/10"
           iconColor="text-accent"
+          currency={currency}
         />
         <MetricCard
           icon={<ArrowUpRight className="h-5 w-5" />}
@@ -150,6 +166,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           subtitle={`${summary.creditCount} transactions`}
           iconBg="bg-success/10"
           iconColor="text-success"
+          currency={currency}
         />
         <MetricCard
           icon={<ArrowDownRight className="h-5 w-5" />}
@@ -159,6 +176,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           subtitle={`${summary.debitCount} transactions`}
           iconBg="bg-destructive/10"
           iconColor="text-destructive"
+          currency={currency}
         />
       </motion.div>
 
@@ -172,7 +190,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <p className={`text-4xl font-bold ${
               summary.netChange >= 0 ? 'text-success' : 'text-destructive'
             }`}>
-              AED {formatCurrency(summary.netChange)}
+              {formatCurrency(summary.netChange)}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               {summary.openingBalance > 0 ? (
@@ -220,7 +238,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, 'Average']}
+                  formatter={(value: number) => [`${formatCurrency(value)}`, 'Average']}
                 />
                 <Area 
                   type="monotone" 
@@ -265,7 +283,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     borderRadius: '8px'
                   }}
                   formatter={(value: number, name: string, props: any) => [
-                    `AED ${formatCurrency(value)}`, 
+                    `${formatCurrency(value)}`, 
                     props.payload?.fullName || name
                   ]}
                 />
@@ -294,7 +312,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, 'Amount']}
+                  formatter={(value: number) => [`${formatCurrency(value)}`, 'Amount']}
                 />
                 <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -331,7 +349,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, '']}
+                  formatter={(value: number) => [`${formatCurrency(value)}`, '']}
                 />
                 <Legend 
                   verticalAlign="bottom" 
@@ -382,13 +400,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {month.month}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-foreground text-right font-medium">
-                    AED {formatCurrency(month.average)}
+                    {formatCurrency(month.average)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-right">
-                    AED {formatCurrency(month.opening)}
+                    {formatCurrency(month.opening)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-right">
-                    AED {formatCurrency(month.closing)}
+                    {formatCurrency(month.closing)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
                     {month.days}
@@ -427,7 +445,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </p>
               <div className="flex items-baseline justify-between">
                 <span className="text-lg font-bold text-foreground">
-                  AED {formatCurrency(cat.totalDebit + cat.totalCredit)}
+                  {formatCurrency(cat.totalDebit + cat.totalCredit)}
                 </span>
                 {cat.totalCredit > cat.totalDebit ? (
                   <span className="text-xs text-success font-medium">+Credit</span>
@@ -456,6 +474,7 @@ interface MetricCardProps {
   subtitle?: string;
   iconBg: string;
   iconColor: string;
+  currency?: CurrencyCode;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -465,10 +484,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
   format, 
   subtitle,
   iconBg,
-  iconColor
+  iconColor,
+  currency = 'AED'
 }) => {
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-AE', {
+  const formatValue = (val: number) => {
+    if (format === 'currency') {
+      return CurrencyService.format(val, currency);
+    }
+    return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(val);
@@ -487,8 +510,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         </div>
       </div>
       <p className="text-2xl font-bold text-foreground">
-        {format === 'currency' ? 'AED ' : ''}
-        {formatCurrency(value)}
+        {formatValue(value)}
       </p>
       {subtitle && (
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>

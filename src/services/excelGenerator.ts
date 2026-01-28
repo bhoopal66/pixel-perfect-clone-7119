@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import type { AnalysisReport } from '../types/transaction.types';
+import { CurrencyService } from './currencyService';
 
 export class ExcelGenerator {
   static async generateReport(report: AnalysisReport): Promise<Blob> {
@@ -131,8 +132,9 @@ export class ExcelGenerator {
 
   private static createMonthlyBalanceSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Monthly Average Balance');
+    const currency = report.summary.currency || 'AED';
     
-    const headers = ['Month', 'Average Balance (AED)', 'Days', 'Opening Balance', 'Closing Balance'];
+    const headers = ['Month', `Average Balance (${currency})`, 'Days', 'Opening Balance', 'Closing Balance'];
     const headerRow = sheet.addRow(headers);
     this.styleHeader(headerRow);
     
@@ -176,8 +178,9 @@ export class ExcelGenerator {
 
   private static createDailyBalanceSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Daily Average Balance');
+    const currency = report.summary.currency || 'AED';
     
-    const headerRow = sheet.addRow(['Date', 'Balance (AED)', 'Month']);
+    const headerRow = sheet.addRow(['Date', `Balance (${currency})`, 'Month']);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 15;
@@ -195,17 +198,20 @@ export class ExcelGenerator {
 
   private static createTransactionGroupingSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Transaction Grouping');
+    const currency = report.summary.currency || 'AED';
     
-    const headerRow = sheet.addRow(['Date', 'Month', 'Description', 'Category', 'Debit', 'Credit', 'Balance']);
+    const headerRow = sheet.addRow(['Date', 'Month', 'Description', 'Category', 'Currency', 'Debit', 'Credit', 'Balance']);
+    this.styleHeader(headerRow);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 15;
     sheet.getColumn(2).width = 18;
     sheet.getColumn(3).width = 40;
     sheet.getColumn(4).width = 25;
-    sheet.getColumn(5).width = 15;
+    sheet.getColumn(5).width = 10;
     sheet.getColumn(6).width = 15;
-    sheet.getColumn(7).width = 18;
+    sheet.getColumn(7).width = 15;
+    sheet.getColumn(8).width = 18;
     
     report.transactions.forEach(txn => {
       const txnDate = new Date(txn.date);
@@ -214,6 +220,7 @@ export class ExcelGenerator {
         txnDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
         txn.description,
         txn.category,
+        txn.originalCurrency || txn.currency,
         txn.debit || '',
         txn.credit || '',
         txn.balance
@@ -221,7 +228,7 @@ export class ExcelGenerator {
     });
     
     for (let i = 2; i <= sheet.rowCount; i++) {
-      ['E', 'F', 'G'].forEach(col => {
+      ['F', 'G', 'H'].forEach(col => {
         const cell = sheet.getCell(`${col}${i}`);
         if (cell.value) {
           cell.numFmt = '#,##0.00';
@@ -233,9 +240,9 @@ export class ExcelGenerator {
     const totalRow = sheet.rowCount + 1;
     sheet.getCell(`C${totalRow}`).value = 'TOTAL';
     sheet.getCell(`C${totalRow}`).font = { bold: true };
-    sheet.getCell(`E${totalRow}`).value = { formula: `SUM(E2:E${totalRow - 1})` };
     sheet.getCell(`F${totalRow}`).value = { formula: `SUM(F2:F${totalRow - 1})` };
-    ['E', 'F'].forEach(col => {
+    sheet.getCell(`G${totalRow}`).value = { formula: `SUM(G2:G${totalRow - 1})` };
+    ['F', 'G'].forEach(col => {
       sheet.getCell(`${col}${totalRow}`).font = { bold: true };
       sheet.getCell(`${col}${totalRow}`).numFmt = '#,##0.00';
     });
@@ -243,8 +250,9 @@ export class ExcelGenerator {
 
   private static createCategorySummarySheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Category Summary');
+    const currency = report.summary.currency || 'AED';
     
-    const headerRow = sheet.addRow(['Transaction Category', 'Count', 'Total Debit (AED)', 'Total Credit (AED)', 'Net Amount']);
+    const headerRow = sheet.addRow(['Transaction Category', 'Count', `Total Debit (${currency})`, `Total Credit (${currency})`, 'Net Amount']);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 30;
