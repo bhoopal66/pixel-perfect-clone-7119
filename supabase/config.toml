@@ -1,0 +1,4 @@
+project_id = "lviyaqzjfsyedkagkfre"
+
+[functions.fetch-exchange-rates]
+verify_jwt = false
