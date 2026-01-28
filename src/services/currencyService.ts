@@ -72,6 +72,9 @@ export class CurrencyService {
   private static exchangeRates: Map<string, number> = new Map();
   private static baseCurrency: CurrencyCode = 'AED';
   private static ratesDate: string = new Date().toISOString().split('T')[0];
+  private static isLiveRates: boolean = false;
+  private static lastFetchTime: number = 0;
+  private static CACHE_DURATION = 1000 * 60 * 60; // 1 hour cache
 
   static initialize() {
     // Initialize with default rates
@@ -82,6 +85,77 @@ export class CurrencyService {
         this.exchangeRates.set(`AED_${currency}`, 1 / rate);
       }
     });
+  }
+
+  // Fetch live exchange rates from the edge function
+  static async fetchLiveRates(baseCurrency: CurrencyCode = 'AED'): Promise<boolean> {
+    // Check cache
+    if (this.isLiveRates && Date.now() - this.lastFetchTime < this.CACHE_DURATION) {
+      console.log('Using cached exchange rates');
+      return true;
+    }
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn('Supabase not configured, using default rates');
+        return false;
+      }
+
+      console.log('Fetching live exchange rates...');
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/fetch-exchange-rates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+        },
+        body: JSON.stringify({ baseCurrency }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rates: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success || !data.rates) {
+        throw new Error(data.error || 'Invalid response from exchange rate API');
+      }
+
+      // Update rates - the API returns rates FROM baseCurrency TO other currencies
+      // We need to invert them for our conversion logic
+      Object.entries(data.rates as Record<string, number>).forEach(([currency, rate]) => {
+        if (currency === baseCurrency) {
+          this.exchangeRates.set(`${currency}_${baseCurrency}`, 1);
+          this.exchangeRates.set(`${baseCurrency}_${currency}`, 1);
+        } else {
+          // Rate is how much of 'currency' you get for 1 baseCurrency
+          // So to convert FROM currency TO baseCurrency: divide by rate
+          this.exchangeRates.set(`${currency}_${baseCurrency}`, 1 / rate);
+          this.exchangeRates.set(`${baseCurrency}_${currency}`, rate);
+        }
+      });
+
+      this.ratesDate = data.date || new Date().toISOString().split('T')[0];
+      this.baseCurrency = baseCurrency;
+      this.isLiveRates = true;
+      this.lastFetchTime = Date.now();
+
+      console.log(`Live exchange rates updated for ${Object.keys(data.rates).length} currencies (as of ${this.ratesDate})`);
+      return true;
+    } catch (error) {
+      console.error('Failed to fetch live exchange rates:', error);
+      this.isLiveRates = false;
+      return false;
+    }
+  }
+
+  // Check if using live rates
+  static isUsingLiveRates(): boolean {
+    return this.isLiveRates;
   }
 
   // Detect currency from PDF text
