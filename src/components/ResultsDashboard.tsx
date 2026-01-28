@@ -14,6 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import type { AnalysisReport } from '../types/transaction.types';
+import { TransactionTable } from './TransactionTable';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 interface ResultsDashboardProps {
@@ -437,6 +438,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </motion.div>
           ))}
         </div>
+      </motion.div>
+
+      {/* Transaction Browser */}
+      <motion.div variants={itemVariants} className="mt-6">
+        <TransactionTable transactions={report.transactions} />
       </motion.div>
     </motion.div>
   );
