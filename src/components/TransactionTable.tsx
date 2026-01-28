@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, X, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -12,6 +12,7 @@ import {
 } from './ui/select';
 import { Badge } from './ui/badge';
 import type { Transaction, TransactionCategory } from '../types/transaction.types';
+import { CurrencyService, CURRENCIES, type CurrencyCode } from '../services/currencyService';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -94,12 +95,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
     currentPage * itemsPerPage
   );
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number, currency: CurrencyCode = 'AED') => {
     if (value === 0) return '-';
-    return new Intl.NumberFormat('en-AE', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return CurrencyService.format(value, currency);
   };
 
   const handleSort = (field: SortField) => {
@@ -314,6 +312,15 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
                         Ref: {txn.reference}
                       </div>
                     )}
+                    {txn.originalCurrency && txn.originalCurrency !== txn.currency && (
+                      <div className="flex items-center gap-1 text-xs text-accent mt-1">
+                        <Globe className="h-3 w-3" />
+                        <span>
+                          Original: {CurrencyService.format(txn.originalAmount || 0, txn.originalCurrency)}
+                          {txn.exchangeRate && ` @ ${txn.exchangeRate.toFixed(4)}`}
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <Badge variant="outline" className="text-xs font-normal">
@@ -321,13 +328,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
                     </Badge>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-destructive">
-                    {txn.debit > 0 ? formatCurrency(txn.debit) : '-'}
+                    {txn.debit > 0 ? formatCurrency(txn.debit, txn.currency) : '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-success">
-                    {txn.credit > 0 ? formatCurrency(txn.credit) : '-'}
+                    {txn.credit > 0 ? formatCurrency(txn.credit, txn.currency) : '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-foreground">
-                    {formatCurrency(txn.balance)}
+                    {formatCurrency(txn.balance, txn.currency)}
                   </td>
                 </motion.tr>
               ))
