@@ -21,6 +21,7 @@ interface NewLoanCaseDialogProps {
   onSubmit: (loanCase: LoanCase) => void;
   currency?: 'AED' | 'USD';
   existingAnalysts?: string[];
+  existingAgentRefs?: string[];
 }
 
 export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
@@ -28,9 +29,11 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
   onOpenChange,
   onSubmit,
   currency = 'AED',
-  existingAnalysts = []
+  existingAnalysts = [],
+  existingAgentRefs = []
 }) => {
   const [analystOpen, setAnalystOpen] = useState(false);
+  const [agentRefOpen, setAgentRefOpen] = useState(false);
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantPhone: '',
@@ -182,11 +185,55 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>Agent Reference *</Label>
-                <Input
-                  value={formData.agentReference}
-                  onChange={(e) => setFormData({ ...formData, agentReference: e.target.value })}
-                  placeholder="Agent reference code"
-                />
+                <Popover open={agentRefOpen} onOpenChange={setAgentRefOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={agentRefOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.agentReference || "Select or type agent reference..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search or type new reference..." 
+                        value={formData.agentReference}
+                        onValueChange={(value) => setFormData({ ...formData, agentReference: value })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-muted-foreground text-sm">
+                            Press enter to use "{formData.agentReference}"
+                          </span>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing References">
+                          {existingAgentRefs.map((ref) => (
+                            <CommandItem
+                              key={ref}
+                              value={ref}
+                              onSelect={(currentValue) => {
+                                setFormData({ ...formData, agentReference: currentValue });
+                                setAgentRefOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.agentReference === ref ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {ref}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Analyst Name *</Label>
