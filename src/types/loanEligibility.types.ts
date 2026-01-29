@@ -71,8 +71,8 @@ export interface EligibilityFilters {
 // Product type labels
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   standard: 'Standard Loan',
-  rak_pos: 'RAK POS Loan',
-  wio_pos: 'WIO POS Loan'
+  rak_pos: 'RAK POS Loan (40% cap)',
+  wio_pos: 'WIO POS Loan (30% cap)'
 };
 
 // POS cap rates
