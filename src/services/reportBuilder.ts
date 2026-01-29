@@ -1,6 +1,7 @@
 import { PDFParser, ExtractedTransaction } from './pdfParser';
 import { TransactionAnalyzer } from './transactionAnalyzer';
 import { CurrencyService, type CurrencyCode } from './currencyService';
+import { calculateDailyClosingBalances } from '../utils/balanceCalculator';
 import type { 
   AnalysisReport, 
   Transaction, 
@@ -100,7 +101,7 @@ export class ReportBuilder {
     const monthlyBalances = this.calculateMonthlyBalances(monthlyData);
     const monthWiseSummary = this.calculateMonthWiseSummary(monthlyData);
 
-    // Calculate daily balances (use 6 months range)
+    // Calculate daily closing balances (use 6 months range)
     const startDate = transactions[0]?.date 
       ? new Date(transactions[0].date) 
       : new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
@@ -108,10 +109,17 @@ export class ReportBuilder {
       ? new Date(transactions[transactions.length - 1].date)
       : new Date();
     
-    const dailyBalances = TransactionAnalyzer.calculateDailyBalances(
+    // Calculate opening balance for first day (use the balance before first transaction)
+    const firstTxn = transactions[0];
+    const dailyOpeningBalance = firstTxn 
+      ? firstTxn.balance - firstTxn.credit + firstTxn.debit 
+      : 0;
+    
+    const dailyBalances = calculateDailyClosingBalances(
+      transactions,
       startDate,
       endDate,
-      transactions
+      dailyOpeningBalance
     );
 
     // Calculate average monthly balance
@@ -373,8 +381,9 @@ export class ReportBuilder {
       })),
       dailyBalances: transactions.map(t => ({
         date: t.date,
-        balance: t.balance,
-        month: new Date(t.date).toLocaleString('default', { month: 'long', year: 'numeric' })
+        closingBalance: t.balance,
+        month: new Date(t.date).toLocaleString('default', { month: 'long', year: 'numeric' }),
+        hasTransactions: true
       })),
       transactions,
       categoryAnalysis: categories.map(cat => ({

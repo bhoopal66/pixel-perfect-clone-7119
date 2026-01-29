@@ -177,23 +177,73 @@ export class ExcelGenerator {
   }
 
   private static createDailyBalanceSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
-    const sheet = workbook.addWorksheet('Daily Average Balance');
+    const sheet = workbook.addWorksheet('Daily Closing Balance');
     const currency = report.summary.currency || 'AED';
     
-    const headerRow = sheet.addRow(['Date', `Balance (${currency})`, 'Month']);
+    const headerRow = sheet.addRow(['Date', `Closing Balance (${currency})`, 'Month', 'Has Transactions']);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 15;
-    sheet.getColumn(2).width = 20;
+    sheet.getColumn(2).width = 25;
     sheet.getColumn(3).width = 20;
+    sheet.getColumn(4).width = 18;
     
     report.dailyBalances.forEach(day => {
-      sheet.addRow([day.date, day.balance, day.month]);
+      const formattedDate = new Date(day.date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+      sheet.addRow([
+        formattedDate, 
+        day.closingBalance, 
+        day.month,
+        day.hasTransactions ? 'Yes' : 'No (Carried Forward)'
+      ]);
     });
     
+    // Format currency column
     for (let i = 2; i <= sheet.rowCount; i++) {
       sheet.getCell(`B${i}`).numFmt = '#,##0.00';
+      // Highlight rows with no transactions
+      if (!report.dailyBalances[i - 2]?.hasTransactions) {
+        sheet.getRow(i).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF5F5F5' }
+        };
+      }
     }
+    
+    // Add explanatory notes
+    const noteRow = sheet.rowCount + 2;
+    sheet.getCell(`A${noteRow}`).value = 'Note:';
+    sheet.getCell(`A${noteRow}`).font = { bold: true, italic: true };
+    
+    sheet.getCell(`A${noteRow + 1}`).value = 
+      'Daily Closing Balance shows the final balance at the end of each day (last transaction balance).';
+    sheet.getCell(`A${noteRow + 1}`).font = { italic: true, size: 9 };
+    sheet.mergeCells(`A${noteRow + 1}:D${noteRow + 1}`);
+    
+    sheet.getCell(`A${noteRow + 2}`).value = 
+      'For days with no transactions, the previous day\'s closing balance is carried forward.';
+    sheet.getCell(`A${noteRow + 2}`).font = { italic: true, size: 9 };
+    sheet.mergeCells(`A${noteRow + 2}:D${noteRow + 2}`);
+    
+    // Add average calculation
+    const avgRow = noteRow + 4;
+    sheet.getCell(`A${avgRow}`).value = 'Average of Daily Closing Balances';
+    sheet.getCell(`A${avgRow}`).font = { bold: true };
+    sheet.getCell(`B${avgRow}`).value = { 
+      formula: `AVERAGE(B2:B${noteRow - 1})` 
+    };
+    sheet.getCell(`B${avgRow}`).numFmt = '#,##0.00';
+    sheet.getCell(`B${avgRow}`).font = { bold: true };
+    sheet.getCell(`B${avgRow}`).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF00' }
+    };
   }
 
   private static createTransactionGroupingSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
