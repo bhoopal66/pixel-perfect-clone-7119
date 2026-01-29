@@ -71,6 +71,9 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
   const [cashAdjustment, setCashAdjustment] = useState<string>(initialData?.cash_adjustment?.toString() || '');
   const [sisterConcernAdjustment, setSisterConcernAdjustment] = useState<string>(initialData?.sister_concern_adjustment?.toString() || '');
   const [posMonthlyTurnover, setPosMonthlyTurnover] = useState<string>(initialData?.pos_monthly_turnover?.toString() || '');
+  const [companyName, setCompanyName] = useState<string>(initialData?.company_name || '');
+  const [periodStart, setPeriodStart] = useState<string>(initialData?.period_start || '');
+  const [periodEnd, setPeriodEnd] = useState<string>(initialData?.period_end || '');
   const [notes, setNotes] = useState<string>(initialData?.notes || '');
   const [calculated, setCalculated] = useState<CalculatedValues | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -88,6 +91,9 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       setCashAdjustment(initialData.cash_adjustment?.toString() || '');
       setSisterConcernAdjustment(initialData.sister_concern_adjustment?.toString() || '');
       setPosMonthlyTurnover(initialData.pos_monthly_turnover?.toString() || '');
+      setCompanyName(initialData.company_name || '');
+      setPeriodStart(initialData.period_start || '');
+      setPeriodEnd(initialData.period_end || '');
       setNotes(initialData.notes || '');
     } else {
       handleReset();
@@ -211,6 +217,9 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       cash_adjustment: parseFloat(cashAdjustment) || 0,
       sister_concern_adjustment: parseFloat(sisterConcernAdjustment) || 0,
       pos_monthly_turnover: parseFloat(posMonthlyTurnover) || 0,
+      company_name: companyName || undefined,
+      period_start: periodStart || undefined,
+      period_end: periodEnd || undefined,
       notes: notes || undefined
     };
     
@@ -224,6 +233,9 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     setCashAdjustment('');
     setSisterConcernAdjustment('');
     setPosMonthlyTurnover('');
+    setCompanyName('');
+    setPeriodStart('');
+    setPeriodEnd('');
     setNotes('');
   };
 
@@ -269,6 +281,41 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Company Name & Period Fields */}
+            <div className="space-y-4 p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="space-y-2">
+                <Label htmlFor="company_name">Company Name</Label>
+                <Input
+                  id="company_name"
+                  type="text"
+                  placeholder="Enter company name"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  maxLength={100}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="period_start">Period Start</Label>
+                  <Input
+                    id="period_start"
+                    type="date"
+                    value={periodStart}
+                    onChange={(e) => setPeriodStart(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="period_end">Period End</Label>
+                  <Input
+                    id="period_end"
+                    type="date"
+                    value={periodEnd}
+                    onChange={(e) => setPeriodEnd(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Product Type Dropdown */}
             <div className="space-y-2">
               <Label htmlFor="product_type">Product Type *</Label>

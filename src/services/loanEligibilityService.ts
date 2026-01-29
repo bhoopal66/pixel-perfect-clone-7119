@@ -13,6 +13,9 @@ export const LoanEligibilityService = {
         cash_adjustment: input.cash_adjustment || 0,
         sister_concern_adjustment: input.sister_concern_adjustment || 0,
         pos_monthly_turnover: input.pos_monthly_turnover || 0,
+        company_name: input.company_name || null,
+        period_start: input.period_start || null,
+        period_end: input.period_end || null,
         notes: input.notes || null,
       })
       .select()
@@ -33,6 +36,9 @@ export const LoanEligibilityService = {
         ...(input.cash_adjustment !== undefined && { cash_adjustment: input.cash_adjustment }),
         ...(input.sister_concern_adjustment !== undefined && { sister_concern_adjustment: input.sister_concern_adjustment }),
         ...(input.pos_monthly_turnover !== undefined && { pos_monthly_turnover: input.pos_monthly_turnover }),
+        ...(input.company_name !== undefined && { company_name: input.company_name }),
+        ...(input.period_start !== undefined && { period_start: input.period_start }),
+        ...(input.period_end !== undefined && { period_end: input.period_end }),
         ...(input.notes !== undefined && { notes: input.notes }),
       })
       .eq('id', id)
@@ -100,6 +106,9 @@ export const LoanEligibilityService = {
   exportToCSV(records: LoanEligibility[]): string[][] {
     const headers = [
       'ID',
+      'Company Name',
+      'Period Start',
+      'Period End',
       'Product Type',
       'VAT Turnover',
       'Declared Turnover',
@@ -125,6 +134,9 @@ export const LoanEligibilityService = {
     
     const rows = records.map(r => [
       r.id,
+      r.company_name || '',
+      r.period_start || '',
+      r.period_end || '',
       r.product_type,
       r.vat_turnover.toString(),
       r.declared_turnover.toString(),
