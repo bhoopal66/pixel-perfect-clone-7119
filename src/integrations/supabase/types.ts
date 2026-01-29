@@ -153,6 +153,7 @@ export type Database = {
         Row: {
           adjusted_turnover: number
           cash_adjustment: number
+          company_name: string | null
           created_at: string
           declared_turnover: number
           eligibility_status: string
@@ -160,6 +161,8 @@ export type Database = {
           eligible_multiplier: number
           id: string
           notes: string | null
+          period_end: string | null
+          period_start: string | null
           pos_annual_turnover: number
           pos_cap_adjusted: number
           pos_cap_rate: number
@@ -177,6 +180,7 @@ export type Database = {
         Insert: {
           adjusted_turnover?: number
           cash_adjustment?: number
+          company_name?: string | null
           created_at?: string
           declared_turnover?: number
           eligibility_status?: string
@@ -184,6 +188,8 @@ export type Database = {
           eligible_multiplier?: number
           id?: string
           notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
           pos_annual_turnover?: number
           pos_cap_adjusted?: number
           pos_cap_rate?: number
@@ -201,6 +207,7 @@ export type Database = {
         Update: {
           adjusted_turnover?: number
           cash_adjustment?: number
+          company_name?: string | null
           created_at?: string
           declared_turnover?: number
           eligibility_status?: string
@@ -208,6 +215,8 @@ export type Database = {
           eligible_multiplier?: number
           id?: string
           notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
           pos_annual_turnover?: number
           pos_cap_adjusted?: number
           pos_cap_rate?: number

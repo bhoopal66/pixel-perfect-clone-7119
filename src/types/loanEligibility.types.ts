@@ -34,6 +34,9 @@ export interface LoanEligibility {
   turnover_basis: number;
   
   // Metadata
+  company_name?: string;
+  period_start?: string;
+  period_end?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -46,6 +49,9 @@ export interface LoanEligibilityInput {
   cash_adjustment: number;
   sister_concern_adjustment: number;
   pos_monthly_turnover: number;
+  company_name?: string;
+  period_start?: string;
+  period_end?: string;
   notes?: string;
 }
 
