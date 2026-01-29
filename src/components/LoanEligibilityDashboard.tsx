@@ -18,7 +18,8 @@ import {
   CreditCard,
   XCircle,
   AlertCircle,
-  FileText
+  FileText,
+  Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -45,6 +46,8 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
   const [records, setRecords] = useState<LoanEligibility[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<LoanEligibility | null>(null);
+  const [activeTab, setActiveTab] = useState('calculator');
   const [filters, setFilters] = useState<EligibilityFilters>({
     eligibility_status: 'all',
     variance_bucket: 'all',
@@ -71,21 +74,39 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
     loadRecords();
   }, [filters]);
 
-  // Create new record
-  const handleCreate = async (input: LoanEligibilityInput): Promise<LoanEligibility> => {
+  // Create or update record
+  const handleSubmit = async (input: LoanEligibilityInput): Promise<LoanEligibility> => {
     setIsSaving(true);
     try {
-      const result = await LoanEligibilityService.create(input);
-      toast.success('Eligibility record saved');
+      let result: LoanEligibility;
+      if (editingRecord) {
+        result = await LoanEligibilityService.update(editingRecord.id, input);
+        toast.success('Eligibility record updated');
+        setEditingRecord(null);
+      } else {
+        result = await LoanEligibilityService.create(input);
+        toast.success('Eligibility record saved');
+      }
       loadRecords();
       return result;
     } catch (error) {
-      console.error('Failed to create record:', error);
+      console.error('Failed to save record:', error);
       toast.error('Failed to save eligibility record');
       throw error;
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Edit record
+  const handleEdit = (record: LoanEligibility) => {
+    setEditingRecord(record);
+    setActiveTab('calculator');
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setEditingRecord(null);
   };
 
   // Delete record
@@ -200,11 +221,11 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="calculator" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="calculator">
             <Calculator className="h-4 w-4 mr-2" />
-            Calculator
+            {editingRecord ? 'Edit Record' : 'Calculator'}
           </TabsTrigger>
           <TabsTrigger value="records">
             <FileText className="h-4 w-4 mr-2" />
@@ -214,9 +235,11 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
 
         <TabsContent value="calculator" className="mt-4">
           <LoanEligibilityForm 
-            onSubmit={handleCreate} 
+            onSubmit={handleSubmit} 
+            initialData={editingRecord || undefined}
             isLoading={isSaving}
             currency={currency}
+            onCancel={editingRecord ? handleCancelEdit : undefined}
           />
         </TabsContent>
 
@@ -383,12 +406,21 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                             {formatCurrency(record.eligible_loan_amount)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(record)}
+                                title="Edit record"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleDelete(record.id)}
                                 className="text-destructive hover:text-destructive"
+                                title="Delete record"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
