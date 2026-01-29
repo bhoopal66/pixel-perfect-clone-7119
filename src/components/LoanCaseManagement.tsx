@@ -174,6 +174,14 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     posLoans: cases.filter(c => c.productType === 'pos').length
   }), [cases]);
 
+  // Extract unique analyst names from existing cases
+  const existingAnalysts = useMemo(() => {
+    const analysts = cases
+      .map(c => c.analystName)
+      .filter((name): name is string => !!name && name.trim() !== '');
+    return [...new Set(analysts)].sort();
+  }, [cases]);
+
   const handleAddCase = (newCase: LoanCase) => {
     setCases(prev => [...prev, newCase]);
     setShowNewCaseDialog(false);
@@ -495,11 +503,12 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       </Tabs>
 
       {/* New Case Dialog */}
-      <NewLoanCaseDialog
-        open={showNewCaseDialog}
+      <NewLoanCaseDialog 
+        open={showNewCaseDialog} 
         onOpenChange={setShowNewCaseDialog}
         onSubmit={handleAddCase}
         currency={currency}
+        existingAnalysts={existingAnalysts}
       />
 
       {/* Case Detail Sheet */}
