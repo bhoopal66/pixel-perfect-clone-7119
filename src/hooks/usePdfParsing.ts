@@ -24,20 +24,39 @@ export interface UsePdfParsingResult {
 // Available banks for manual selection
 export const SUPPORTED_BANKS = [
   { value: 'auto', label: 'Auto-detect' },
+  // Major UAE Local Banks
   { value: 'ADCB', label: 'ADCB' },
+  { value: 'ADIB', label: 'Abu Dhabi Islamic Bank (ADIB)' },
   { value: 'Emirates NBD', label: 'Emirates NBD' },
   { value: 'ENBD Business', label: 'Emirates NBD Business' },
+  { value: 'Emirates Islamic', label: 'Emirates Islamic' },
   { value: 'FAB', label: 'First Abu Dhabi Bank (FAB)' },
   { value: 'Mashreq', label: 'Mashreq' },
   { value: 'CBD', label: 'Commercial Bank of Dubai (CBD)' },
   { value: 'DIB', label: 'Dubai Islamic Bank (DIB)' },
   { value: 'RAKBANK', label: 'RAK Bank' },
   { value: 'NBF', label: 'National Bank of Fujairah (NBF)' },
-  { value: 'Arab Bank', label: 'Arab Bank' },
+  { value: 'Sharjah Islamic', label: 'Sharjah Islamic Bank (SIB)' },
+  { value: 'UAB', label: 'United Arab Bank (UAB)' },
+  { value: 'Al Hilal', label: 'Al Hilal Bank' },
+  { value: 'Ajman Bank', label: 'Ajman Bank' },
+  { value: 'CBI', label: 'Commercial Bank International (CBI)' },
+  { value: 'Al Masraf', label: 'Al Masraf' },
+  { value: 'Bank of Sharjah', label: 'Bank of Sharjah' },
+  { value: 'Invest Bank', label: 'Invest Bank' },
+  { value: 'NBQ', label: 'National Bank of Umm Al Quwain (NBQ)' },
+  // Digital & Neo Banks
   { value: 'WIO', label: 'WIO Bank' },
+  { value: 'Liv', label: 'Liv (by ENBD)' },
+  { value: 'Mashreq Neo', label: 'Mashreq Neo' },
+  { value: 'YAP', label: 'YAP' },
+  // International Banks in UAE
+  { value: 'Arab Bank', label: 'Arab Bank' },
   { value: 'HSBC', label: 'HSBC' },
   { value: 'Citibank', label: 'Citibank' },
   { value: 'Standard Chartered', label: 'Standard Chartered' },
+  { value: 'Habib Bank', label: 'Habib Bank AG Zurich' },
+  { value: 'NBK', label: 'National Bank of Kuwait' },
   { value: 'Other', label: 'Other' },
 ] as const;
 
