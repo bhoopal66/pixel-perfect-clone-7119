@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
+import { LoanEligibilityDashboard } from '../components/LoanEligibilityDashboard';
 import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
 import { CurrencyService } from '../services/currencyService';
@@ -171,7 +172,7 @@ const Index = () => {
     { icon: <Shield className="h-6 w-6" />, title: 'Secure Processing', desc: 'Your data stays private' },
   ];
 
-  const [activeTab, setActiveTab] = useState<'analysis' | 'loans'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'loans' | 'eligibility'>('analysis');
 
   return (
     <div className="min-h-screen bg-background">
@@ -191,7 +192,7 @@ const Index = () => {
             
             {/* Navigation Tabs */}
             <div className="flex items-center gap-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'analysis' | 'loans')}>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'analysis' | 'loans' | 'eligibility')}>
                 <TabsList className="bg-muted/50">
                   <TabsTrigger value="analysis" className="gap-2 text-xs sm:text-sm">
                     <BarChart3 className="h-4 w-4" />
@@ -200,6 +201,10 @@ const Index = () => {
                   <TabsTrigger value="loans" className="gap-2 text-xs sm:text-sm">
                     <Briefcase className="h-4 w-4" />
                     <span className="hidden sm:inline">Cash Loans</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="eligibility" className="gap-2 text-xs sm:text-sm">
+                    <Calculator className="h-4 w-4" />
+                    <span className="hidden sm:inline">Loan Eligibility</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -310,6 +315,10 @@ const Index = () => {
 
         {activeTab === 'loans' && (
           <LoanCaseManagement currency="AED" />
+        )}
+
+        {activeTab === 'eligibility' && (
+          <LoanEligibilityDashboard currency="AED" />
         )}
       </main>
 

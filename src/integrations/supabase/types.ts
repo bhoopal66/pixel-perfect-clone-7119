@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      loan_eligibility: {
+        Row: {
+          adjusted_turnover: number
+          cash_adjustment: number
+          created_at: string
+          declared_turnover: number
+          eligibility_status: string
+          eligible_loan_amount: number
+          eligible_multiplier: number
+          id: string
+          notes: string | null
+          sister_concern_adjustment: number
+          updated_at: string
+          variance_bucket: string
+          variance_percent: number
+          vat_turnover: number
+        }
+        Insert: {
+          adjusted_turnover?: number
+          cash_adjustment?: number
+          created_at?: string
+          declared_turnover?: number
+          eligibility_status?: string
+          eligible_loan_amount?: number
+          eligible_multiplier?: number
+          id?: string
+          notes?: string | null
+          sister_concern_adjustment?: number
+          updated_at?: string
+          variance_bucket?: string
+          variance_percent?: number
+          vat_turnover?: number
+        }
+        Update: {
+          adjusted_turnover?: number
+          cash_adjustment?: number
+          created_at?: string
+          declared_turnover?: number
+          eligibility_status?: string
+          eligible_loan_amount?: number
+          eligible_multiplier?: number
+          id?: string
+          notes?: string | null
+          sister_concern_adjustment?: number
+          updated_at?: string
+          variance_bucket?: string
+          variance_percent?: number
+          vat_turnover?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
