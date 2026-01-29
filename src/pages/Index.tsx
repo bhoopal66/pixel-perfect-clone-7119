@@ -237,59 +237,139 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section - Only show on upload state for analysis tab */}
-      {activeTab === 'analysis' && appState === 'upload' && (
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 gradient-hero opacity-95" />
-          <div className="absolute inset-0">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-          </div>
-          
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/90 text-sm font-medium mb-6 backdrop-blur-sm">
-                <Zap className="h-4 w-4" />
-                Powered by Advanced Analytics
-              </span>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                Analyze Bank Statements<br />
-                <span className="text-accent">In Seconds</span>
-              </h2>
-              <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10">
-                Upload your PDF bank statements and get comprehensive Excel reports 
-                with categorized transactions, balance analysis, and financial insights.
-              </p>
-            </motion.div>
+      {/* Hero Section - Show for all tabs */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 gradient-hero opacity-95" />
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-accent/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/90 text-sm font-medium mb-6 backdrop-blur-sm">
+              <Zap className="h-4 w-4" />
+              Complete Loan Processing Suite
+            </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
+              Streamline Your<br />
+              <span className="text-accent">Loan Management</span>
+            </h2>
+            <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto mb-10">
+              From eligibility checks to lender comparison and statement analysis — 
+              everything you need in one powerful platform.
+            </p>
+          </motion.div>
 
-            {/* Features Grid */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto"
+          {/* Quick Action Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          >
+            {/* Cash Loans Card */}
+            <motion.button
+              onClick={() => setActiveTab('loans')}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
+                activeTab === 'loans' 
+                  ? 'bg-accent/20 border-accent/50' 
+                  : 'bg-white/10 border-white/10 hover:bg-white/15'
+              }`}
             >
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 text-left"
-                >
-                  <div className="text-accent mb-2">{feature.icon}</div>
-                  <p className="text-white font-semibold text-sm">{feature.title}</p>
-                  <p className="text-white/60 text-xs">{feature.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      )}
+              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
+                <Briefcase className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Cash Loans</h3>
+              <p className="text-white/70 text-sm mb-4">
+                Compare RAK Bank & Wio Bank rates. Track applications from draft to disbursement.
+              </p>
+              <div className="flex items-center gap-2 text-accent text-sm font-medium">
+                <span>Open Module</span>
+                <BarChart3 className="h-4 w-4" />
+              </div>
+            </motion.button>
+
+            {/* Loan Eligibility Card */}
+            <motion.button
+              onClick={() => setActiveTab('eligibility')}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
+                activeTab === 'eligibility' 
+                  ? 'bg-accent/20 border-accent/50' 
+                  : 'bg-white/10 border-white/10 hover:bg-white/15'
+              }`}
+            >
+              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
+                <Calculator className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Loan Eligibility</h3>
+              <p className="text-white/70 text-sm mb-4">
+                VAT vs Turnover analysis with RAG status. 8x/6x multiplier calculations.
+              </p>
+              <div className="flex items-center gap-2 text-accent text-sm font-medium">
+                <span>Open Module</span>
+                <BarChart3 className="h-4 w-4" />
+              </div>
+            </motion.button>
+
+            {/* Statement Analysis Card */}
+            <motion.button
+              onClick={() => setActiveTab('analysis')}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
+                activeTab === 'analysis' 
+                  ? 'bg-accent/20 border-accent/50' 
+                  : 'bg-white/10 border-white/10 hover:bg-white/15'
+              }`}
+            >
+              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
+                <FileSpreadsheet className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Statement Analysis</h3>
+              <p className="text-white/70 text-sm mb-4">
+                Upload PDFs for instant categorization, balance tracking, and Excel reports.
+              </p>
+              <div className="flex items-center gap-2 text-accent text-sm font-medium">
+                <span>Open Module</span>
+                <BarChart3 className="h-4 w-4" />
+              </div>
+            </motion.button>
+          </motion.div>
+
+          {/* Feature highlights */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="flex flex-wrap justify-center gap-4 mt-10"
+          >
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/80 text-sm"
+              >
+                <span className="text-accent">{feature.icon}</span>
+                <span>{feature.title}</span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
