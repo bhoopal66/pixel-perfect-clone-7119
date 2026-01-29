@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Calculator,
   CheckCircle,
+  CreditCard,
   XCircle,
   AlertCircle,
   FileText
@@ -29,9 +30,10 @@ import type {
   LoanEligibilityInput, 
   EligibilityFilters,
   EligibilityStatus,
-  VarianceBucket
+  VarianceBucket,
+  ProductType
 } from '@/types/loanEligibility.types';
-import { getStatusColor, getBucketColor } from '@/types/loanEligibility.types';
+import { getStatusColor, getBucketColor, PRODUCT_TYPE_LABELS, isPOSProduct } from '@/types/loanEligibility.types';
 
 interface LoanEligibilityDashboardProps {
   currency?: 'AED' | 'USD';
@@ -45,7 +47,8 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
   const [isSaving, setIsSaving] = useState(false);
   const [filters, setFilters] = useState<EligibilityFilters>({
     eligibility_status: 'all',
-    variance_bucket: 'all'
+    variance_bucket: 'all',
+    product_type: 'all'
   });
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
@@ -233,7 +236,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="Eligible">Eligible</SelectItem>
                       <SelectItem value="Eligible (Reduced)">Eligible (Reduced)</SelectItem>
@@ -251,11 +254,38 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                     <SelectTrigger className="w-[120px]">
                       <SelectValue placeholder="Variance" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="all">All Buckets</SelectItem>
                       <SelectItem value="<=10%">≤10%</SelectItem>
                       <SelectItem value="11%-25%">11%-25%</SelectItem>
                       <SelectItem value=">25%">&gt;25%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select 
+                    value={filters.product_type || 'all'} 
+                    onValueChange={(v) => setFilters(prev => ({ 
+                      ...prev, 
+                      product_type: v as ProductType | 'all' 
+                    }))}
+                  >
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Product Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="all">All Products</SelectItem>
+                      <SelectItem value="standard">Standard Loan</SelectItem>
+                      <SelectItem value="rak_pos">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-3.5 w-3.5" />
+                          RAK POS Loan
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="wio_pos">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-3.5 w-3.5" />
+                          WIO POS Loan
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <div className="flex gap-2">
@@ -301,6 +331,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
+                        <TableHead>Product</TableHead>
                         <TableHead className="text-right">VAT Turnover</TableHead>
                         <TableHead className="text-right">Declared</TableHead>
                         <TableHead className="text-right">Adjusted</TableHead>
@@ -315,6 +346,20 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                         <TableRow key={record.id}>
                           <TableCell className="text-sm text-muted-foreground">
                             {new Date(record.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-xs",
+                                isPOSProduct(record.product_type) && "border-primary/50 bg-primary/5"
+                              )}
+                            >
+                              {isPOSProduct(record.product_type) && (
+                                <CreditCard className="h-3 w-3 mr-1" />
+                              )}
+                              {PRODUCT_TYPE_LABELS[record.product_type] || record.product_type}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(record.vat_turnover)}
