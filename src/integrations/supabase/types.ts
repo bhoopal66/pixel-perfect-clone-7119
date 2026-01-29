@@ -158,6 +158,7 @@ export type Database = {
           company_name: string | null
           created_at: string
           declared_turnover: number
+          eligibility_method: string | null
           eligibility_status: string
           eligible_loan_amount: number
           eligible_multiplier: number
@@ -188,6 +189,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           declared_turnover?: number
+          eligibility_method?: string | null
           eligibility_status?: string
           eligible_loan_amount?: number
           eligible_multiplier?: number
@@ -218,6 +220,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           declared_turnover?: number
+          eligibility_method?: string | null
           eligibility_status?: string
           eligible_loan_amount?: number
           eligible_multiplier?: number

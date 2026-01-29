@@ -152,6 +152,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
     const styles: Record<string, string> = {
       success: 'bg-success/20 text-success',
       warning: 'bg-warning/20 text-warning',
+      alternative: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
       destructive: 'bg-destructive/20 text-destructive',
       muted: 'bg-muted text-muted-foreground'
     };
@@ -381,6 +382,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Product</TableHead>
+                        <TableHead>Method</TableHead>
                         <TableHead className="text-right">VAT Turnover</TableHead>
                         <TableHead className="text-right">Declared</TableHead>
                         <TableHead className="text-right">Adjusted</TableHead>
@@ -409,6 +411,17 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                               )}
                               {PRODUCT_TYPE_LABELS[record.product_type] || record.product_type}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {record.eligibility_method === 'Alternative' ? (
+                              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200 text-xs">
+                                Alternative
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                Standard
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(record.vat_turnover)}
