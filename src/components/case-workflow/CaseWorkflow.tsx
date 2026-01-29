@@ -162,9 +162,16 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
             Back to Cases
           </Button>
           {caseData && (
-            <Badge className={STATUS_CONFIG[caseData.status]?.color || 'bg-muted'}>
-              {caseData.status}
-            </Badge>
+            <>
+              {caseData.case_number && (
+                <Badge variant="outline" className="font-mono">
+                  {caseData.case_number}
+                </Badge>
+              )}
+              <Badge className={STATUS_CONFIG[caseData.status]?.color || 'bg-muted'}>
+                {caseData.status}
+              </Badge>
+            </>
           )}
         </div>
       )}
