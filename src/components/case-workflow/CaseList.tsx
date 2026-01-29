@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { Calendar } from '../ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { 
   Table, 
   TableBody, 
@@ -32,7 +35,9 @@ import {
   Hash,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  CalendarIcon,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -63,6 +68,8 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [caseNumberFilter, setCaseNumberFilter] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [caseNumberSort, setCaseNumberSort] = useState<SortDirection>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
@@ -140,7 +147,11 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
       const matchesCaseNumber = !caseNumberFilter || 
         (c.case_number && c.case_number.toLowerCase().includes(caseNumberFilter.toLowerCase()));
       
-      return matchesSearch && matchesCaseNumber;
+      const caseDate = new Date(c.created_at);
+      const matchesDateFrom = !dateFrom || caseDate >= dateFrom;
+      const matchesDateTo = !dateTo || caseDate <= new Date(dateTo.getTime() + 24 * 60 * 60 * 1000 - 1);
+      
+      return matchesSearch && matchesCaseNumber && matchesDateFrom && matchesDateTo;
     })
     .sort((a, b) => {
       if (caseNumberSort === null) return 0;
@@ -269,6 +280,64 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
               <Button variant="outline" size="icon" onClick={loadCases}>
                 <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
               </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[130px] justify-start text-left font-normal text-xs",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[130px] justify-start text-left font-normal text-xs",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {dateTo ? format(dateTo, "MMM d, yyyy") : "To"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}
+                  title="Clear date filter"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
