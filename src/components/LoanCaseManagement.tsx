@@ -208,13 +208,16 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                     </SelectContent>
                   </Select>
                   <Select value={lenderFilter} onValueChange={(v) => setLenderFilter(v as LenderType | 'all')}>
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Lender" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Lenders</SelectItem>
-                      <SelectItem value="RAK">RAK Bank</SelectItem>
-                      <SelectItem value="WIO">Wio Bank</SelectItem>
+                      {(Object.keys(LENDERS) as LenderType[]).map(lenderId => (
+                        <SelectItem key={lenderId} value={lenderId}>
+                          {LENDERS[lenderId].name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -253,7 +256,10 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{LENDERS[loanCase.lender].name}</Badge>
+                            <div className="flex flex-col">
+                              <Badge variant="outline" className="w-fit">{LENDERS[loanCase.lender].shortName}</Badge>
+                              <span className="text-[10px] text-muted-foreground mt-0.5 uppercase">{loanCase.productType}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(loanCase.loanAmount)}

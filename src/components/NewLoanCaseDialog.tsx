@@ -7,8 +7,9 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Badge } from './ui/badge';
+import { Building2, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { LoanCase, LenderType } from '../types/loanCase.types';
+import type { LoanCase, LenderType, ProductType } from '../types/loanCase.types';
 import { LENDERS, calculateEMI, calculateTotalInterest, calculateProcessingFee } from '../types/loanCase.types';
 import { CurrencyService } from '../services/currencyService';
 
@@ -32,6 +33,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     monthlySalary: 0,
     employer: '',
     lender: 'RAK' as LenderType,
+    productType: 'cash' as ProductType,
     loanAmount: 50000,
     tenure: 24,
     purpose: '',
@@ -39,6 +41,18 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
   });
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
+
+  // Get available product types for selected lender
+  const availableProductTypes = useMemo(() => {
+    return LENDERS[formData.lender].productTypes;
+  }, [formData.lender]);
+
+  // Reset product type if not available for selected lender
+  useMemo(() => {
+    if (!availableProductTypes.includes(formData.productType)) {
+      setFormData(prev => ({ ...prev, productType: availableProductTypes[0] }));
+    }
+  }, [availableProductTypes, formData.productType]);
 
   // Calculate EMI and costs
   const calculations = useMemo(() => {
@@ -62,6 +76,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       monthlySalary: formData.monthlySalary,
       employer: formData.employer,
       lender: formData.lender,
+      productType: formData.productType,
       loanAmount: formData.loanAmount,
       tenure: formData.tenure,
       purpose: formData.purpose,
@@ -90,6 +105,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       monthlySalary: 0,
       employer: '',
       lender: 'RAK',
+      productType: 'cash',
       loanAmount: 50000,
       tenure: 24,
       purpose: '',
@@ -159,40 +175,105 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
           {/* Lender Selection */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Select Lender</h3>
-            <RadioGroup
-              value={formData.lender}
-              onValueChange={(v) => setFormData({ ...formData, lender: v as LenderType })}
-              className="grid grid-cols-2 gap-4"
-            >
-              {(Object.keys(LENDERS) as LenderType[]).map((lenderId) => {
-                const lender = LENDERS[lenderId];
-                const isSelected = formData.lender === lenderId;
-                return (
-                  <div
-                    key={lenderId}
-                    className={cn(
-                      "relative flex items-start p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                      isSelected ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
-                    )}
-                  >
-                    <RadioGroupItem value={lenderId} id={lenderId} className="mt-1" />
-                    <Label htmlFor={lenderId} className="flex-1 ml-3 cursor-pointer">
-                      <p className="font-semibold">{lender.name}</p>
-                      <p className="text-sm text-muted-foreground">{lender.interestRate}% p.a.</p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs">
-                          {formatCurrency(lender.minAmount)} - {formatCurrency(lender.maxAmount)}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {lender.minTenure}-{lender.maxTenure} mo
-                        </Badge>
+            
+            {/* Banks Section */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <Building2 className="h-3 w-3" /> Banks
+              </p>
+              <RadioGroup
+                value={formData.lender}
+                onValueChange={(v) => setFormData({ ...formData, lender: v as LenderType })}
+                className="grid grid-cols-2 gap-3"
+              >
+                {(Object.keys(LENDERS) as LenderType[])
+                  .filter(id => LENDERS[id].category === 'bank')
+                  .map((lenderId) => {
+                    const lender = LENDERS[lenderId];
+                    const isSelected = formData.lender === lenderId;
+                    return (
+                      <div
+                        key={lenderId}
+                        className={cn(
+                          "relative flex items-start p-3 rounded-lg border-2 cursor-pointer transition-colors",
+                          isSelected ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
+                        )}
+                      >
+                        <RadioGroupItem value={lenderId} id={lenderId} className="mt-0.5" />
+                        <Label htmlFor={lenderId} className="flex-1 ml-2 cursor-pointer">
+                          <p className="font-semibold text-sm">{lender.name}</p>
+                          <p className="text-xs text-muted-foreground">{lender.interestRate}% p.a.</p>
+                          {lender.productTypes.length > 1 && (
+                            <div className="mt-1 flex gap-1">
+                              {lender.productTypes.map(pt => (
+                                <Badge key={pt} variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {pt.toUpperCase()}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </Label>
                       </div>
-                    </Label>
-                  </div>
-                );
-              })}
-            </RadioGroup>
+                    );
+                  })}
+              </RadioGroup>
+            </div>
+            
+            {/* Fintech Section */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <Wallet className="h-3 w-3" /> Fintech Lenders
+              </p>
+              <RadioGroup
+                value={formData.lender}
+                onValueChange={(v) => setFormData({ ...formData, lender: v as LenderType })}
+                className="grid grid-cols-3 gap-2"
+              >
+                {(Object.keys(LENDERS) as LenderType[])
+                  .filter(id => LENDERS[id].category === 'fintech')
+                  .map((lenderId) => {
+                    const lender = LENDERS[lenderId];
+                    const isSelected = formData.lender === lenderId;
+                    return (
+                      <div
+                        key={lenderId}
+                        className={cn(
+                          "relative flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-colors",
+                          isSelected ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
+                        )}
+                      >
+                        <RadioGroupItem value={lenderId} id={lenderId} className="h-3 w-3" />
+                        <Label htmlFor={lenderId} className="cursor-pointer text-xs">
+                          <p className="font-medium">{lender.shortName}</p>
+                          <p className="text-muted-foreground">{lender.interestRate}%</p>
+                        </Label>
+                      </div>
+                    );
+                  })}
+              </RadioGroup>
+            </div>
           </div>
+
+          {/* Product Type Selection (if lender supports multiple) */}
+          {availableProductTypes.length > 1 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Product Type</h3>
+              <div className="flex gap-3">
+                {availableProductTypes.map((pt) => (
+                  <Button
+                    key={pt}
+                    type="button"
+                    variant={formData.productType === pt ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, productType: pt })}
+                    className="flex-1"
+                  >
+                    {pt === 'cash' ? 'Cash Loan' : 'POS Financing'}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Loan Details */}
           <div className="space-y-4">
