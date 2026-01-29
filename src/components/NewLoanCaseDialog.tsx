@@ -22,6 +22,7 @@ interface NewLoanCaseDialogProps {
   currency?: 'AED' | 'USD';
   existingAnalysts?: string[];
   existingAgentRefs?: string[];
+  existingCompanyNames?: string[];
 }
 
 export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
@@ -30,10 +31,12 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
   onSubmit,
   currency = 'AED',
   existingAnalysts = [],
-  existingAgentRefs = []
+  existingAgentRefs = [],
+  existingCompanyNames = []
 }) => {
   const [analystOpen, setAnalystOpen] = useState(false);
   const [agentRefOpen, setAgentRefOpen] = useState(false);
+  const [companyNameOpen, setCompanyNameOpen] = useState(false);
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantPhone: '',
@@ -290,11 +293,55 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>Company Name</Label>
-                <Input
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  placeholder="Company name"
-                />
+                <Popover open={companyNameOpen} onOpenChange={setCompanyNameOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={companyNameOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.companyName || "Select or type company name..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search or type new company..." 
+                        value={formData.companyName}
+                        onValueChange={(value) => setFormData({ ...formData, companyName: value })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-muted-foreground text-sm">
+                            Press enter to use "{formData.companyName}"
+                          </span>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing Companies">
+                          {existingCompanyNames.map((company) => (
+                            <CommandItem
+                              key={company}
+                              value={company}
+                              onSelect={(currentValue) => {
+                                setFormData({ ...formData, companyName: currentValue });
+                                setCompanyNameOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.companyName === company ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {company}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label>Agent Reference *</Label>
