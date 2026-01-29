@@ -47,7 +47,11 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     loanAmount: 50000,
     tenure: 24,
     purpose: '',
-    notes: ''
+    notes: '',
+    // POS eligibility inputs
+    vatTurnover: 0,
+    adjustedTurnover: 0,
+    posMonthlyTurnover: 0,
   });
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
@@ -64,6 +68,9 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     }
   }, [availableProductTypes, formData.productType]);
 
+  // Check if RAK POS Loan is selected
+  const isRakPosLoan = formData.lender === 'RAK' && formData.productType === 'pos';
+
   // Calculate EMI and costs
   const calculations = useMemo(() => {
     const lender = LENDERS[formData.lender];
@@ -74,6 +81,69 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
 
     return { emi, totalInterest, processingFee, totalPayable, interestRate: lender.interestRate };
   }, [formData.lender, formData.loanAmount, formData.tenure]);
+
+  // POS Eligibility calculations (for RAK POS Loan)
+  const posEligibilityCalcs = useMemo(() => {
+    if (!isRakPosLoan) {
+      return {
+        posAnnualTurnover: 0,
+        posCapAdjusted: 0,
+        posCapVat: 0,
+        posEligibleTurnover: 0,
+        turnoverBasis: 0,
+        variancePercent: 0,
+        eligibleMultiplier: 0,
+        eligibleLoanAmount: 0,
+        abcdFeeRate: 0.01,
+        abcdFeeAmount: 0,
+        totalWithAbcd: 0,
+      };
+    }
+
+    // Calculate POS fields
+    const posAnnualTurnover = formData.posMonthlyTurnover * 12;
+    const posCapAdjusted = formData.adjustedTurnover * 0.40;
+    const posCapVat = formData.vatTurnover * 0.40;
+    const posEligibleTurnover = Math.min(posAnnualTurnover, posCapAdjusted, posCapVat);
+    const turnoverBasis = posEligibleTurnover;
+
+    // Calculate variance percent
+    const maxTurnover = Math.max(formData.vatTurnover, formData.adjustedTurnover);
+    const variancePercent = maxTurnover === 0 ? 0 : 
+      Math.round(Math.abs(formData.vatTurnover - formData.adjustedTurnover) / maxTurnover * 100 * 100) / 100;
+
+    // Determine multiplier based on variance
+    let eligibleMultiplier = 0;
+    if (variancePercent <= 10) {
+      eligibleMultiplier = 8;
+    } else if (variancePercent <= 25) {
+      eligibleMultiplier = 8 / 6;
+    } else {
+      eligibleMultiplier = 0;
+    }
+
+    // Calculate eligible loan amount
+    const eligibleLoanAmount = eligibleMultiplier > 0 ? turnoverBasis * eligibleMultiplier : 0;
+
+    // ABCD Fee calculation
+    const abcdFeeRate = 0.01;
+    const abcdFeeAmount = eligibleLoanAmount * abcdFeeRate;
+    const totalWithAbcd = eligibleLoanAmount + abcdFeeAmount;
+
+    return {
+      posAnnualTurnover,
+      posCapAdjusted,
+      posCapVat,
+      posEligibleTurnover,
+      turnoverBasis,
+      variancePercent,
+      eligibleMultiplier,
+      eligibleLoanAmount,
+      abcdFeeRate,
+      abcdFeeAmount,
+      totalWithAbcd,
+    };
+  }, [isRakPosLoan, formData.posMonthlyTurnover, formData.adjustedTurnover, formData.vatTurnover]);
 
   const handleSubmit = () => {
     const caseNumber = `CL-${Date.now().toString().slice(-6)}`;
@@ -97,6 +167,23 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       totalInterest: calculations.totalInterest,
       totalPayable: calculations.totalPayable,
       processingFee: calculations.processingFee,
+      // POS eligibility fields
+      vatTurnover: formData.vatTurnover,
+      adjustedTurnover: formData.adjustedTurnover,
+      posMonthlyTurnover: formData.posMonthlyTurnover,
+      posAnnualTurnover: posEligibilityCalcs.posAnnualTurnover,
+      posCapAdjusted: posEligibilityCalcs.posCapAdjusted,
+      posCapVat: posEligibilityCalcs.posCapVat,
+      posEligibleTurnover: posEligibilityCalcs.posEligibleTurnover,
+      turnoverBasis: posEligibilityCalcs.turnoverBasis,
+      variancePercent: posEligibilityCalcs.variancePercent,
+      eligibleMultiplier: posEligibilityCalcs.eligibleMultiplier,
+      eligibleLoanAmount: posEligibilityCalcs.eligibleLoanAmount,
+      // ABCD fee fields
+      abcdFeeRate: posEligibilityCalcs.abcdFeeRate,
+      abcdFeeAmount: posEligibilityCalcs.abcdFeeAmount,
+      totalWithAbcd: posEligibilityCalcs.totalWithAbcd,
+      // Status
       status: 'draft',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -123,11 +210,20 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       loanAmount: 50000,
       tenure: 24,
       purpose: '',
-      notes: ''
+      notes: '',
+      vatTurnover: 0,
+      adjustedTurnover: 0,
+      posMonthlyTurnover: 0,
     });
   };
 
-  const isValid = formData.applicantName && formData.loanAmount > 0 && formData.tenure > 0 && formData.agentReference.trim() !== '' && formData.analystName.trim() !== '';
+  // Validation - also require POS fields if RAK POS is selected
+  const isValid = formData.applicantName && 
+    formData.loanAmount > 0 && 
+    formData.tenure > 0 && 
+    formData.agentReference.trim() !== '' && 
+    formData.analystName.trim() !== '' &&
+    (!isRakPosLoan || (formData.posMonthlyTurnover > 0 && formData.vatTurnover > 0 && formData.adjustedTurnover > 0));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -393,6 +489,45 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
             </div>
           )}
 
+          {/* RAK POS Loan Eligibility Inputs */}
+          {isRakPosLoan && (
+            <div className="space-y-4 p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
+              <h3 className="text-sm font-medium text-primary flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">RAK POS</Badge>
+                POS Eligibility Inputs
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>POS Monthly Turnover *</Label>
+                  <Input
+                    type="number"
+                    value={formData.posMonthlyTurnover || ''}
+                    onChange={(e) => setFormData({ ...formData, posMonthlyTurnover: Number(e.target.value) })}
+                    placeholder="e.g., 100000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>VAT Turnover *</Label>
+                  <Input
+                    type="number"
+                    value={formData.vatTurnover || ''}
+                    onChange={(e) => setFormData({ ...formData, vatTurnover: Number(e.target.value) })}
+                    placeholder="e.g., 1200000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Adjusted Turnover *</Label>
+                  <Input
+                    type="number"
+                    value={formData.adjustedTurnover || ''}
+                    onChange={(e) => setFormData({ ...formData, adjustedTurnover: Number(e.target.value) })}
+                    placeholder="e.g., 1100000"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Loan Details */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Loan Details</h3>
@@ -461,6 +596,74 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
               </div>
             </div>
           </div>
+
+          {/* RAK POS Eligibility Summary */}
+          {isRakPosLoan && (formData.posMonthlyTurnover > 0 || formData.vatTurnover > 0 || formData.adjustedTurnover > 0) && (
+            <div className="p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
+              <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">RAK POS</Badge>
+                POS Eligibility Calculation
+              </h3>
+              
+              {/* Turnover Breakdown */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">POS Annual Turnover</p>
+                  <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posAnnualTurnover)}</p>
+                  <p className="text-[10px] text-muted-foreground">Monthly × 12</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">40% Adjusted Cap</p>
+                  <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posCapAdjusted)}</p>
+                  <p className="text-[10px] text-muted-foreground">Adjusted × 0.40</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">40% VAT Cap</p>
+                  <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posCapVat)}</p>
+                  <p className="text-[10px] text-muted-foreground">VAT × 0.40</p>
+                </div>
+                <div className="p-2 bg-primary/10 rounded border border-primary/30">
+                  <p className="text-xs text-muted-foreground">POS Eligible Turnover</p>
+                  <p className="font-bold text-primary">{formatCurrency(posEligibilityCalcs.posEligibleTurnover)}</p>
+                  <p className="text-[10px] text-muted-foreground">MIN of above</p>
+                </div>
+              </div>
+
+              {/* Eligibility Results */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">Variance</p>
+                  <p className={cn(
+                    "font-semibold",
+                    posEligibilityCalcs.variancePercent <= 10 ? "text-success" :
+                    posEligibilityCalcs.variancePercent <= 25 ? "text-warning" : "text-destructive"
+                  )}>
+                    {posEligibilityCalcs.variancePercent.toFixed(2)}%
+                  </p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">Multiplier</p>
+                  <p className="font-semibold">{posEligibilityCalcs.eligibleMultiplier.toFixed(2)}x</p>
+                </div>
+                <div className="p-2 bg-success/10 rounded border border-success/30">
+                  <p className="text-xs text-muted-foreground">Eligible Loan Amount</p>
+                  <p className="font-bold text-success">{formatCurrency(posEligibilityCalcs.eligibleLoanAmount)}</p>
+                </div>
+                <div className="p-2 bg-warning/10 rounded border border-warning/30">
+                  <p className="text-xs text-muted-foreground">ABCD Fee (1%)</p>
+                  <p className="font-semibold text-warning">{formatCurrency(posEligibilityCalcs.abcdFeeAmount)}</p>
+                </div>
+              </div>
+
+              {/* Total with ABCD */}
+              <div className="mt-3 p-3 bg-primary/20 rounded-lg border border-primary/40">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total Including ABCD Fee</span>
+                  <span className="text-xl font-bold text-primary">{formatCurrency(posEligibilityCalcs.totalWithAbcd)}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">

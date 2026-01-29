@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       loan_cases: {
         Row: {
+          abcd_fee_amount: number
+          abcd_fee_rate: number
+          adjusted_turnover: number
           agent_reference: string
           analyst_name: string
           applicant_email: string
@@ -27,6 +30,8 @@ export type Database = {
           created_at: string
           disbursed_at: string | null
           documents: Json
+          eligible_loan_amount: number
+          eligible_multiplier: number
           emi: number
           id: string
           interest_rate: number
@@ -34,6 +39,11 @@ export type Database = {
           loan_amount: number
           monthly_salary: number
           notes: string | null
+          pos_annual_turnover: number
+          pos_cap_adjusted: number
+          pos_cap_vat: number
+          pos_eligible_turnover: number
+          pos_monthly_turnover: number
           processing_fee: number
           product_type: string
           purpose: string | null
@@ -42,10 +52,17 @@ export type Database = {
           tenure: number
           total_interest: number
           total_payable: number
+          total_with_abcd: number
+          turnover_basis: number
           updated_at: string
           user_id: string | null
+          variance_percent: number
+          vat_turnover: number
         }
         Insert: {
+          abcd_fee_amount?: number
+          abcd_fee_rate?: number
+          adjusted_turnover?: number
           agent_reference: string
           analyst_name: string
           applicant_email: string
@@ -57,6 +74,8 @@ export type Database = {
           created_at?: string
           disbursed_at?: string | null
           documents?: Json
+          eligible_loan_amount?: number
+          eligible_multiplier?: number
           emi?: number
           id?: string
           interest_rate?: number
@@ -64,6 +83,11 @@ export type Database = {
           loan_amount?: number
           monthly_salary?: number
           notes?: string | null
+          pos_annual_turnover?: number
+          pos_cap_adjusted?: number
+          pos_cap_vat?: number
+          pos_eligible_turnover?: number
+          pos_monthly_turnover?: number
           processing_fee?: number
           product_type?: string
           purpose?: string | null
@@ -72,10 +96,17 @@ export type Database = {
           tenure?: number
           total_interest?: number
           total_payable?: number
+          total_with_abcd?: number
+          turnover_basis?: number
           updated_at?: string
           user_id?: string | null
+          variance_percent?: number
+          vat_turnover?: number
         }
         Update: {
+          abcd_fee_amount?: number
+          abcd_fee_rate?: number
+          adjusted_turnover?: number
           agent_reference?: string
           analyst_name?: string
           applicant_email?: string
@@ -87,6 +118,8 @@ export type Database = {
           created_at?: string
           disbursed_at?: string | null
           documents?: Json
+          eligible_loan_amount?: number
+          eligible_multiplier?: number
           emi?: number
           id?: string
           interest_rate?: number
@@ -94,6 +127,11 @@ export type Database = {
           loan_amount?: number
           monthly_salary?: number
           notes?: string | null
+          pos_annual_turnover?: number
+          pos_cap_adjusted?: number
+          pos_cap_vat?: number
+          pos_eligible_turnover?: number
+          pos_monthly_turnover?: number
           processing_fee?: number
           product_type?: string
           purpose?: string | null
@@ -102,8 +140,12 @@ export type Database = {
           tenure?: number
           total_interest?: number
           total_payable?: number
+          total_with_abcd?: number
+          turnover_basis?: number
           updated_at?: string
           user_id?: string | null
+          variance_percent?: number
+          vat_turnover?: number
         }
         Relationships: []
       }

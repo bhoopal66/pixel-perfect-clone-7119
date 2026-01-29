@@ -23,6 +23,23 @@ interface DbLoanCase {
   total_interest: number;
   total_payable: number;
   processing_fee: number;
+  // POS eligibility fields
+  vat_turnover: number;
+  adjusted_turnover: number;
+  pos_monthly_turnover: number;
+  pos_annual_turnover: number;
+  pos_cap_adjusted: number;
+  pos_cap_vat: number;
+  pos_eligible_turnover: number;
+  turnover_basis: number;
+  variance_percent: number;
+  eligible_multiplier: number;
+  eligible_loan_amount: number;
+  // ABCD fee fields
+  abcd_fee_rate: number;
+  abcd_fee_amount: number;
+  total_with_abcd: number;
+  // Status & tracking
   status: string;
   notes: string | null;
   submitted_at: string | null;
@@ -55,6 +72,23 @@ const fromDbFormat = (dbCase: DbLoanCase): LoanCase => ({
   totalInterest: dbCase.total_interest,
   totalPayable: dbCase.total_payable,
   processingFee: dbCase.processing_fee,
+  // POS eligibility fields
+  vatTurnover: dbCase.vat_turnover || 0,
+  adjustedTurnover: dbCase.adjusted_turnover || 0,
+  posMonthlyTurnover: dbCase.pos_monthly_turnover || 0,
+  posAnnualTurnover: dbCase.pos_annual_turnover || 0,
+  posCapAdjusted: dbCase.pos_cap_adjusted || 0,
+  posCapVat: dbCase.pos_cap_vat || 0,
+  posEligibleTurnover: dbCase.pos_eligible_turnover || 0,
+  turnoverBasis: dbCase.turnover_basis || 0,
+  variancePercent: dbCase.variance_percent || 0,
+  eligibleMultiplier: dbCase.eligible_multiplier || 0,
+  eligibleLoanAmount: dbCase.eligible_loan_amount || 0,
+  // ABCD fee fields
+  abcdFeeRate: dbCase.abcd_fee_rate || 0.01,
+  abcdFeeAmount: dbCase.abcd_fee_amount || 0,
+  totalWithAbcd: dbCase.total_with_abcd || 0,
+  // Status
   status: dbCase.status as LoanStatus,
   notes: dbCase.notes || '',
   submittedAt: dbCase.submitted_at || undefined,
@@ -86,6 +120,23 @@ const toDbFormat = (loanCase: LoanCase): Omit<DbLoanCase, 'created_at' | 'update
   total_interest: loanCase.totalInterest,
   total_payable: loanCase.totalPayable,
   processing_fee: loanCase.processingFee,
+  // POS eligibility fields
+  vat_turnover: loanCase.vatTurnover || 0,
+  adjusted_turnover: loanCase.adjustedTurnover || 0,
+  pos_monthly_turnover: loanCase.posMonthlyTurnover || 0,
+  pos_annual_turnover: loanCase.posAnnualTurnover || 0,
+  pos_cap_adjusted: loanCase.posCapAdjusted || 0,
+  pos_cap_vat: loanCase.posCapVat || 0,
+  pos_eligible_turnover: loanCase.posEligibleTurnover || 0,
+  turnover_basis: loanCase.turnoverBasis || 0,
+  variance_percent: loanCase.variancePercent || 0,
+  eligible_multiplier: loanCase.eligibleMultiplier || 0,
+  eligible_loan_amount: loanCase.eligibleLoanAmount || 0,
+  // ABCD fee fields
+  abcd_fee_rate: loanCase.abcdFeeRate || 0.01,
+  abcd_fee_amount: loanCase.abcdFeeAmount || 0,
+  total_with_abcd: loanCase.totalWithAbcd || 0,
+  // Status
   status: loanCase.status,
   notes: loanCase.notes || null,
   submitted_at: loanCase.submittedAt || null,
