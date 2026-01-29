@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { cn } from '@/lib/utils';
-import type { VATReturn } from '../types/turnoverAnalysis.types';
+import type { VATReturn } from '../types/turnover.types';
 import type { CurrencyCode } from '../services/currencyService';
 import { CurrencyService } from '../services/currencyService';
 

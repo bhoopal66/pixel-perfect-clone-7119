@@ -70,3 +70,20 @@ export const getDefaultConfiguration = (): TurnoverConfiguration => ({
     sisterConcern: [...DEFAULT_KEYWORDS.sisterConcern]
   }
 });
+
+// VAT Return types
+export interface VATReturn {
+  id: string;
+  period: string;
+  startDate: string;
+  endDate: string;
+  taxableSales: number;
+  zeroRatedSales: number;
+  exemptSales: number;
+  outputVAT: number;
+  inputVAT: number;
+  netVAT?: number;
+  fileName?: string;
+  uploadDate?: string;
+  status: 'draft' | 'submitted' | 'filed' | 'approved' | 'pending';
+}
