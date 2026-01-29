@@ -472,6 +472,20 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
                     max="360"
                     step="1"
                   />
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[6, 12, 24, 36].map((months) => (
+                      <Button
+                        key={months}
+                        type="button"
+                        variant={parseInt(tenure) === months ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setTenure(months.toString())}
+                        className="h-7 px-2.5 text-xs"
+                      >
+                        {months}m
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
