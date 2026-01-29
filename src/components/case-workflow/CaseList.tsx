@@ -70,6 +70,12 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'Closed', label: 'Closed' },
 ];
 
+const PRODUCT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'All Products' },
+  { value: 'standard', label: 'Cash Loan' },
+  { value: 'pos', label: 'POS Financing' },
+];
+
 type SortDirection = 'asc' | 'desc' | null;
 
 interface CaseListProps {
@@ -88,6 +94,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [productTypeFilter, setProductTypeFilter] = useState<string>('all');
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
@@ -171,7 +178,11 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
       
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
       
-      return matchesSearch && matchesCaseNumber && matchesDateFrom && matchesDateTo && matchesStatus;
+      const matchesProductType = productTypeFilter === 'all' || 
+        (productTypeFilter === 'standard' && c.product_type === 'standard') ||
+        (productTypeFilter === 'pos' && (c.product_type === 'rak_pos' || c.product_type === 'wio_pos'));
+      
+      return matchesSearch && matchesCaseNumber && matchesDateFrom && matchesDateTo && matchesStatus && matchesProductType;
     })
     .sort((a, b) => {
       if (caseNumberSort === null) return 0;
@@ -364,6 +375,18 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
                 </SelectTrigger>
                 <SelectContent>
                   {STATUS_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={productTypeFilter} onValueChange={setProductTypeFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_TYPE_OPTIONS.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
