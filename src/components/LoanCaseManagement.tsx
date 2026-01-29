@@ -439,7 +439,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                           <TableCell>
                             <div>
                               <p className="font-medium">{loanCase.applicantName}</p>
-                              <p className="text-xs text-muted-foreground">{loanCase.employer}</p>
+                              <p className="text-xs text-muted-foreground">{loanCase.companyName}</p>
                             </div>
                           </TableCell>
                           <TableCell>
