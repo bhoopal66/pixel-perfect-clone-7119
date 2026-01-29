@@ -13,11 +13,13 @@ interface UploadedFile {
 
 interface FileUploadProps {
   onFilesSelected: (files: File[]) => void;
+  onDemoMode?: () => void;
   isProcessing?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
   onFilesSelected, 
+  onDemoMode,
   isProcessing = false 
 }) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -116,6 +118,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <FileCheck className="h-4 w-4" />
             <span>Accepts PDF files • Max 6 files</span>
           </div>
+          
+          {onDemoMode && (
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDemoMode();
+                }}
+                disabled={isProcessing}
+                className="text-sm"
+              >
+                Try Demo Mode
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                See a sample analysis with demo data
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
 
