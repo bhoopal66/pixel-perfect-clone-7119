@@ -82,11 +82,14 @@ export class PDFParser {
   static readonly BANK_PATTERNS: Record<string, string> = {
     'ADCB': 'ADCB',
     'Emirates NBD': 'Emirates NBD',
+    'ENBD Business': 'ENBD Business',
     'FAB': 'FAB',
     'Mashreq': 'Mashreq',
     'CBD': 'CBD',
     'DIB': 'DIB',
     'RAKBANK': 'RAK Bank',
+    'NBF': 'NBF',
+    'Arab Bank': 'Arab Bank',
     'WIO': 'Generic Multi-Column', // WIO uses standard multi-column format
     'HSBC': 'HSBC',
     'Citibank': 'Citibank',
@@ -101,11 +104,14 @@ export class PDFParser {
     const allPatterns = [
       { name: 'ADCB', fn: () => this.tryADCBPattern(pdfText) },
       { name: 'Emirates NBD', fn: () => this.tryEmiratesNBDPattern(pdfText) },
+      { name: 'ENBD Business', fn: () => this.tryENBDBusinessPattern(pdfText) },
       { name: 'FAB', fn: () => this.tryFABPattern(pdfText) },
       { name: 'Mashreq', fn: () => this.tryMashreqPattern(pdfText) },
       { name: 'CBD', fn: () => this.tryCBDPattern(pdfText) },
       { name: 'DIB', fn: () => this.tryDIBPattern(pdfText) },
       { name: 'RAK Bank', fn: () => this.tryRAKBankPattern(pdfText) },
+      { name: 'NBF', fn: () => this.tryNBFPattern(pdfText) },
+      { name: 'Arab Bank', fn: () => this.tryArabBankPattern(pdfText) },
       { name: 'HSBC', fn: () => this.tryHSBCPattern(pdfText) },
       { name: 'Citibank', fn: () => this.tryCitibankPattern(pdfText) },
       { name: 'Standard Chartered', fn: () => this.tryStandardCharteredPattern(pdfText) },
@@ -180,6 +186,224 @@ export class PDFParser {
           debit,
           credit,
           balance: parseFloat(match[5].replace(/,/g, ''))
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 2b: ENBD Business format - Business accounts have different layout
+  private static tryENBDBusinessPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    let match;
+    
+    // ENBD Business format: Date | Value Date | Reference | Description | Debit | Credit | Balance
+    const pattern = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})?\s*([A-Z0-9]{8,20})?\s*([A-Za-z][^\d]{3,55}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      const credit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          valueDate: match[2],
+          reference: match[3],
+          description: match[4].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[7].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative ENBD Business pattern: Transaction ID with DR/CR indicator
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}[-\/]\d{2}[-\/]\d{2,4})\s+([A-Z0-9]{10,})\s+([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})\s*(DR|CR)?\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[4].replace(/,/g, ''));
+        const indicator = match[5]?.toUpperCase() || '';
+        const balance = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+        const desc = match[3].toLowerCase();
+        const isCredit = indicator === 'CR' || 
+                         desc.includes('credit') || desc.includes('deposit') || 
+                         desc.includes('salary') || desc.includes('received') ||
+                         desc.includes('inward');
+        transactions.push({
+          date: match[1],
+          reference: match[2],
+          description: match[3].trim(),
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+          balance
+        });
+      }
+    }
+    
+    // Third pattern: ENBD Business with transaction type column
+    if (transactions.length === 0) {
+      const thirdPattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z][A-Za-z0-9\s\-\/\*#\.]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
+      while ((match = thirdPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[3].replace(/,/g, ''));
+        const balance = parseFloat(match[4].replace(/,/g, ''));
+        const desc = match[2].toLowerCase();
+        const isDebit = desc.includes('payment') || desc.includes('transfer out') || 
+                        desc.includes('outward') || desc.includes('debit') ||
+                        desc.includes('purchase') || desc.includes('withdrawal') ||
+                        desc.includes('charges') || desc.includes('fee');
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: isDebit ? amount : 0,
+          credit: isDebit ? 0 : amount,
+          balance
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern: NBF (National Bank of Fujairah) format
+  private static tryNBFPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    let match;
+    
+    // NBF format: Date | Reference | Description | Debit | Credit | Balance
+    const pattern = /(\d{2}[-\/]\d{2}[-\/]\d{4})\s+([A-Z0-9]{6,15})?\s*([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+      const credit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          reference: match[2],
+          description: match[3].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[6].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative NBF pattern: DD-MMM-YYYY format with single amount + indicator
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}-[A-Za-z]{3}-\d{2,4})\s+([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})\s*(DR|CR|D|C)?\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[3].replace(/,/g, ''));
+        const indicator = match[4]?.toUpperCase() || '';
+        const balance = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+        const desc = match[2].toLowerCase();
+        const isCredit = indicator === 'CR' || indicator === 'C' ||
+                         desc.includes('credit') || desc.includes('deposit') || 
+                         desc.includes('salary') || desc.includes('received') ||
+                         desc.includes('transfer in') || desc.includes('incoming');
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+          balance
+        });
+      }
+    }
+    
+    // Third pattern: NBF with Value Date
+    if (transactions.length === 0) {
+      const thirdPattern = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?/g;
+      while ((match = thirdPattern.exec(pdfText)) !== null) {
+        const amounts = [match[4], match[5], match[6]].filter(Boolean).map(a => parseFloat(a!.replace(/,/g, '')));
+        if (amounts.length >= 2) {
+          const desc = match[3].toLowerCase();
+          const isDebit = desc.includes('payment') || desc.includes('withdrawal') || 
+                          desc.includes('transfer to') || desc.includes('debit') ||
+                          desc.includes('charges') || desc.includes('fee');
+          transactions.push({
+            date: match[1],
+            valueDate: match[2],
+            description: match[3].trim(),
+            debit: isDebit ? amounts[0] : 0,
+            credit: isDebit ? 0 : amounts[0],
+            balance: amounts[amounts.length - 1]
+          });
+        }
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern: Arab Bank format
+  private static tryArabBankPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    let match;
+    
+    // Arab Bank format: Date | Value Date | Reference | Particulars | Withdrawals | Deposits | Balance
+    const pattern = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})?\s*([A-Z0-9]{6,})?\s*([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const withdrawal = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      const deposit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+      if (withdrawal > 0 || deposit > 0) {
+        transactions.push({
+          date: match[1],
+          valueDate: match[2],
+          reference: match[3],
+          description: match[4].trim(),
+          debit: withdrawal,
+          credit: deposit,
+          balance: parseFloat(match[7].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative Arab Bank pattern: DD-MMM-YYYY format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}-[A-Za-z]{3}-\d{4})\s+([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})\s*([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amounts = [match[3], match[4], match[5]].filter(Boolean).map(a => parseFloat(a!.replace(/,/g, '')));
+        if (amounts.length >= 2) {
+          const desc = match[2].toLowerCase();
+          const isDebit = desc.includes('withdrawal') || desc.includes('payment') || 
+                          desc.includes('transfer to') || desc.includes('debit') ||
+                          desc.includes('purchase') || desc.includes('charges');
+          if (amounts.length === 3) {
+            // Three amounts: Debit, Credit, Balance
+            transactions.push({
+              date: match[1],
+              description: match[2].trim(),
+              debit: amounts[0],
+              credit: amounts[1],
+              balance: amounts[2]
+            });
+          } else {
+            // Two amounts: Amount and Balance
+            transactions.push({
+              date: match[1],
+              description: match[2].trim(),
+              debit: isDebit ? amounts[0] : 0,
+              credit: isDebit ? 0 : amounts[0],
+              balance: amounts[1]
+            });
+          }
+        }
+      }
+    }
+    
+    // Third pattern: Arab Bank with transaction code
+    if (transactions.length === 0) {
+      const thirdPattern = /(\d{2}[-\/]\d{2}[-\/]\d{2,4})\s+([A-Z]{2,4}\d+)?\s*([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})\s*(DR|CR)?\s*([\d,]+\.\d{2})?/g;
+      while ((match = thirdPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[4].replace(/,/g, ''));
+        const indicator = match[5]?.toUpperCase() || '';
+        const balance = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+        const desc = match[3].toLowerCase();
+        const isCredit = indicator === 'CR' || 
+                         desc.includes('credit') || desc.includes('deposit') || 
+                         desc.includes('salary') || desc.includes('received') ||
+                         desc.includes('transfer from') || desc.includes('incoming');
+        transactions.push({
+          date: match[1],
+          reference: match[2],
+          description: match[3].trim(),
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+          balance
         });
       }
     }
