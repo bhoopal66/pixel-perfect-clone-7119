@@ -481,6 +481,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
                       </div>
                     </TableHead>
                     <TableHead>Client</TableHead>
+                    <TableHead>Agent Ref</TableHead>
                     <TableHead>Bank</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Status</TableHead>
@@ -497,6 +498,9 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
                         {caseItem.case_number || '—'}
                       </TableCell>
                       <TableCell className="font-medium">{caseItem.client_name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {caseItem.agent_reference || '—'}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Building2 className="h-3 w-3 text-muted-foreground" />
