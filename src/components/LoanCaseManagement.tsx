@@ -53,6 +53,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
   const [statusFilter, setStatusFilter] = useState<LoanStatus | 'all'>('all');
   const [lenderFilter, setLenderFilter] = useState<LenderType | 'all'>('all');
   const [productFilter, setProductFilter] = useState<ProductType | 'all'>('all');
+  const [analystFilter, setAnalystFilter] = useState<string>('all');
   const [showNewCaseDialog, setShowNewCaseDialog] = useState(false);
   const [selectedCase, setSelectedCase] = useState<LoanCase | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -137,7 +138,8 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
       const matchesLender = lenderFilter === 'all' || c.lender === lenderFilter;
       const matchesProduct = productFilter === 'all' || c.productType === productFilter;
-      return matchesSearch && matchesStatus && matchesLender && matchesProduct;
+      const matchesAnalyst = analystFilter === 'all' || c.analystName === analystFilter;
+      return matchesSearch && matchesStatus && matchesLender && matchesProduct && matchesAnalyst;
     });
 
     // Apply sorting
@@ -162,7 +164,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     }
 
     return result;
-  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter, sortField, sortDirection]);
+  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter, analystFilter, sortField, sortDirection]);
 
   // Statistics
   const stats = useMemo(() => ({
@@ -412,6 +414,19 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="cash">Cash Loan</SelectItem>
                       <SelectItem value="pos">POS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={analystFilter} onValueChange={setAnalystFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Analyst" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Analysts</SelectItem>
+                      {existingAnalysts.map(analyst => (
+                        <SelectItem key={analyst} value={analyst}>
+                          {analyst}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
