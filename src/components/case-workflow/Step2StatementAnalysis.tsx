@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
-import { FileText, Calendar, DollarSign, ArrowRight, ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
+import { 
+  FileText, 
+  Calendar, 
+  DollarSign, 
+  ArrowRight, 
+  ArrowLeft, 
+  CheckCircle, 
+  AlertTriangle,
+  Upload,
+  X,
+  File,
+  Loader2,
+  ExternalLink
+} from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import type { Case, CaseAnalysisInput } from '@/types/case.types';
 
 interface Step2StatementAnalysisProps {
@@ -32,8 +49,21 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
   const [sisterConcernAdjustment, setSisterConcernAdjustment] = useState(caseData.sister_concern_adjustment?.toString() || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
+
+  // Extract filename from URL if exists
+  useEffect(() => {
+    if (caseData.statement_pdf_url) {
+      const urlParts = caseData.statement_pdf_url.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      if (filename && filename.endsWith('.pdf')) {
+        setUploadedFileName(decodeURIComponent(filename));
+      }
+    }
+  }, [caseData.statement_pdf_url]);
 
   // Track changes
   useEffect(() => {
@@ -47,6 +77,87 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
       sisterConcernAdjustment !== (caseData.sister_concern_adjustment?.toString() || '');
     setHasChanges(changed);
   }, [statementPdfUrl, periodFrom, periodTo, vatTurnover, declaredTurnover, cashAdjustment, sisterConcernAdjustment, caseData]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Create unique filename with case ID and timestamp
+      const timestamp = Date.now();
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `${caseData.id}/${timestamp}_${sanitizedName}`;
+
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('case-documents')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        toast.error('Failed to upload file: ' + error.message);
+        return;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('case-documents')
+        .getPublicUrl(data.path);
+
+      setStatementPdfUrl(urlData.publicUrl);
+      setUploadedFileName(file.name);
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [caseData.id]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    maxFiles: 1,
+    disabled: isUploading
+  });
+
+  const handleRemoveFile = async () => {
+    if (statementPdfUrl && statementPdfUrl.includes('case-documents')) {
+      try {
+        // Extract path from URL
+        const urlParts = statementPdfUrl.split('/case-documents/');
+        if (urlParts[1]) {
+          await supabase.storage
+            .from('case-documents')
+            .remove([urlParts[1]]);
+        }
+      } catch (error) {
+        console.error('Error removing file:', error);
+      }
+    }
+    setStatementPdfUrl('');
+    setUploadedFileName(null);
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -103,22 +214,97 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
         {/* Statement Upload Section */}
         <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
           <h3 className="font-semibold flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Statement Details
+            <Upload className="h-4 w-4" />
+            Upload Bank Statement
           </h3>
           
+          {/* File Upload Dropzone */}
+          {!uploadedFileName ? (
+            <div
+              {...getRootProps()}
+              className={cn(
+                "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                isDragActive && "border-primary bg-primary/5",
+                isUploading && "opacity-50 cursor-not-allowed",
+                !isDragActive && !isUploading && "border-muted-foreground/30 hover:border-primary hover:bg-muted/50"
+              )}
+            >
+              <input {...getInputProps()} />
+              {isUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Uploading...</p>
+                </div>
+              ) : isDragActive ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-8 w-8 text-primary" />
+                  <p className="text-sm text-primary font-medium">Drop the PDF here</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-3 bg-muted rounded-full">
+                    <FileText className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      Drag & drop your bank statement PDF here
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      or click to browse (max 10MB)
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-3 bg-success/10 border border-success/30 rounded-lg">
+              <div className="p-2 bg-success/20 rounded">
+                <File className="h-5 w-5 text-success" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{uploadedFileName}</p>
+                <p className="text-xs text-muted-foreground">Uploaded successfully</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {statementPdfUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(statementPdfUrl, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveFile}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Manual URL Input (Alternative) */}
           <div className="space-y-2">
-            <Label htmlFor="statement_pdf_url">Statement PDF URL</Label>
+            <Label htmlFor="statement_pdf_url" className="text-xs text-muted-foreground">
+              Or paste a direct URL to the statement
+            </Label>
             <Input
               id="statement_pdf_url"
               type="url"
               placeholder="https://..."
               value={statementPdfUrl}
-              onChange={(e) => setStatementPdfUrl(e.target.value)}
+              onChange={(e) => {
+                setStatementPdfUrl(e.target.value);
+                setUploadedFileName(null);
+              }}
+              className="text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              Paste link to uploaded bank statement PDF
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
