@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, TrendingDown, Percent, Clock, DollarSign, CheckCircle, XCircle } from 'lucide-react';
+import { Calculator, TrendingDown, Percent, Clock, DollarSign, CheckCircle, XCircle, Building2, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { cn } from '@/lib/utils';
 import { LENDERS, calculateEMI, calculateTotalInterest, calculateProcessingFee, type LenderType } from '../types/loanCase.types';
 import { CurrencyService } from '../services/currencyService';
@@ -14,30 +15,33 @@ interface LenderComparisonProps {
   currency?: 'AED' | 'USD';
 }
 
+interface LenderCalculation {
+  eligible: boolean;
+  eligibilityIssues: string[];
+  emi: number;
+  totalInterest: number;
+  totalPayable: number;
+  processingFee: number;
+  effectiveRate: number;
+}
+
 export const LenderComparison: React.FC<LenderComparisonProps> = ({ currency = 'AED' }) => {
   const [loanAmount, setLoanAmount] = useState(100000);
   const [tenure, setTenure] = useState(24);
   const [salary, setSalary] = useState(15000);
+  const [category, setCategory] = useState<'all' | 'bank' | 'fintech'>('all');
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
 
   const comparison = useMemo(() => {
-    const results: Record<LenderType, {
-      eligible: boolean;
-      eligibilityIssues: string[];
-      emi: number;
-      totalInterest: number;
-      totalPayable: number;
-      processingFee: number;
-      effectiveRate: number;
-    }> = {} as any;
+    const results: Record<LenderType, LenderCalculation> = {} as any;
 
     (Object.keys(LENDERS) as LenderType[]).forEach(lenderId => {
       const lender = LENDERS[lenderId];
       const eligibilityIssues: string[] = [];
 
       // Check eligibility
-      if (salary < lender.eligibility.minSalary) {
+      if (lender.eligibility.minSalary > 0 && salary < lender.eligibility.minSalary) {
         eligibilityIssues.push(`Min salary: ${formatCurrency(lender.eligibility.minSalary)}`);
       }
       if (loanAmount < lender.minAmount) {
@@ -73,15 +77,24 @@ export const LenderComparison: React.FC<LenderComparisonProps> = ({ currency = '
     return results;
   }, [loanAmount, tenure, salary]);
 
-  // Find best option
+  // Filter lenders by category
+  const filteredLenders = useMemo(() => {
+    return (Object.keys(LENDERS) as LenderType[]).filter(id => {
+      if (category === 'all') return true;
+      return LENDERS[id].category === category;
+    });
+  }, [category]);
+
+  // Find best option among eligible lenders
   const bestOption = useMemo(() => {
-    const eligible = (Object.entries(comparison) as [LenderType, typeof comparison.RAK][])
-      .filter(([_, data]) => data.eligible);
+    const eligible = filteredLenders
+      .filter(id => comparison[id].eligible)
+      .map(id => ({ id, data: comparison[id] }));
     if (eligible.length === 0) return null;
     return eligible.reduce((best, current) => 
-      current[1].totalPayable < best[1].totalPayable ? current : best
-    )[0];
-  }, [comparison]);
+      current.data.totalPayable < best.data.totalPayable ? current : best
+    ).id;
+  }, [comparison, filteredLenders]);
 
   return (
     <div className="space-y-6">
@@ -147,9 +160,24 @@ export const LenderComparison: React.FC<LenderComparisonProps> = ({ currency = '
         </CardContent>
       </Card>
 
+      {/* Category Filter */}
+      <div className="flex justify-center">
+        <Tabs value={category} onValueChange={(v) => setCategory(v as 'all' | 'bank' | 'fintech')}>
+          <TabsList>
+            <TabsTrigger value="all">All Lenders</TabsTrigger>
+            <TabsTrigger value="bank" className="gap-1">
+              <Building2 className="h-3 w-3" /> Banks
+            </TabsTrigger>
+            <TabsTrigger value="fintech" className="gap-1">
+              <Wallet className="h-3 w-3" /> Fintech
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       {/* Lender Cards */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {(Object.keys(LENDERS) as LenderType[]).map((lenderId) => {
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filteredLenders.map((lenderId) => {
           const lender = LENDERS[lenderId];
           const data = comparison[lenderId];
           const isBest = lenderId === bestOption;
@@ -159,42 +187,43 @@ export const LenderComparison: React.FC<LenderComparisonProps> = ({ currency = '
               key={lenderId}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              layout
             >
               <Card className={cn(
-                "relative overflow-hidden",
+                "relative overflow-hidden h-full",
                 isBest && "ring-2 ring-primary",
                 !data.eligible && "opacity-75"
               )}>
                 {isBest && (
-                  <div className="absolute top-0 right-0 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium">
-                    Best Option
+                  <div className="absolute top-0 right-0 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-medium">
+                    Best
                   </div>
                 )}
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">{lender.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {lender.interestRate}% p.a.
-                      </p>
+                      <CardTitle className="text-base">{lender.name}</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm text-muted-foreground">
+                          {lender.interestRate}% p.a.
+                        </span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {lender.category}
+                        </Badge>
+                      </div>
                     </div>
                     {data.eligible ? (
-                      <Badge className="bg-success/20 text-success gap-1">
-                        <CheckCircle className="h-3 w-3" /> Eligible
-                      </Badge>
+                      <CheckCircle className="h-5 w-5 text-success" />
                     ) : (
-                      <Badge className="bg-destructive/20 text-destructive gap-1">
-                        <XCircle className="h-3 w-3" /> Not Eligible
-                      </Badge>
+                      <XCircle className="h-5 w-5 text-destructive" />
                     )}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 pt-2">
                   {/* Eligibility Issues */}
                   {data.eligibilityIssues.length > 0 && (
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                      <p className="text-xs font-medium text-destructive mb-1">Eligibility Issues:</p>
-                      <ul className="text-xs text-destructive/80 space-y-0.5">
+                    <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
+                      <ul className="text-[10px] text-destructive space-y-0.5">
                         {data.eligibilityIssues.map((issue, i) => (
                           <li key={i}>• {issue}</li>
                         ))}
@@ -203,60 +232,34 @@ export const LenderComparison: React.FC<LenderComparisonProps> = ({ currency = '
                   )}
 
                   {/* EMI & Costs */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Monthly EMI</p>
-                      <p className="text-xl font-bold text-foreground">
-                        {formatCurrency(data.emi)}
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                      <span className="text-xs text-muted-foreground">Monthly EMI</span>
+                      <span className="text-sm font-bold text-primary">{formatCurrency(data.emi)}</span>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Total Interest</p>
-                      <p className="text-lg font-semibold text-destructive">
-                        {formatCurrency(data.totalInterest)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground mb-1">Processing Fee</p>
-                      <p className="text-sm font-medium">
-                        {formatCurrency(data.processingFee)}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          ({lender.processingFee}%)
-                        </span>
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <p className="text-xs text-muted-foreground mb-1">Total Payable</p>
-                      <p className="text-lg font-bold text-primary">
-                        {formatCurrency(data.totalPayable)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Lender Details */}
-                  <div className="pt-3 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Lender Terms</p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Min Amount:</span>
-                        <span>{formatCurrency(lender.minAmount)}</span>
+                      <div className="p-2 rounded bg-muted/30">
+                        <p className="text-muted-foreground">Interest</p>
+                        <p className="font-medium text-destructive">{formatCurrency(data.totalInterest)}</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Max Amount:</span>
-                        <span>{formatCurrency(lender.maxAmount)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Min Salary:</span>
-                        <span>{formatCurrency(lender.eligibility.minSalary)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Tenure:</span>
-                        <span>{lender.minTenure}-{lender.maxTenure} mo</span>
+                      <div className="p-2 rounded bg-muted/30">
+                        <p className="text-muted-foreground">Processing</p>
+                        <p className="font-medium">{formatCurrency(data.processingFee)}</p>
                       </div>
                     </div>
+                    <div className="flex justify-between items-center p-2 rounded bg-primary/10">
+                      <span className="text-xs font-medium">Total Payable</span>
+                      <span className="text-sm font-bold">{formatCurrency(data.totalPayable)}</span>
+                    </div>
+                  </div>
+
+                  {/* Product Types */}
+                  <div className="flex gap-1">
+                    {lender.productTypes.map(pt => (
+                      <Badge key={pt} variant="secondary" className="text-[10px]">
+                        {pt.toUpperCase()}
+                      </Badge>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -265,21 +268,18 @@ export const LenderComparison: React.FC<LenderComparisonProps> = ({ currency = '
         })}
       </div>
 
-      {/* Savings Comparison */}
-      {bestOption && comparison.RAK.eligible && comparison.WIO.eligible && (
+      {/* Best Option Summary */}
+      {bestOption && (
         <Card className="bg-success/5 border-success/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <TrendingDown className="h-10 w-10 text-success" />
               <div>
                 <p className="text-lg font-semibold text-foreground">
-                  Choose {LENDERS[bestOption].name} to save{' '}
-                  <span className="text-success">
-                    {formatCurrency(Math.abs(comparison.RAK.totalPayable - comparison.WIO.totalPayable))}
-                  </span>
+                  Best Option: <span className="text-success">{LENDERS[bestOption].name}</span>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Lower EMI by {formatCurrency(Math.abs(comparison.RAK.emi - comparison.WIO.emi))}/month
+                  Lowest total payable at {formatCurrency(comparison[bestOption].totalPayable)} with {formatCurrency(comparison[bestOption].emi)}/month EMI
                 </p>
               </div>
             </div>
