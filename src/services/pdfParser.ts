@@ -32,6 +32,19 @@ export interface ExtractedBalances {
   average: number;
 }
 
+// Common date patterns in bank statements
+const DATE_PATTERNS = [
+  /\d{2}-[A-Za-z]{3}-\d{4}/g,       // DD-MMM-YYYY (01-Jan-2024)
+  /\d{2}\/\d{2}\/\d{4}/g,           // DD/MM/YYYY (01/01/2024)
+  /\d{2}-[A-Za-z]{3}-\d{2}/g,       // DD-MMM-YY (01-Jan-24)
+  /\d{2}\/\d{2}\/\d{2}/g,           // DD/MM/YY (01/01/24)
+  /\d{4}-\d{2}-\d{2}/g,             // YYYY-MM-DD (2024-01-01)
+  /\d{2}\.\d{2}\.\d{4}/g,           // DD.MM.YYYY (01.01.2024)
+];
+
+// Amount pattern: matches numbers with optional commas and decimals
+const AMOUNT_PATTERN = /[\d,]+\.\d{2}/g;
+
 export class PDFParser {
   static async parsePDF(file: File): Promise<ParsedPDFData> {
     const arrayBuffer = await file.arrayBuffer();
@@ -48,19 +61,55 @@ export class PDFParser {
       pages.push(pageText);
     }
     
+    const fullText = pages.join('\n');
+    
+    // Debug logging - helps identify text structure
+    console.log('=== PDF Parser Debug ===');
+    console.log('Total pages:', pages.length);
+    console.log('Total text length:', fullText.length);
+    console.log('First 2000 chars:', fullText.substring(0, 2000));
+    console.log('Sample dates found:', fullText.match(DATE_PATTERNS[0])?.slice(0, 5) || 'none');
+    console.log('Sample amounts found:', fullText.match(AMOUNT_PATTERN)?.slice(0, 10) || 'none');
+    console.log('========================');
+    
     return {
-      text: pages.join('\n'),
+      text: fullText,
       pages
     };
   }
 
   static extractTransactions(pdfText: string): ExtractedTransaction[] {
-    const transactions: ExtractedTransaction[] = [];
-    let match;
+    let transactions: ExtractedTransaction[] = [];
 
-    // Pattern 1: ADCB format - Date ValueDate Reference Description Debit Credit Balance
-    const adcbPattern = /(\d{2}-\w{3}-\d{4})\s+(\d{2}-\w{3}-\d{4})\s+([A-Z0-9]+)\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
-    while ((match = adcbPattern.exec(pdfText)) !== null) {
+    // Try each pattern in order of specificity
+    const patternResults = [
+      { name: 'ADCB', transactions: this.tryADCBPattern(pdfText) },
+      { name: 'Emirates NBD', transactions: this.tryEmiratesNBDPattern(pdfText) },
+      { name: 'FAB', transactions: this.tryFABPattern(pdfText) },
+      { name: 'Mashreq', transactions: this.tryMashreqPattern(pdfText) },
+      { name: 'Generic Multi-Column', transactions: this.tryGenericMultiColumnPattern(pdfText) },
+      { name: 'Generic Single Amount', transactions: this.tryGenericSingleAmountPattern(pdfText) },
+      { name: 'Line-by-Line', transactions: this.tryLineByLinePattern(pdfText) },
+    ];
+
+    // Use the pattern that extracted the most transactions
+    for (const result of patternResults) {
+      console.log(`Pattern "${result.name}" extracted ${result.transactions.length} transactions`);
+      if (result.transactions.length > transactions.length) {
+        transactions = result.transactions;
+      }
+    }
+
+    console.log(`Best pattern extracted ${transactions.length} transactions`);
+    return transactions;
+  }
+
+  // Pattern 1: ADCB format - Date ValueDate Reference Description Debit Credit Balance
+  private static tryADCBPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    const pattern = /(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{2}-[A-Za-z]{3}-\d{4})\s+([A-Z0-9]+)\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
       transactions.push({
         date: match[1],
         valueDate: match[2],
@@ -71,124 +120,324 @@ export class PDFParser {
         balance: parseFloat(match[7].replace(/,/g, ''))
       });
     }
+    return transactions;
+  }
 
-    // Pattern 2: Emirates NBD format - DD/MM/YYYY Description Debit Credit Balance
-    if (transactions.length === 0) {
-      const enbdPattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z0-9\s\-\/]+?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
-      while ((match = enbdPattern.exec(pdfText)) !== null) {
-        const debit = match[3] ? parseFloat(match[3].replace(/,/g, '')) : 0;
-        const credit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
-        if (debit > 0 || credit > 0) {
-          transactions.push({
-            date: match[1],
-            description: match[2].trim(),
-            debit,
-            credit,
-            balance: parseFloat(match[5].replace(/,/g, ''))
-          });
-        }
-      }
-    }
-
-    // Pattern 3: FAB (First Abu Dhabi Bank) format - DD-MMM-YY Reference Description Amount Balance
-    if (transactions.length === 0) {
-      const fabPattern = /(\d{2}-\w{3}-\d{2,4})\s+([A-Z0-9]{6,})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s*(CR|DR)?\s+([\d,]+\.\d{2})/g;
-      while ((match = fabPattern.exec(pdfText)) !== null) {
-        const amount = parseFloat(match[4].replace(/,/g, ''));
-        const isCredit = match[5] === 'CR' || match[3].toLowerCase().includes('credit');
+  // Pattern 2: Emirates NBD format - DD/MM/YYYY Description Debit Credit Balance
+  private static tryEmiratesNBDPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    const pattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z0-9\s\-\/]+?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[3] ? parseFloat(match[3].replace(/,/g, '')) : 0;
+      const credit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
         transactions.push({
           date: match[1],
-          reference: match[2],
-          description: match[3].trim(),
+          description: match[2].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[5].replace(/,/g, ''))
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 3: FAB format - DD-MMM-YY Reference Description Amount CR/DR Balance
+  private static tryFABPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    const pattern = /(\d{2}-[A-Za-z]{3}-\d{2,4})\s+([A-Z0-9]{6,})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s*(CR|DR)?\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const amount = parseFloat(match[4].replace(/,/g, ''));
+      const isCredit = match[5] === 'CR' || match[3].toLowerCase().includes('credit');
+      transactions.push({
+        date: match[1],
+        reference: match[2],
+        description: match[3].trim(),
+        debit: isCredit ? 0 : amount,
+        credit: isCredit ? amount : 0,
+        balance: parseFloat(match[6].replace(/,/g, ''))
+      });
+    }
+    return transactions;
+  }
+
+  // Pattern 4: Mashreq format - DD/MM/YY ValueDate Reference Description Debit Credit Balance
+  private static tryMashreqPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    const pattern = /(\d{2}\/\d{2}\/\d{2,4})\s+(\d{2}\/\d{2}\/\d{2,4})?\s*([A-Z0-9]+)?\s+([^\d]+?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      const credit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          valueDate: match[2],
+          reference: match[3],
+          description: match[4].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[7].replace(/,/g, ''))
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 5: Generic Multi-Column - Date Description Amount Amount Balance
+  private static tryGenericMultiColumnPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    // Flexible date + description + 2-3 amounts pattern
+    const pattern = /(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})\s+([A-Za-z][A-Za-z0-9\s\-\/\.\*#@]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})(?:\s+([\d,]+\.\d{2}))?/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const amount1 = parseFloat(match[3].replace(/,/g, ''));
+      const amount2 = parseFloat(match[4].replace(/,/g, ''));
+      const amount3 = match[5] ? parseFloat(match[5].replace(/,/g, '')) : null;
+      
+      // If 3 amounts: assume Debit, Credit, Balance
+      // If 2 amounts: try to determine which is transaction and which is balance
+      if (amount3 !== null) {
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: amount1,
+          credit: amount2,
+          balance: amount3
+        });
+      } else {
+        // Assume larger amount is balance, smaller is transaction
+        const balance = Math.max(amount1, amount2);
+        const txnAmount = Math.min(amount1, amount2);
+        const desc = match[2].toLowerCase();
+        const isDebit = desc.includes('debit') || desc.includes('payment') || 
+                        desc.includes('withdrawal') || desc.includes('transfer to') ||
+                        desc.includes('purchase') || desc.includes('atm');
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: isDebit ? txnAmount : 0,
+          credit: isDebit ? 0 : txnAmount,
+          balance: balance
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 6: Generic Single Amount with CR/DR indicator
+  private static tryGenericSingleAmountPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    // Date + Description + Amount + optional CR/DR + Balance
+    const pattern = /(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})\s+([A-Za-z][^\d]{5,50})\s+([\d,]+\.\d{2})\s*(CR|DR|Cr|Dr|C|D)?\s*([\d,]+\.\d{2})?/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const amount = parseFloat(match[3].replace(/,/g, ''));
+      const indicator = match[4]?.toUpperCase() || '';
+      const balance = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      const desc = match[2].toLowerCase();
+      
+      // Determine if credit based on indicator or description keywords
+      const isCredit = indicator === 'CR' || indicator === 'C' ||
+                       desc.includes('credit') || desc.includes('deposit') || 
+                       desc.includes('salary') || desc.includes('received') ||
+                       desc.includes('transfer from') || desc.includes('inward');
+      
+      if (amount > 0) {
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
           debit: isCredit ? 0 : amount,
           credit: isCredit ? amount : 0,
-          balance: parseFloat(match[6].replace(/,/g, ''))
+          balance: balance
         });
       }
     }
+    return transactions;
+  }
 
-    // Pattern 4: Mashreq format - DD/MM/YY ValueDate Reference Description Debit Credit Balance
-    if (transactions.length === 0) {
-      const mashreqPattern = /(\d{2}\/\d{2}\/\d{2,4})\s+(\d{2}\/\d{2}\/\d{2,4})?\s*([A-Z0-9]+)?\s+([^\d]+?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
-      while ((match = mashreqPattern.exec(pdfText)) !== null) {
-        const debit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
-        const credit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
-        if (debit > 0 || credit > 0) {
-          transactions.push({
-            date: match[1],
-            valueDate: match[2],
-            reference: match[3],
-            description: match[4].trim(),
-            debit,
-            credit,
-            balance: parseFloat(match[7].replace(/,/g, ''))
-          });
-        }
-      }
-    }
-
-    // Pattern 5: Generic DD/MM/YYYY with single amount column
-    if (transactions.length === 0) {
-      const genericPattern = /(\d{2}\/\d{2}\/\d{4})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
-      while ((match = genericPattern.exec(pdfText)) !== null) {
-        const amount = parseFloat(match[3].replace(/,/g, ''));
-        const desc = match[2].toLowerCase();
-        const isDebit = desc.includes('debit') || desc.includes('withdrawal') || 
-                       desc.includes('payment') || desc.includes('transfer out');
-        transactions.push({
-          date: match[1],
-          description: match[2].trim(),
-          debit: isDebit ? amount : 0,
-          credit: isDebit ? 0 : amount,
-          balance: parseFloat(match[4].replace(/,/g, ''))
-        });
-      }
-    }
-
-    // Pattern 6: ISO date format YYYY-MM-DD
-    if (transactions.length === 0) {
-      const isoPattern = /(\d{4}-\d{2}-\d{2})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
-      while ((match = isoPattern.exec(pdfText)) !== null) {
-        const amount = parseFloat(match[3].replace(/,/g, ''));
-        const desc = match[2].toLowerCase();
-        const isDebit = desc.includes('debit') || desc.includes('withdrawal') || desc.includes('payment');
-        transactions.push({
-          date: match[1],
-          description: match[2].trim(),
-          debit: isDebit ? amount : 0,
-          credit: isDebit ? 0 : amount,
-          balance: parseFloat(match[4].replace(/,/g, ''))
-        });
-      }
+  // Pattern 7: Line-by-line parsing - most flexible fallback
+  private static tryLineByLinePattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    
+    // Split by common line separators
+    const lines = pdfText.split(/(?=\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})/);
+    
+    for (const line of lines) {
+      // Find date at start of line
+      const dateMatch = line.match(/^(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})/);
+      if (!dateMatch) continue;
+      
+      // Find all amounts in the line
+      const amounts = line.match(/[\d,]+\.\d{2}/g)?.map(a => parseFloat(a.replace(/,/g, ''))) || [];
+      if (amounts.length < 1) continue;
+      
+      // Extract description (text between date and first amount)
+      const dateEnd = line.indexOf(dateMatch[1]) + dateMatch[1].length;
+      const firstAmountMatch = line.match(/[\d,]+\.\d{2}/);
+      const descEnd = firstAmountMatch ? line.indexOf(firstAmountMatch[0]) : line.length;
+      let description = line.substring(dateEnd, descEnd).trim();
+      
+      // Clean up description
+      description = description.replace(/^\s*[-:]\s*/, '').trim();
+      if (description.length < 3) continue;
+      
+      // Determine credit/debit from description
+      const descLower = description.toLowerCase();
+      const isCredit = descLower.includes('credit') || descLower.includes('deposit') || 
+                       descLower.includes('salary') || descLower.includes('received') ||
+                       descLower.includes('transfer in') || descLower.includes('inward') ||
+                       descLower.includes('refund') || descLower.includes('reversal');
+      
+      const amount = amounts[0];
+      const balance = amounts.length > 1 ? amounts[amounts.length - 1] : 0;
+      
+      transactions.push({
+        date: dateMatch[1],
+        description: description.substring(0, 100), // Limit description length
+        debit: isCredit ? 0 : amount,
+        credit: isCredit ? amount : 0,
+        balance: balance
+      });
     }
     
     return transactions;
   }
 
   static extractAccountInfo(pdfText: string): ExtractedAccountInfo {
-    const accountNumberMatch = pdfText.match(/Account\s*(?:No\.?|Number)\s*:?\s*([\d\s-]+)/i);
-    const ibanMatch = pdfText.match(/IBAN\s*:?\s*(AE[\d]+)/i);
-    const accountNameMatch = pdfText.match(/Account\s*Name\s*:?\s*([^\n]+)/i);
-    const periodMatch = pdfText.match(/(?:Start\s*Date|From)\s*:?\s*(\d{2}[-\/]\w{3}[-\/]\d{4})\s+(?:End\s*Date|To)\s*:?\s*(\d{2}[-\/]\w{3}[-\/]\d{4})/i);
+    // Multiple patterns for account number
+    const accountNumberPatterns = [
+      /Account\s*(?:No\.?|Number|#)\s*:?\s*([\d\s-]+)/i,
+      /A\/C\s*(?:No\.?)?\s*:?\s*([\d\s-]+)/i,
+      /(?:Current|Savings)\s+Account\s*:?\s*([\d-]+)/i,
+    ];
+    
+    // Multiple patterns for IBAN
+    const ibanPatterns = [
+      /IBAN\s*:?\s*([A-Z]{2}[\dA-Z]+)/i,
+      /([A-Z]{2}\d{2}[A-Z0-9]{4,30})/,
+    ];
+    
+    // Multiple patterns for account name
+    const accountNamePatterns = [
+      /Account\s*(?:Holder\s*)?Name\s*:?\s*([^\n]+)/i,
+      /Customer\s*Name\s*:?\s*([^\n]+)/i,
+      /Name\s*:?\s*([A-Z][A-Za-z\s]+)/,
+    ];
+    
+    // Multiple patterns for period dates
+    const periodPatterns = [
+      /(?:Statement\s+)?Period\s*:?\s*(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})\s*(?:to|-)\s*(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})/i,
+      /(?:From|Start)\s*(?:Date)?\s*:?\s*(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4}).*?(?:To|End)\s*(?:Date)?\s*:?\s*(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})/is,
+      /(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})\s*(?:to|-)\s*(\d{1,2}[-\/\.]\w{2,3}[-\/\.]\d{2,4})/i,
+    ];
+    
+    let accountNumber: string | undefined;
+    let iban: string | undefined;
+    let accountName: string | undefined;
+    let startDate: string | undefined;
+    let endDate: string | undefined;
+    
+    // Try each pattern until we find a match
+    for (const pattern of accountNumberPatterns) {
+      const match = pdfText.match(pattern);
+      if (match) {
+        accountNumber = match[1].trim().replace(/\s+/g, '');
+        break;
+      }
+    }
+    
+    for (const pattern of ibanPatterns) {
+      const match = pdfText.match(pattern);
+      if (match && match[1].length >= 15) {
+        iban = match[1];
+        break;
+      }
+    }
+    
+    for (const pattern of accountNamePatterns) {
+      const match = pdfText.match(pattern);
+      if (match) {
+        accountName = match[1].trim();
+        break;
+      }
+    }
+    
+    for (const pattern of periodPatterns) {
+      const match = pdfText.match(pattern);
+      if (match) {
+        startDate = match[1];
+        endDate = match[2];
+        break;
+      }
+    }
+    
+    console.log('Extracted account info:', { accountNumber, iban, accountName, startDate, endDate });
     
     return {
-      accountNumber: accountNumberMatch?.[1]?.trim().replace(/\s+/g, ''),
-      iban: ibanMatch?.[1],
-      accountName: accountNameMatch?.[1]?.trim(),
-      startDate: periodMatch?.[1],
-      endDate: periodMatch?.[2]
+      accountNumber,
+      iban,
+      accountName,
+      startDate,
+      endDate
     };
   }
 
   static extractBalances(pdfText: string): ExtractedBalances {
-    const openingMatch = pdfText.match(/Opening\s*Balance\s*:?\s*([\d,]+\.\d{2})/i);
-    const closingMatch = pdfText.match(/Closing\s*(?:Available\s*)?Balance\s*:?\s*([\d,]+\.\d{2})/i);
-    const averageMatch = pdfText.match(/Average\s*Balance\s*:?\s*([\d,]+\.\d{2})/i);
+    // Multiple patterns for opening balance
+    const openingPatterns = [
+      /Opening\s*(?:Available\s*)?Balance\s*:?\s*([\d,]+\.\d{2})/i,
+      /(?:Balance\s+)?(?:B\/F|Brought\s+Forward)\s*:?\s*([\d,]+\.\d{2})/i,
+      /Previous\s*Balance\s*:?\s*([\d,]+\.\d{2})/i,
+    ];
     
-    return {
-      opening: parseFloat(openingMatch?.[1]?.replace(/,/g, '') || '0'),
-      closing: parseFloat(closingMatch?.[1]?.replace(/,/g, '') || '0'),
-      average: parseFloat(averageMatch?.[1]?.replace(/,/g, '') || '0')
-    };
+    // Multiple patterns for closing balance
+    const closingPatterns = [
+      /Closing\s*(?:Available\s*)?Balance\s*:?\s*([\d,]+\.\d{2})/i,
+      /(?:Balance\s+)?(?:C\/F|Carried\s+Forward)\s*:?\s*([\d,]+\.\d{2})/i,
+      /(?:Final|End(?:ing)?)\s*Balance\s*:?\s*([\d,]+\.\d{2})/i,
+      /(?:Current|Available)\s*Balance\s*:?\s*([\d,]+\.\d{2})/i,
+    ];
+    
+    // Pattern for average balance
+    const averagePatterns = [
+      /Average\s*(?:Monthly\s*)?Balance\s*:?\s*([\d,]+\.\d{2})/i,
+      /(?:Monthly\s*)?Average\s*:?\s*([\d,]+\.\d{2})/i,
+    ];
+    
+    let opening = 0;
+    let closing = 0;
+    let average = 0;
+    
+    for (const pattern of openingPatterns) {
+      const match = pdfText.match(pattern);
+      if (match) {
+        opening = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+    
+    for (const pattern of closingPatterns) {
+      const match = pdfText.match(pattern);
+      if (match) {
+        closing = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+    
+    for (const pattern of averagePatterns) {
+      const match = pdfText.match(pattern);
+      if (match) {
+        average = parseFloat(match[1].replace(/,/g, ''));
+        break;
+      }
+    }
+    
+    console.log('Extracted balances:', { opening, closing, average });
+    
+    return { opening, closing, average };
   }
 }
