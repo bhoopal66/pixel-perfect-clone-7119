@@ -5,6 +5,7 @@ import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertC
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
+import { ParsedFilesPreview } from '../components/ParsedFilesPreview';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { LoanEligibilityDashboard } from '../components/LoanEligibilityDashboard';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
@@ -13,6 +14,7 @@ import { WelcomeModal } from '../components/WelcomeModal';
 import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
 import { CurrencyService } from '../services/currencyService';
+import { usePdfParsing, type ParsedStatementData } from '../hooks/usePdfParsing';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
@@ -26,6 +28,8 @@ const Index = () => {
   const [appState, setAppState] = useState<AppState>('upload');
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [ratesStatus, setRatesStatus] = useState<'loading' | 'live' | 'default'>('loading');
+  const [parsedFiles, setParsedFiles] = useState<{ name: string; data: ParsedStatementData; file: File }[]>([]);
+  const { parseFile, isParsing } = usePdfParsing();
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
     { id: '1', label: 'Parsing PDF files', status: 'pending' },
     { id: '2', label: 'Extracting transactions', status: 'pending' },
@@ -87,35 +91,69 @@ const Index = () => {
   };
 
   const handleFilesSelected = async (files: File[]) => {
+    setAppState('parsing');
+    setParsedFiles([]);
+    
+    try {
+      // Parse all files and collect results
+      const results: { name: string; data: ParsedStatementData; file: File }[] = [];
+      
+      for (const file of files) {
+        const data = await parseFile(file);
+        if (data) {
+          results.push({ name: file.name, data, file });
+        }
+      }
+      
+      if (results.length > 0) {
+        setParsedFiles(results);
+        setAppState('preview');
+      } else {
+        // No files could be parsed, go straight to demo
+        toast.warning('Could not parse any files, using demo data');
+        const demoReport = ReportBuilder.generateDemoReport();
+        setReport(demoReport);
+        setAppState('results');
+      }
+    } catch (error) {
+      console.error('Parsing failed:', error);
+      toast.error('Failed to parse files');
+      setAppState('upload');
+    }
+  };
+
+  const handleProceedWithAnalysis = async () => {
     setAppState('analyzing');
     
     // Reset steps
     setAnalysisSteps(prev => prev.map(s => ({ ...s, status: 'pending' as const })));
     
+    const files = parsedFiles.map(p => p.file);
+    
     try {
-      // Step 1: Parsing PDFs
+      // Step 1: Parsing PDFs (already done, quick completion)
       updateStepStatus(0, 'processing');
-      await delay(800);
+      await delay(200);
       updateStepStatus(0, 'completed');
 
       // Step 2: Extracting transactions
       updateStepStatus(1, 'processing');
-      await delay(600);
+      await delay(400);
       updateStepStatus(1, 'completed');
 
       // Step 3: Categorizing
       updateStepStatus(2, 'processing');
-      await delay(500);
+      await delay(400);
       updateStepStatus(2, 'completed');
 
       // Step 4: Calculating balances
       updateStepStatus(3, 'processing');
-      await delay(700);
+      await delay(500);
       updateStepStatus(3, 'completed');
 
       // Step 5: Generating analysis
       updateStepStatus(4, 'processing');
-      await delay(600);
+      await delay(400);
       updateStepStatus(4, 'completed');
 
       // Step 6: Creating report
@@ -135,11 +173,11 @@ const Index = () => {
         analysisReport = ReportBuilder.generateDemoReport();
       }
       
-      await delay(500);
+      await delay(300);
       setReport(analysisReport);
       updateStepStatus(5, 'completed');
 
-      await delay(300);
+      await delay(200);
       setAppState('results');
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -148,6 +186,11 @@ const Index = () => {
       setReport(demoReport);
       setAppState('results');
     }
+  };
+
+  const handlePreviewReset = () => {
+    setParsedFiles([]);
+    setAppState('upload');
   };
 
   const handleDownload = async () => {
@@ -469,6 +512,27 @@ const Index = () => {
           <>
             {appState === 'upload' && (
               <FileUpload onFilesSelected={handleFilesSelected} onDemoMode={handleDemoMode} />
+            )}
+
+            {appState === 'parsing' && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent mb-6"
+                />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Parsing Bank Statements</h3>
+                <p className="text-muted-foreground">Extracting transactions and account information...</p>
+              </div>
+            )}
+
+            {appState === 'preview' && parsedFiles.length > 0 && (
+              <ParsedFilesPreview
+                files={parsedFiles}
+                onProceed={handleProceedWithAnalysis}
+                onReset={handlePreviewReset}
+                isProcessing={isParsing}
+              />
             )}
             
             {appState === 'analyzing' && (
