@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -8,11 +8,14 @@ import {
   AlertCircle,
   Info,
   Save,
-  X
+  X,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
+import { Switch } from './ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { 
   Dialog,
@@ -26,22 +29,53 @@ import {
 } from './ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
-import type { TurnoverConfiguration, SisterCompany } from '../types/turnover.types';
+import type { TurnoverConfiguration, SisterCompany, ExclusionStatus } from '../types/turnover.types';
 import { TurnoverCalculator } from '../services/turnoverCalculator';
+import { CurrencyService, type CurrencyCode } from '../services/currencyService';
 
 interface TurnoverConfigurationProps {
   config: TurnoverConfiguration;
   onConfigChange: (config: TurnoverConfiguration) => void;
+  exclusionStatus?: ExclusionStatus;
+  currency?: CurrencyCode;
 }
 
 export const TurnoverConfigurationPanel: React.FC<TurnoverConfigurationProps> = ({
   config,
-  onConfigChange
+  onConfigChange,
+  exclusionStatus,
+  currency = 'AED'
 }) => {
   const [localConfig, setLocalConfig] = useState<TurnoverConfiguration>(config);
   const [isOpen, setIsOpen] = useState(false);
 
   const validation = TurnoverCalculator.validateConfiguration(localConfig);
+
+  const formatCurrency = (value: number) => CurrencyService.format(value, currency);
+
+  const canToggleCash = !exclusionStatus?.cashDeposits.mandatory;
+  const canToggleSister = !exclusionStatus?.sisterConcern.mandatory;
+
+  // Update local config when exclusion status changes mandatory flags
+  useEffect(() => {
+    if (exclusionStatus) {
+      let updated = false;
+      const newConfig = { ...localConfig };
+      
+      if (exclusionStatus.cashDeposits.mandatory && !localConfig.excludeCashDeposits) {
+        newConfig.excludeCashDeposits = true;
+        updated = true;
+      }
+      if (exclusionStatus.sisterConcern.mandatory && !localConfig.excludeSisterConcern) {
+        newConfig.excludeSisterConcern = true;
+        updated = true;
+      }
+      
+      if (updated) {
+        setLocalConfig(newConfig);
+      }
+    }
+  }, [exclusionStatus]);
 
   const calculateDuration = () => {
     const start = new Date(localConfig.startDate);
@@ -103,6 +137,14 @@ export const TurnoverConfigurationPanel: React.FC<TurnoverConfigurationProps> = 
     setIsOpen(false);
   };
 
+  // Build dynamic formula
+  const getFormulaDisplay = () => {
+    let formula = 'Turnover = Total Credits';
+    if (localConfig.excludeCashDeposits) formula += ' - Cash Deposits';
+    if (localConfig.excludeSisterConcern) formula += ' - Sister Concern';
+    return formula;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -115,26 +157,295 @@ export const TurnoverConfigurationPanel: React.FC<TurnoverConfigurationProps> = 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5 text-primary" />
-            Turnover Analysis Configuration
+            Turnover Calculation Configuration
           </DialogTitle>
           <DialogDescription>
-            Configure how business turnover is calculated by defining exclusions
+            Configure how business turnover is calculated with conditional exclusions
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Formula Display */}
+          {/* Dynamic Formula Display */}
           <Card className="border-accent/30 bg-accent/5">
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-accent mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">Turnover Calculation Formula</p>
-                  <code className="text-sm text-accent bg-accent/10 px-2 py-1 rounded mt-1 inline-block">
-                    Business Turnover = Total Credits - Cash Deposits - Sister Concern Transfers
+                  <p className="font-semibold text-foreground">Current Formula</p>
+                  <code className="text-sm text-accent bg-accent/10 px-2 py-1 rounded mt-1 inline-block font-mono">
+                    {getFormulaDisplay()}
                   </code>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Exclusion Toggles with Conditional Logic */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Exclusion Settings</CardTitle>
+              <CardDescription>
+                Exclusions become mandatory when they exceed threshold percentages
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Cash Deposits Toggle */}
+              <div className={cn(
+                "p-4 rounded-lg border transition-colors",
+                exclusionStatus?.cashDeposits.mandatory 
+                  ? "border-destructive/50 bg-destructive/5" 
+                  : localConfig.excludeCashDeposits 
+                    ? "border-warning/50 bg-warning/5"
+                    : "border-border bg-background"
+              )}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={localConfig.excludeCashDeposits}
+                      onCheckedChange={(checked) => {
+                        if (canToggleCash) {
+                          setLocalConfig({ ...localConfig, excludeCashDeposits: checked });
+                        }
+                      }}
+                      disabled={!canToggleCash}
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "font-medium",
+                        !canToggleCash && "text-muted-foreground"
+                      )}>
+                        Exclude Cash Deposits
+                      </span>
+                      {!canToggleCash && <Lock className="h-4 w-4 text-destructive" />}
+                      {canToggleCash && localConfig.excludeCashDeposits && <Unlock className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </div>
+                  
+                  {exclusionStatus && (
+                    <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                      {formatCurrency(exclusionStatus.cashDeposits.amount)}
+                      <span className={cn(
+                        "ml-2",
+                        exclusionStatus.cashDeposits.percentage > localConfig.cashDepositThreshold 
+                          ? "text-destructive font-semibold" 
+                          : "text-muted-foreground"
+                      )}>
+                        ({exclusionStatus.cashDeposits.percentage.toFixed(2)}%)
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mandatory Warning */}
+                {exclusionStatus?.cashDeposits.mandatory && (
+                  <div className="mt-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-semibold text-destructive">MANDATORY EXCLUSION</p>
+                        <p className="text-destructive/80">{exclusionStatus.cashDeposits.reason}</p>
+                        <p className="text-xs text-destructive/60 mt-1 italic">
+                          Rule: Cash deposits exceed {localConfig.cashDepositThreshold}% threshold
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Info when optional */}
+                {!exclusionStatus?.cashDeposits.mandatory && exclusionStatus && (
+                  <div className="mt-3 p-3 bg-success/10 border border-success/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                      <div className="text-sm text-success/80">
+                        <p>Cash deposits are {exclusionStatus.cashDeposits.percentage.toFixed(2)}% of total credits (below {localConfig.cashDepositThreshold}% threshold)</p>
+                        <p className="mt-1">You can choose whether to exclude them from turnover calculation.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sister Concern Toggle */}
+              <div className={cn(
+                "p-4 rounded-lg border transition-colors",
+                exclusionStatus?.sisterConcern.mandatory 
+                  ? "border-destructive/50 bg-destructive/5" 
+                  : localConfig.excludeSisterConcern 
+                    ? "border-warning/50 bg-warning/5"
+                    : "border-border bg-background"
+              )}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={localConfig.excludeSisterConcern}
+                      onCheckedChange={(checked) => {
+                        if (canToggleSister) {
+                          setLocalConfig({ ...localConfig, excludeSisterConcern: checked });
+                        }
+                      }}
+                      disabled={!canToggleSister}
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "font-medium",
+                        !canToggleSister && "text-muted-foreground"
+                      )}>
+                        Exclude Sister Concern Transfers
+                      </span>
+                      {!canToggleSister && <Lock className="h-4 w-4 text-destructive" />}
+                      {canToggleSister && localConfig.excludeSisterConcern && <Unlock className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </div>
+                  
+                  {exclusionStatus && (
+                    <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                      {formatCurrency(exclusionStatus.sisterConcern.amount)}
+                      <span className={cn(
+                        "ml-2",
+                        exclusionStatus.sisterConcern.percentage > localConfig.sisterConcernThreshold 
+                          ? "text-destructive font-semibold" 
+                          : "text-muted-foreground"
+                      )}>
+                        ({exclusionStatus.sisterConcern.percentage.toFixed(2)}%)
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mandatory Warning */}
+                {exclusionStatus?.sisterConcern.mandatory && (
+                  <div className="mt-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-semibold text-destructive">MANDATORY EXCLUSION</p>
+                        <p className="text-destructive/80">{exclusionStatus.sisterConcern.reason}</p>
+                        <p className="text-xs text-destructive/60 mt-1 italic">
+                          Rule: Sister concern transfers exceed {localConfig.sisterConcernThreshold}% threshold
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Info when optional */}
+                {!exclusionStatus?.sisterConcern.mandatory && exclusionStatus && (
+                  <div className="mt-3 p-3 bg-success/10 border border-success/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                      <div className="text-sm text-success/80">
+                        <p>Sister concern transfers are {exclusionStatus.sisterConcern.percentage.toFixed(2)}% of total credits (below {localConfig.sisterConcernThreshold}% threshold)</p>
+                        <p className="mt-1">You can choose whether to exclude them from turnover calculation.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* VAT Variance Warning */}
+              {exclusionStatus?.vatVariance.mandatory && (
+                <div className="p-4 bg-destructive/10 border-2 border-destructive/50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-bold text-destructive">VAT VARIANCE ALERT - MANDATORY EXCLUSIONS ENFORCED</p>
+                      <p className="text-sm text-destructive/80 mt-1">{exclusionStatus.vatVariance.reason}</p>
+                      <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Bank Turnover</p>
+                          <p className="font-semibold">{formatCurrency(exclusionStatus.vatVariance.bankTurnover)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">VAT Sales</p>
+                          <p className="font-semibold">{formatCurrency(exclusionStatus.vatVariance.vatSales)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Variance</p>
+                          <p className="font-semibold text-destructive">
+                            {formatCurrency(exclusionStatus.vatVariance.variance)} 
+                            ({exclusionStatus.vatVariance.percentageVariance.toFixed(2)}%)
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-destructive/60 mt-3 italic border-t border-destructive/20 pt-2">
+                        Rule: VAT variance exceeds {localConfig.vatVarianceThreshold}% threshold - all exclusions are mandatory
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Threshold Configuration */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Exclusion Thresholds</CardTitle>
+              <CardDescription>
+                Exclusions become mandatory when these percentages are exceeded
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Cash Deposit</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      type="number"
+                      value={localConfig.cashDepositThreshold}
+                      onChange={(e) => setLocalConfig({ 
+                        ...localConfig, 
+                        cashDepositThreshold: parseFloat(e.target.value) || 20 
+                      })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-20"
+                    />
+                    <span className="text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Sister Concern</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      type="number"
+                      value={localConfig.sisterConcernThreshold}
+                      onChange={(e) => setLocalConfig({ 
+                        ...localConfig, 
+                        sisterConcernThreshold: parseFloat(e.target.value) || 20 
+                      })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-20"
+                    />
+                    <span className="text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">VAT Variance</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      type="number"
+                      value={localConfig.vatVarianceThreshold}
+                      onChange={(e) => setLocalConfig({ 
+                        ...localConfig, 
+                        vatVarianceThreshold: parseFloat(e.target.value) || 25 
+                      })}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-20"
+                    />
+                    <span className="text-muted-foreground">%</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Default thresholds: Cash (20%), Sister Concern (20%), VAT Variance (25%)
+              </p>
             </CardContent>
           </Card>
 
@@ -340,17 +651,28 @@ export const TurnoverConfigurationPanel: React.FC<TurnoverConfigurationProps> = 
             </Card>
           )}
 
-          {/* Instructions */}
+          {/* Legend */}
           <Card className="bg-muted/30">
             <CardContent className="pt-4">
-              <h4 className="font-medium text-sm mb-2">Instructions</h4>
-              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Update the Start Date and End Date for your analysis period</li>
-                <li>Add sister companies in the table (mark Active to exclude from turnover)</li>
-                <li>Update transaction keywords if needed</li>
-                <li>All turnover calculations will automatically exclude these amounts</li>
-                <li>Green rows indicate active exclusions, grey rows are inactive</li>
-              </ol>
+              <h4 className="font-medium text-sm mb-3">Legend</h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-destructive/20 border border-destructive/50" />
+                  <span className="text-muted-foreground">Mandatory exclusion (&gt;threshold)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-warning/20 border border-warning/50" />
+                  <span className="text-muted-foreground">Optional exclusion (user-selected)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-destructive" />
+                  <span className="text-muted-foreground">Locked (cannot toggle)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Unlock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Unlocked (can toggle)</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
