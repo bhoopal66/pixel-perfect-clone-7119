@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { TurnoverAnalysisReport } from '../types/turnover.types';
+import type { TurnoverAnalysisReport, TurnoverBalanceReport } from '../types/turnover.types';
 import { CurrencyService } from './currencyService';
 
 export class ExcelGenerator {
@@ -52,6 +52,37 @@ export class ExcelGenerator {
     if (turnoverAnalysis) {
       this.createTurnoverAnalysisSheet(workbook, turnoverAnalysis);
     }
+    
+    const buffer = await workbook.xlsx.writeBuffer();
+    return new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+  }
+
+  /**
+   * Generate report with Turnover & Average Balance Analysis (CORRECT methodology)
+   * Turnover = Total Credits, Avg Balance % = (Avg EOD Balance / Turnover) × 100
+   */
+  static async generateReportWithTurnoverBalance(
+    report: AnalysisReport,
+    turnoverBalance: TurnoverBalanceReport
+  ): Promise<Blob> {
+    const workbook = new ExcelJS.Workbook();
+    
+    workbook.creator = 'Bank Statement Analyzer';
+    workbook.created = new Date();
+    
+    // Create all worksheets
+    this.createSummarySheet(workbook, report);
+    this.createMonthlyBalanceSheet(workbook, report);
+    this.createDailyBalanceSheet(workbook, report);
+    this.createTransactionGroupingSheet(workbook, report);
+    this.createCategorySummarySheet(workbook, report);
+    this.createChequeAnalysisSheet(workbook, report);
+    this.createMonthWiseSummarySheet(workbook, report);
+    
+    // Add Turnover & Average Balance worksheet
+    this.createTurnoverBalanceSheet(workbook, turnoverBalance);
     
     const buffer = await workbook.xlsx.writeBuffer();
     return new Blob([buffer], {
@@ -722,5 +753,281 @@ export class ExcelGenerator {
       case 3: return `${rank}rd`;
       default: return `${rank}th`;
     }
+  }
+
+  /**
+   * Create Turnover & Average Balance Analysis worksheet
+   * CORRECT methodology: Turnover = Total Credits, Avg Balance % = (Avg EOD / Turnover) × 100
+   */
+  private static createTurnoverBalanceSheet(
+    workbook: ExcelJS.Workbook,
+    report: TurnoverBalanceReport
+  ) {
+    const sheet = workbook.addWorksheet('Turnover & Avg Balance');
+    
+    // Title
+    sheet.getCell('A1').value = 'TURNOVER & AVERAGE BALANCE ANALYSIS';
+    sheet.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    sheet.getCell('A1').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1F4E78' }
+    };
+    sheet.mergeCells('A1:F1');
+    sheet.getRow(1).height = 35;
+    
+    // Definitions box
+    let row = 3;
+    const defBox = sheet.getCell(`A${row}`);
+    defBox.value = 'Definitions:';
+    defBox.font = { bold: true };
+    defBox.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE8F4FD' }
+    };
+    sheet.mergeCells(`A${row}:F${row}`);
+    row++;
+    
+    const definitions = [
+      'Turnover = Total Credits from Bank Statement (sum of all credit transactions)',
+      'Average Balance = Average of all EOD (End of Day) Balances in the period',
+      'Avg Balance % = (Average Balance / Turnover) × 100'
+    ];
+    
+    definitions.forEach(def => {
+      sheet.getCell(`A${row}`).value = `• ${def}`;
+      sheet.getCell(`A${row}`).font = { italic: true, size: 10 };
+      sheet.getCell(`A${row}`).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE8F4FD' }
+      };
+      sheet.mergeCells(`A${row}:F${row}`);
+      row++;
+    });
+    
+    row += 2;
+    
+    // Period info
+    if (report.companyName) {
+      sheet.getCell(`A${row}`).value = 'Company:';
+      sheet.getCell(`A${row}`).font = { bold: true };
+      sheet.getCell(`B${row}`).value = report.companyName;
+      row++;
+    }
+    sheet.getCell(`A${row}`).value = 'Period:';
+    sheet.getCell(`A${row}`).font = { bold: true };
+    sheet.getCell(`B${row}`).value = `${report.analysisStartDate} to ${report.analysisEndDate} (${report.totalDays} days)`;
+    row += 2;
+    
+    // Overall Summary
+    const summaryHeader = sheet.getCell(`A${row}`);
+    summaryHeader.value = 'Overall Summary';
+    summaryHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    summaryHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF366092' }
+    };
+    sheet.mergeCells(`A${row}:D${row}`);
+    row++;
+    
+    const summaryData = [
+      ['Total Turnover (Credits)', report.totalTurnover],
+      ['Total Debits (Reference)', report.totalDebits],
+      ['Overall Average Balance', report.overallAverageBalance],
+      ['Avg Balance % of Turnover', `${report.overallAvgBalancePercentage.toFixed(2)}%`],
+      ['Balance Coverage', report.balanceCoverage.toUpperCase()]
+    ];
+    
+    summaryData.forEach(([label, value]) => {
+      sheet.getCell(`A${row}`).value = label;
+      sheet.getCell(`A${row}`).font = { bold: true };
+      sheet.getCell(`B${row}`).value = value;
+      if (typeof value === 'number') {
+        sheet.getCell(`B${row}`).numFmt = '#,##0.00';
+      }
+      if (label === 'Balance Coverage') {
+        let color = 'FF228B22'; // green
+        if (report.balanceCoverage === 'good') color = 'FF4CAF50';
+        else if (report.balanceCoverage === 'moderate') color = 'FFFFA500';
+        else if (report.balanceCoverage === 'low') color = 'FFDC143C';
+        sheet.getCell(`B${row}`).font = { bold: true, color: { argb: color } };
+      }
+      row++;
+    });
+    
+    row += 2;
+    
+    // Monthly Analysis Table
+    const monthlyHeader = sheet.getCell(`A${row}`);
+    monthlyHeader.value = 'Monthly Analysis';
+    monthlyHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    monthlyHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF366092' }
+    };
+    sheet.mergeCells(`A${row}:F${row}`);
+    row++;
+    
+    // Table headers
+    const tableHeaders = ['Month', 'Turnover (Credits)', 'Average Balance', 'Avg Balance %', 'Days', 'Closing Balance'];
+    const headerRow = sheet.getRow(row);
+    tableHeaders.forEach((h, idx) => {
+      const cell = headerRow.getCell(idx + 1);
+      cell.value = h;
+    });
+    this.styleHeader(headerRow);
+    row++;
+    
+    // Set column widths
+    sheet.getColumn(1).width = 12;
+    sheet.getColumn(2).width = 20;
+    sheet.getColumn(3).width = 18;
+    sheet.getColumn(4).width = 15;
+    sheet.getColumn(5).width = 8;
+    sheet.getColumn(6).width = 18;
+    
+    // Monthly data
+    const dataStartRow = row;
+    report.monthly.forEach(month => {
+      const dataRow = sheet.getRow(row);
+      dataRow.getCell(1).value = month.month;
+      dataRow.getCell(2).value = month.turnover;
+      dataRow.getCell(2).numFmt = '#,##0.00';
+      dataRow.getCell(3).value = month.averageBalance;
+      dataRow.getCell(3).numFmt = '#,##0.00';
+      dataRow.getCell(4).value = month.avgBalancePercentage / 100;
+      dataRow.getCell(4).numFmt = '0.00%';
+      dataRow.getCell(5).value = month.days;
+      dataRow.getCell(6).value = month.closingBalance;
+      dataRow.getCell(6).numFmt = '#,##0.00';
+      
+      // Color code percentage
+      const pctCell = dataRow.getCell(4);
+      if (month.avgBalancePercentage >= 100) {
+        pctCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } };
+      } else if (month.avgBalancePercentage >= 50) {
+        pctCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
+      } else {
+        pctCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
+      }
+      
+      row++;
+    });
+    
+    // Monthly totals
+    const monthTotalRow = sheet.getRow(row);
+    monthTotalRow.getCell(1).value = 'TOTAL';
+    monthTotalRow.getCell(1).font = { bold: true };
+    monthTotalRow.getCell(2).value = { formula: `SUM(B${dataStartRow}:B${row - 1})` };
+    monthTotalRow.getCell(2).numFmt = '#,##0.00';
+    monthTotalRow.getCell(2).font = { bold: true };
+    monthTotalRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF00' }
+    };
+    row += 3;
+    
+    // Quarterly Analysis
+    if (report.quarterly.length > 0) {
+      const qHeader = sheet.getCell(`A${row}`);
+      qHeader.value = 'Quarterly Analysis';
+      qHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      qHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF366092' }
+      };
+      sheet.mergeCells(`A${row}:E${row}`);
+      row++;
+      
+      const qHeaders = ['Quarter', 'Months', 'Turnover', 'Avg Balance', 'Avg Balance %'];
+      const qHeaderRow = sheet.getRow(row);
+      qHeaders.forEach((h, idx) => {
+        qHeaderRow.getCell(idx + 1).value = h;
+      });
+      this.styleHeader(qHeaderRow);
+      row++;
+      
+      report.quarterly.forEach(q => {
+        const qRow = sheet.getRow(row);
+        qRow.getCell(1).value = q.quarter;
+        qRow.getCell(2).value = q.months.join(', ');
+        qRow.getCell(3).value = q.turnover;
+        qRow.getCell(3).numFmt = '#,##0.00';
+        qRow.getCell(4).value = q.averageBalance;
+        qRow.getCell(4).numFmt = '#,##0.00';
+        qRow.getCell(5).value = q.avgBalancePercentage / 100;
+        qRow.getCell(5).numFmt = '0.00%';
+        row++;
+      });
+      
+      row += 2;
+    }
+    
+    // Half-Yearly Analysis
+    if (report.halfYearly.length > 0) {
+      const hHeader = sheet.getCell(`A${row}`);
+      hHeader.value = 'Half-Yearly Analysis';
+      hHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      hHeader.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF366092' }
+      };
+      sheet.mergeCells(`A${row}:E${row}`);
+      row++;
+      
+      const hHeaders = ['Period', 'Turnover', 'Avg Balance', 'Avg Balance %', 'Days'];
+      const hHeaderRow = sheet.getRow(row);
+      hHeaders.forEach((h, idx) => {
+        hHeaderRow.getCell(idx + 1).value = h;
+      });
+      this.styleHeader(hHeaderRow);
+      row++;
+      
+      report.halfYearly.forEach(h => {
+        const hRow = sheet.getRow(row);
+        hRow.getCell(1).value = h.period;
+        hRow.getCell(2).value = h.turnover;
+        hRow.getCell(2).numFmt = '#,##0.00';
+        hRow.getCell(3).value = h.averageBalance;
+        hRow.getCell(3).numFmt = '#,##0.00';
+        hRow.getCell(4).value = h.avgBalancePercentage / 100;
+        hRow.getCell(4).numFmt = '0.00%';
+        hRow.getCell(5).value = h.days;
+        row++;
+      });
+      
+      row += 2;
+    }
+    
+    // Notes
+    sheet.getCell(`A${row}`).value = 'Color Legend:';
+    sheet.getCell(`A${row}`).font = { bold: true };
+    row++;
+    
+    const legendData = [
+      ['Green (≥100%)', 'Excellent - Average balance exceeds monthly turnover', 'FFC6EFCE'],
+      ['Yellow (50-99%)', 'Good - Moderate balance coverage', 'FFFFEB9C'],
+      ['Red (<50%)', 'Low - Average balance below half of turnover', 'FFFFC7CE']
+    ];
+    
+    legendData.forEach(([label, desc, color]) => {
+      sheet.getCell(`A${row}`).value = label;
+      sheet.getCell(`A${row}`).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: color }
+      };
+      sheet.getCell(`B${row}`).value = desc;
+      sheet.getCell(`B${row}`).font = { italic: true, size: 9 };
+      sheet.mergeCells(`B${row}:E${row}`);
+      row++;
+    });
   }
 }
