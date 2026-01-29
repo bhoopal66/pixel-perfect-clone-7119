@@ -192,6 +192,14 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     return [...new Set(refs)].sort();
   }, [cases]);
 
+  // Extract unique company names from existing cases
+  const existingCompanyNames = useMemo(() => {
+    const companies = cases
+      .map(c => c.companyName)
+      .filter((name): name is string => !!name && name.trim() !== '');
+    return [...new Set(companies)].sort();
+  }, [cases]);
+
   const handleAddCase = async (newCase: LoanCase) => {
     const success = await addCase(newCase);
     if (success) {
@@ -531,6 +539,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
         currency={currency}
         existingAnalysts={existingAnalysts}
         existingAgentRefs={existingAgentRefs}
+        existingCompanyNames={existingCompanyNames}
       />
 
       {/* Case Detail Sheet */}
