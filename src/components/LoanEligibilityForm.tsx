@@ -592,7 +592,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        MIN(Annual POS, Cap Adjusted, Cap VAT)
+                        = MIN(100% POS Annual, {(calculated.pos_cap_rate * 100).toFixed(0)}% Adjusted, {(calculated.pos_cap_rate * 100).toFixed(0)}% VAT)
                       </p>
                     </div>
                   </div>
