@@ -6,7 +6,9 @@ import type {
   MonthlyTurnover,
   TurnoverSummary,
   SisterCompany,
-  TransactionKeywords
+  TransactionKeywords,
+  ExtendedMonthlyTurnover,
+  TurnoverAnalysisReport
 } from '../types/turnover.types';
 
 export class TurnoverCalculator {
@@ -265,6 +267,166 @@ export class TurnoverCalculator {
     return {
       highest: sorted[0],
       lowest: sorted[sorted.length - 1]
+    };
+  }
+
+  /**
+   * Calculate standard deviation for an array of numbers
+   */
+  private static calculateStandardDeviation(values: number[]): number {
+    if (values.length === 0) return 0;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+    const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
+    return Math.sqrt(avgSquaredDiff);
+  }
+
+  /**
+   * Determine volatility assessment based on percentage
+   */
+  private static getVolatilityAssessment(volatilityPercent: number): 'low' | 'moderate' | 'moderate-high' | 'high' {
+    if (volatilityPercent <= 15) return 'low';
+    if (volatilityPercent <= 25) return 'moderate';
+    if (volatilityPercent <= 35) return 'moderate-high';
+    return 'high';
+  }
+
+  /**
+   * Determine activity level based on percentage of total
+   */
+  private static getActivityLevel(percentage: number, periodMonths: number): 'high' | 'medium' | 'low' {
+    const expectedEven = 100 / periodMonths;
+    // High: >1.2x expected, Low: <0.75x expected
+    if (percentage > expectedEven * 1.2) return 'high';
+    if (percentage < expectedEven * 0.75) return 'low';
+    return 'medium';
+  }
+
+  /**
+   * Generate comprehensive turnover analysis report
+   * Implements the full spec: Credits + Debits = Turnover, with % breakdown
+   */
+  static generateTurnoverAnalysisReport(
+    transactions: Transaction[],
+    config: TurnoverConfiguration,
+    companyName?: string
+  ): TurnoverAnalysisReport {
+    // Group transactions by month
+    const monthlyData = new Map<string, { credits: number; debits: number }>();
+
+    transactions.forEach(txn => {
+      const date = new Date(txn.date);
+      const monthKey = `${date.toLocaleString('default', { month: 'short' })}-${date.getFullYear().toString().slice(-2)}`;
+
+      if (!monthlyData.has(monthKey)) {
+        monthlyData.set(monthKey, { credits: 0, debits: 0 });
+      }
+      const data = monthlyData.get(monthKey)!;
+      data.credits += txn.credit;
+      data.debits += txn.debit;
+    });
+
+    // Calculate totals
+    let totalCredits = 0;
+    let totalDebits = 0;
+    const monthlyTurnovers: number[] = [];
+
+    monthlyData.forEach(data => {
+      totalCredits += data.credits;
+      totalDebits += data.debits;
+      monthlyTurnovers.push(data.credits + data.debits);
+    });
+
+    const totalTurnover = totalCredits + totalDebits;
+    const periodMonths = monthlyData.size || 1;
+    const averageMonthlyTurnover = totalTurnover / periodMonths;
+
+    // Calculate volatility
+    const stdDev = this.calculateStandardDeviation(monthlyTurnovers);
+    const volatilityPercent = averageMonthlyTurnover > 0 
+      ? (stdDev / averageMonthlyTurnover) * 100 
+      : 0;
+
+    // Build extended monthly breakdown
+    const extendedMonthly: ExtendedMonthlyTurnover[] = [];
+    
+    // Get base monthly turnover data for business metrics
+    const baseMonthlyData = this.calculateMonthlyTurnover(transactions, config);
+
+    monthlyData.forEach((data, month) => {
+      const baseTurnover = baseMonthlyData.find(m => m.month === month);
+      const monthTurnover = data.credits + data.debits;
+      const percentage = totalTurnover > 0 ? (monthTurnover / totalTurnover) * 100 : 0;
+
+      extendedMonthly.push({
+        month,
+        totalCredits: data.credits,
+        totalDebits: data.debits,
+        totalTurnover: monthTurnover,
+        cashDeposits: baseTurnover?.cashDeposits || 0,
+        sisterConcern: baseTurnover?.sisterConcern || 0,
+        businessTurnover: baseTurnover?.businessTurnover || data.credits,
+        percentageOfTotal: percentage,
+        exclusionRate: baseTurnover?.exclusionRate || 0,
+        ranking: 0, // Will be set below
+        activityLevel: this.getActivityLevel(percentage, periodMonths)
+      });
+    });
+
+    // Sort by turnover descending and assign rankings
+    extendedMonthly.sort((a, b) => b.totalTurnover - a.totalTurnover);
+    extendedMonthly.forEach((m, idx) => { m.ranking = idx + 1; });
+
+    // Sort back to chronological order
+    extendedMonthly.sort((a, b) => {
+      const [aMonth, aYear] = a.month.split('-');
+      const [bMonth, bYear] = b.month.split('-');
+      const aDate = new Date(`${aMonth} 20${aYear}`);
+      const bDate = new Date(`${bMonth} 20${bYear}`);
+      return aDate.getTime() - bDate.getTime();
+    });
+
+    // Categorize by activity level
+    const highActivity = extendedMonthly.filter(m => m.activityLevel === 'high');
+    const mediumActivity = extendedMonthly.filter(m => m.activityLevel === 'medium');
+    const lowActivity = extendedMonthly.filter(m => m.activityLevel === 'low');
+
+    // Find extremes
+    const sortedByTurnover = [...extendedMonthly].sort((a, b) => b.totalTurnover - a.totalTurnover);
+    const highest = sortedByTurnover[0] || null;
+    const lowest = sortedByTurnover[sortedByTurnover.length - 1] || null;
+
+    // Calculate percentage range
+    const percentages = extendedMonthly.map(m => m.percentageOfTotal);
+    const minPct = Math.min(...percentages);
+    const maxPct = Math.max(...percentages);
+
+    return {
+      companyName,
+      analysisStartDate: config.startDate,
+      analysisEndDate: config.endDate,
+      periodMonths,
+      totalTurnover,
+      totalCredits,
+      totalDebits,
+      averageMonthlyTurnover,
+      volatility: {
+        standardDeviation: stdDev,
+        volatilityPercent,
+        assessment: this.getVolatilityAssessment(volatilityPercent)
+      },
+      monthlyBreakdown: extendedMonthly,
+      highActivityMonths: highActivity,
+      mediumActivityMonths: mediumActivity,
+      lowActivityMonths: lowActivity,
+      highestMonth: highest,
+      lowestMonth: lowest,
+      percentageRange: {
+        min: minPct,
+        max: maxPct,
+        spread: maxPct - minPct
+      },
+      expectedEvenDistribution: 100 / periodMonths
     };
   }
 }
