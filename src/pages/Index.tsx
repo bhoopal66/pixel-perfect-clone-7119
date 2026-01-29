@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator, Users, LogOut } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator, Users, LogOut, User } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
@@ -259,15 +259,17 @@ const Index = () => {
                     {user?.email}
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="h-4 w-4 mr-2" />
+                    My Profile
+                  </DropdownMenuItem>
                   {isAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                        <Shield className="h-4 w-4 mr-2" />
-                        User Management
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
+                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      User Management
+                    </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
