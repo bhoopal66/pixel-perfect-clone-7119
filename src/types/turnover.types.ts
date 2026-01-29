@@ -71,50 +71,110 @@ export const getDefaultConfiguration = (): TurnoverConfiguration => ({
   }
 });
 
-// Extended Monthly Turnover with ranking and percentage analysis
-export interface ExtendedMonthlyTurnover extends MonthlyTurnover {
-  totalDebits: number;
-  totalTurnover: number; // Credits + Debits
-  ranking: number; // 1 = highest
-  activityLevel: 'high' | 'medium' | 'low';
+// ===== CORRECT TURNOVER DEFINITIONS =====
+// Turnover = Total Credits (simple sum of all credit transactions)
+// Average Balance = Average of all EOD (End of Day) balances
+// Avg Balance % = (Average Balance / Turnover) × 100
+
+// Monthly Turnover & Balance Analysis
+export interface MonthlyTurnoverBalance {
+  month: string; // e.g., "Jan-24"
+  turnover: number; // Sum of credits for the month
+  averageBalance: number; // Average of daily EOD balances
+  avgBalancePercentage: number; // (Average Balance / Turnover) × 100
+  days: number;
+  openingBalance: number;
+  closingBalance: number;
+  totalDebits: number; // For reference
+  transactionCount: number;
 }
 
-// Turnover Analysis Report (per spec)
-export interface TurnoverAnalysisReport {
+// Quarterly Analysis
+export interface QuarterlyTurnoverBalance {
+  quarter: string; // e.g., "Q1 2024"
+  months: string[];
+  turnover: number;
+  averageBalance: number;
+  avgBalancePercentage: number;
+  days: number;
+}
+
+// Half-Yearly Analysis
+export interface HalfYearlyTurnoverBalance {
+  period: string; // "H1 2024" or "H2 2024"
+  months: string[];
+  turnover: number;
+  averageBalance: number;
+  avgBalancePercentage: number;
+  days: number;
+}
+
+// Yearly Analysis
+export interface YearlyTurnoverBalance {
+  year: string;
+  turnover: number;
+  averageBalance: number;
+  avgBalancePercentage: number;
+  days: number;
+  h1: HalfYearlyTurnoverBalance | null;
+  h2: HalfYearlyTurnoverBalance | null;
+}
+
+// Complete Turnover & Average Balance Report
+export interface TurnoverBalanceReport {
   // Period info
   companyName?: string;
   analysisStartDate: string;
   analysisEndDate: string;
-  periodMonths: number;
+  totalDays: number;
   
-  // Overall metrics
-  totalTurnover: number; // Credits + Debits
+  // Overall totals
+  totalTurnover: number; // Sum of all credits
+  totalDebits: number; // For reference
+  overallAverageBalance: number;
+  overallAvgBalancePercentage: number;
+  
+  // Breakdowns
+  monthly: MonthlyTurnoverBalance[];
+  quarterly: QuarterlyTurnoverBalance[];
+  halfYearly: HalfYearlyTurnoverBalance[];
+  yearly: YearlyTurnoverBalance | null;
+  
+  // Balance coverage assessment
+  balanceCoverage: 'excellent' | 'good' | 'moderate' | 'low';
+}
+
+// Extended Monthly Turnover (legacy compatibility)
+export interface ExtendedMonthlyTurnover extends MonthlyTurnover {
+  totalDebits: number;
+  totalTurnover: number;
+  ranking: number;
+  activityLevel: 'high' | 'medium' | 'low';
+}
+
+// Legacy Turnover Analysis Report (for backward compatibility)
+export interface TurnoverAnalysisReport {
+  companyName?: string;
+  analysisStartDate: string;
+  analysisEndDate: string;
+  periodMonths: number;
+  totalTurnover: number;
   totalCredits: number;
   totalDebits: number;
   averageMonthlyTurnover: number;
-  
-  // Volatility analysis
   volatility: {
     standardDeviation: number;
-    volatilityPercent: number; // stdDev / average * 100
+    volatilityPercent: number;
     assessment: 'low' | 'moderate' | 'moderate-high' | 'high';
   };
-  
-  // Monthly breakdown with rankings
   monthlyBreakdown: ExtendedMonthlyTurnover[];
-  
-  // Key insights
-  highActivityMonths: ExtendedMonthlyTurnover[]; // >20%
-  mediumActivityMonths: ExtendedMonthlyTurnover[]; // 15-20%
-  lowActivityMonths: ExtendedMonthlyTurnover[]; // <15%
-  
-  // Extremes
+  highActivityMonths: ExtendedMonthlyTurnover[];
+  mediumActivityMonths: ExtendedMonthlyTurnover[];
+  lowActivityMonths: ExtendedMonthlyTurnover[];
   highestMonth: ExtendedMonthlyTurnover | null;
   lowestMonth: ExtendedMonthlyTurnover | null;
-  
-  // Distribution
   percentageRange: { min: number; max: number; spread: number };
-  expectedEvenDistribution: number; // 100 / periodMonths
+  expectedEvenDistribution: number;
 }
 
 // VAT Return types
