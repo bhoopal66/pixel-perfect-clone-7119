@@ -182,6 +182,14 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     return [...new Set(analysts)].sort();
   }, [cases]);
 
+  // Extract unique agent references from existing cases
+  const existingAgentRefs = useMemo(() => {
+    const refs = cases
+      .map(c => c.agentReference)
+      .filter((ref): ref is string => !!ref && ref.trim() !== '');
+    return [...new Set(refs)].sort();
+  }, [cases]);
+
   const handleAddCase = (newCase: LoanCase) => {
     setCases(prev => [...prev, newCase]);
     setShowNewCaseDialog(false);
@@ -509,6 +517,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
         onSubmit={handleAddCase}
         currency={currency}
         existingAnalysts={existingAnalysts}
+        existingAgentRefs={existingAgentRefs}
       />
 
       {/* Case Detail Sheet */}
