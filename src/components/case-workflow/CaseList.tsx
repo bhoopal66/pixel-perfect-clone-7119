@@ -29,7 +29,10 @@ import {
   Download,
   FileSpreadsheet,
   FileDown,
-  Hash
+  Hash,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -45,6 +48,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import type { Case, EligibilityStatus } from '@/types/case.types';
 
+type SortDirection = 'asc' | 'desc' | null;
+
 interface CaseListProps {
   onNewCase: () => void;
   onEditCase: (id: string) => void;
@@ -57,6 +62,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [searchTerm, setSearchTerm] = useState('');
   const [caseNumberFilter, setCaseNumberFilter] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [caseNumberSort, setCaseNumberSort] = useState<SortDirection>(null);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
@@ -117,16 +123,32 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
     }
   };
 
-  const filteredCases = cases.filter(c => {
-    const matchesSearch = 
-      c.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.bank_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCaseNumber = !caseNumberFilter || 
-      (c.case_number && c.case_number.toLowerCase().includes(caseNumberFilter.toLowerCase()));
-    
-    return matchesSearch && matchesCaseNumber;
-  });
+  const toggleCaseNumberSort = () => {
+    setCaseNumberSort(prev => {
+      if (prev === null) return 'asc';
+      if (prev === 'asc') return 'desc';
+      return null;
+    });
+  };
+
+  const filteredCases = cases
+    .filter(c => {
+      const matchesSearch = 
+        c.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.bank_name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCaseNumber = !caseNumberFilter || 
+        (c.case_number && c.case_number.toLowerCase().includes(caseNumberFilter.toLowerCase()));
+      
+      return matchesSearch && matchesCaseNumber;
+    })
+    .sort((a, b) => {
+      if (caseNumberSort === null) return 0;
+      const aNum = a.case_number || '';
+      const bNum = b.case_number || '';
+      const comparison = aNum.localeCompare(bNum, undefined, { numeric: true });
+      return caseNumberSort === 'asc' ? comparison : -comparison;
+    });
 
   // Stats
   const stats = {
@@ -262,7 +284,17 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Case #</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={toggleCaseNumberSort}
+                    >
+                      <div className="flex items-center gap-1">
+                        Case #
+                        {caseNumberSort === null && <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
+                        {caseNumberSort === 'asc' && <ArrowUp className="h-3 w-3" />}
+                        {caseNumberSort === 'desc' && <ArrowDown className="h-3 w-3" />}
+                      </div>
+                    </TableHead>
                     <TableHead>Client</TableHead>
                     <TableHead>Bank</TableHead>
                     <TableHead>Product</TableHead>
