@@ -5,6 +5,12 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { 
   Calculator, 
   CreditCard, 
@@ -12,10 +18,15 @@ import {
   ArrowLeft, 
   RefreshCw,
   AlertCircle,
-  TrendingUp
+  Download,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CurrencyService } from '@/services/currencyService';
+import { useAuth } from '@/hooks/useAuth';
+import { exportSingleCaseToExcel, exportSingleCaseToPDF } from '@/services/caseExportService';
 import { 
   isPOSProduct, 
   PRODUCT_TYPE_LABELS, 
@@ -38,10 +49,12 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
   onBack,
   isLoading
 }) => {
+  const { isAdmin } = useAuth();
   const [posMonthlyTurnover, setPosMonthlyTurnover] = useState(
     caseData.pos_monthly_turnover?.toString() || ''
   );
   const [hasChanges, setHasChanges] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
   const isPOS = isPOSProduct(caseData.product_type);
@@ -57,6 +70,30 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
     });
     setHasChanges(false);
   };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await exportSingleCaseToExcel(caseData);
+      toast.success('Excel report exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export Excel report');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      exportSingleCaseToPDF(caseData);
+      toast.success('PDF report opened for printing');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to generate PDF report');
+    }
+  };
+
 
   const getStatusIcon = (status: EligibilityStatus) => {
     switch (status) {
@@ -290,11 +327,33 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-wrap gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onBack}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            
+            {/* Export Button - Admin Only */}
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={isExporting}>
+                    <Download className={cn("mr-2 h-4 w-4", isExporting && "animate-spin")} />
+                    Export Report
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={handleExportExcel}>
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Export as Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPDF}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export as PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             
             <Button
               type="button"
