@@ -127,6 +127,9 @@ export const LoanEligibilityService = {
       'Eligibility Status',
       'Multiplier',
       'Eligible Loan Amount',
+      'ABCD Fee Rate',
+      'ABCD Fee Amount',
+      'Total with ABCD',
       'Created At',
       'Updated At',
       'Notes'
@@ -155,6 +158,9 @@ export const LoanEligibilityService = {
       r.eligibility_status,
       r.eligible_multiplier.toString(),
       r.eligible_loan_amount.toString(),
+      r.abcd_fee_rate.toString(),
+      r.abcd_fee_amount.toString(),
+      r.total_with_abcd.toString(),
       r.created_at,
       r.updated_at,
       r.notes || ''

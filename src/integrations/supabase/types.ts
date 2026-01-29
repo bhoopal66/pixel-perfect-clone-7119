@@ -151,6 +151,8 @@ export type Database = {
       }
       loan_eligibility: {
         Row: {
+          abcd_fee_amount: number | null
+          abcd_fee_rate: number | null
           adjusted_turnover: number
           cash_adjustment: number
           company_name: string | null
@@ -171,6 +173,7 @@ export type Database = {
           pos_monthly_turnover: number
           product_type: string
           sister_concern_adjustment: number
+          total_with_abcd: number | null
           turnover_basis: number
           updated_at: string
           variance_bucket: string
@@ -178,6 +181,8 @@ export type Database = {
           vat_turnover: number
         }
         Insert: {
+          abcd_fee_amount?: number | null
+          abcd_fee_rate?: number | null
           adjusted_turnover?: number
           cash_adjustment?: number
           company_name?: string | null
@@ -198,6 +203,7 @@ export type Database = {
           pos_monthly_turnover?: number
           product_type?: string
           sister_concern_adjustment?: number
+          total_with_abcd?: number | null
           turnover_basis?: number
           updated_at?: string
           variance_bucket?: string
@@ -205,6 +211,8 @@ export type Database = {
           vat_turnover?: number
         }
         Update: {
+          abcd_fee_amount?: number | null
+          abcd_fee_rate?: number | null
           adjusted_turnover?: number
           cash_adjustment?: number
           company_name?: string | null
@@ -225,6 +233,7 @@ export type Database = {
           pos_monthly_turnover?: number
           product_type?: string
           sister_concern_adjustment?: number
+          total_with_abcd?: number | null
           turnover_basis?: number
           updated_at?: string
           variance_bucket?: string

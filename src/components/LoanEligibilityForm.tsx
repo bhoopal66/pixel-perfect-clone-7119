@@ -56,6 +56,10 @@ interface CalculatedValues {
   pos_cap_vat: number;
   pos_eligible_turnover: number;
   turnover_basis: number;
+  // ABCD fee fields
+  abcd_fee_rate: number;
+  abcd_fee_amount: number;
+  total_with_abcd: number;
 }
 
 export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
@@ -80,6 +84,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
   const isPOS = isPOSProduct(productType);
+  const isRAKPOS = productType === 'rak_pos';
   const isEditing = !!initialData;
 
   // Reset form when initialData changes (for edit mode)
@@ -145,7 +150,10 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         pos_cap_adjusted: posCapAdjusted,
         pos_cap_vat: posCapVat,
         pos_eligible_turnover: posEligibleTurnover,
-        turnover_basis: turnoverBasis
+        turnover_basis: turnoverBasis,
+        abcd_fee_rate: 0,
+        abcd_fee_amount: 0,
+        total_with_abcd: 0
       });
       setWarnings(newWarnings);
       return;
@@ -190,6 +198,17 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     // Calculate eligible loan amount using turnover basis
     const eligibleLoanAmount = eligibleMultiplier > 0 ? turnoverBasis * eligibleMultiplier : 0;
 
+    // Calculate ABCD fee (1% for RAK POS only)
+    let abcdFeeRate = 0;
+    let abcdFeeAmount = 0;
+    let totalWithAbcd = eligibleLoanAmount;
+    
+    if (productType === 'rak_pos' && eligibleLoanAmount > 0) {
+      abcdFeeRate = 0.01; // 1%
+      abcdFeeAmount = Math.round(eligibleLoanAmount * abcdFeeRate * 100) / 100;
+      totalWithAbcd = eligibleLoanAmount + abcdFeeAmount;
+    }
+
     setCalculated({
       adjusted_turnover: adjustedTurnover,
       variance_percent: variancePercent,
@@ -202,7 +221,10 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       pos_cap_adjusted: posCapAdjusted,
       pos_cap_vat: posCapVat,
       pos_eligible_turnover: posEligibleTurnover,
-      turnover_basis: turnoverBasis
+      turnover_basis: turnoverBasis,
+      abcd_fee_rate: abcdFeeRate,
+      abcd_fee_amount: abcdFeeAmount,
+      total_with_abcd: totalWithAbcd
     });
     setWarnings(newWarnings);
   }, [vatTurnover, declaredTurnover, cashAdjustment, sisterConcernAdjustment, posMonthlyTurnover, productType, isPOS]);
@@ -584,6 +606,37 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   </p>
                 </div>
 
+                {/* ABCD Fee Section - Only for RAK POS */}
+                {isRAKPOS && calculated.eligible_loan_amount > 0 && (
+                  <div className="space-y-2 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-300 dark:border-amber-700 mt-4">
+                    <p className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider mb-2">
+                      ABCD Fee (RAK POS Only)
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-amber-700 dark:text-amber-300">ABCD Fee Rate:</span>
+                        <span className="font-mono font-semibold text-amber-800 dark:text-amber-200">
+                          {(calculated.abcd_fee_rate * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-amber-700 dark:text-amber-300">ABCD Fee Amount:</span>
+                        <span className="font-mono font-semibold text-amber-800 dark:text-amber-200">
+                          {formatCurrency(calculated.abcd_fee_amount)}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-amber-300 dark:border-amber-700">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-amber-800 dark:text-amber-200">Total with ABCD Fee:</span>
+                          <span className="font-mono font-bold text-lg text-amber-900 dark:text-amber-100">
+                            {formatCurrency(calculated.total_with_abcd)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Formula explanation */}
                 <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg space-y-1">
                   <p><strong>Formula:</strong></p>
@@ -598,6 +651,9 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   )}
                   <p>Variance% = |VAT − Adjusted| / MAX(VAT, Adjusted) × 100</p>
                   <p>Eligible Amount = Turnover Basis × Multiplier</p>
+                  {isRAKPOS && (
+                    <p>Total = Eligible Amount + (Eligible Amount × 1% ABCD Fee)</p>
+                  )}
                 </div>
               </>
             )}
