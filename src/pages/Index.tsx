@@ -270,6 +270,29 @@ const Index = () => {
             {quickAnalysisView === 'upload' ? (
               <FileUploadWithPreview
                 onAnalysisConfirmed={handleQuickAnalysisConfirmed}
+                onDemoMode={() => {
+                  // Create demo data for testing
+                  const demoData: ParsedStatementData = {
+                    transactions: Array.from({ length: 150 }, (_, i) => ({
+                      id: `txn-${i}`,
+                      date: new Date(2024, Math.floor(i / 25), (i % 28) + 1).toISOString().split('T')[0],
+                      description: ['SALARY TRANSFER', 'CASH DEPOSIT ATM', 'RENT PAYMENT', 'UTILITY BILL', 'ONLINE TRANSFER', 'CDM CASH DEPOSIT'][i % 6],
+                      debit: i % 3 === 0 ? Math.random() * 5000 + 500 : 0,
+                      credit: i % 3 !== 0 ? Math.random() * 15000 + 1000 : 0,
+                      balance: 50000 + Math.random() * 20000,
+                      category: ['income', 'transfer', 'expense', 'income', 'transfer', 'cash-deposit'][i % 6],
+                      currency: 'AED'
+                    })),
+                    accountInfo: { accountName: 'Demo Company LLC', accountNumber: '1234567890', iban: 'AE123456789012345678901' },
+                    balances: { opening: 45000, closing: 62000, average: 55000 },
+                    totalCredits: 850000,
+                    totalDebits: 620000,
+                    netTurnover: 230000,
+                    periodFrom: '2024-01-01',
+                    periodTo: '2024-06-30'
+                  };
+                  handleQuickAnalysisConfirmed(demoData);
+                }}
               />
             ) : quickAnalysisData ? (
               <div className="space-y-6">
