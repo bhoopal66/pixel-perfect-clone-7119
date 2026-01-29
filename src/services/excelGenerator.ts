@@ -1,30 +1,28 @@
 import ExcelJS from 'exceljs';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { TurnoverConfiguration, TurnoverSummary } from '../types/turnover.types';
-import { getDefaultConfiguration } from '../types/turnover.types';
-import { TurnoverCalculator } from './turnoverCalculator';
+import type { TurnoverAnalysisSummary } from '../types/turnoverAnalysis.types';
+import { TurnoverAnalysisService } from './turnoverAnalysisService';
 import { CurrencyService } from './currencyService';
 
 export class ExcelGenerator {
   static async generateReport(
-    report: AnalysisReport, 
-    turnoverConfig?: TurnoverConfiguration
+    report: AnalysisReport
   ): Promise<Blob> {
     const workbook = new ExcelJS.Workbook();
     
     workbook.creator = 'Bank Statement Analyzer';
     workbook.created = new Date();
 
-    // Use provided config or default
-    const config = turnoverConfig || getDefaultConfiguration();
-    const turnoverSummary = TurnoverCalculator.calculateTurnoverSummary(
+    // Calculate CORRECT turnover analysis (Turnover = Total Credits)
+    const turnoverAnalysis = TurnoverAnalysisService.calculateTurnoverAnalysisSummary(
       report.transactions,
-      config
+      report.dailyBalances || [],
+      report.summary.currency || 'AED'
     );
     
     // Create all worksheets including new turnover analysis
-    this.createSummarySheet(workbook, report, turnoverSummary);
-    this.createTurnoverAnalysisSheet(workbook, turnoverSummary, report);
+    this.createSummarySheet(workbook, report, turnoverAnalysis);
+    this.createTurnoverAnalysisSheet(workbook, turnoverAnalysis, report);
     this.createMonthlyBalanceSheet(workbook, report);
     this.createDailyBalanceSheet(workbook, report);
     this.createTransactionGroupingSheet(workbook, report);
@@ -51,7 +49,7 @@ export class ExcelGenerator {
   private static createSummarySheet(
     workbook: ExcelJS.Workbook, 
     report: AnalysisReport,
-    turnoverSummary: TurnoverSummary
+    turnoverAnalysis: TurnoverAnalysisSummary
   ) {
     const sheet = workbook.addWorksheet('Summary Dashboard');
     
@@ -147,10 +145,10 @@ export class ExcelGenerator {
       row++;
     });
 
-    // Business Turnover Section
+    // Turnover & Average Balance Section (CORRECT METHODOLOGY)
     row += 1;
     const turnoverHeader = sheet.getCell(`A${row}`);
-    turnoverHeader.value = 'Business Turnover (Corrected Methodology)';
+    turnoverHeader.value = 'Turnover & Average Balance Analysis';
     turnoverHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
     turnoverHeader.fill = {
       type: 'pattern',
@@ -160,18 +158,24 @@ export class ExcelGenerator {
     sheet.mergeCells(`A${row}:D${row}`);
 
     row++;
-    sheet.getCell(`A${row}`).value = 'Formula: Business Turnover = Total Credits - Cash Deposits - Sister Concern';
-    sheet.getCell(`A${row}`).font = { italic: true, color: { argb: 'FFDC143C' } };
+    sheet.getCell(`A${row}`).value = 'Turnover = Total Credits | Avg Balance % = (Avg Balance / Turnover) × 100';
+    sheet.getCell(`A${row}`).font = { italic: true, color: { argb: 'FF366092' } };
     sheet.mergeCells(`A${row}:D${row}`);
+
+    // Get totals from turnover analysis
+    const totalTurnover = turnoverAnalysis.monthly.reduce((sum, m) => sum + m.turnover, 0);
+    const totalDays = turnoverAnalysis.monthly.reduce((sum, m) => sum + m.days, 0);
+    const avgBalance = totalDays > 0 
+      ? turnoverAnalysis.monthly.reduce((sum, m) => sum + m.averageBalance * m.days, 0) / totalDays 
+      : 0;
+    const avgBalancePct = totalTurnover > 0 ? (avgBalance / totalTurnover) * 100 : 0;
 
     row++;
     const turnoverData = [
-      ['Total Credits', turnoverSummary.totalCredits, ''],
-      ['Less: Cash Deposits', turnoverSummary.cashDeposits, 'excluded'],
-      ['Less: Sister Concern Transfers', turnoverSummary.sisterConcern, 'excluded'],
-      ['', '', ''],
-      ['Business Turnover', turnoverSummary.businessTurnover, 'business'],
-      ['Exclusion Rate', `${turnoverSummary.exclusionRate.toFixed(2)}%`, '']
+      ['Total Turnover (Credits)', totalTurnover, ''],
+      ['Average Balance (EOD)', avgBalance, ''],
+      ['Avg Balance % of Turnover', `${avgBalancePct.toFixed(2)}%`, avgBalancePct >= 100 ? 'high' : avgBalancePct >= 50 ? 'medium' : 'low'],
+      ['Analysis Days', totalDays, '']
     ];
 
     turnoverData.forEach(([label, value, type]) => {
@@ -185,18 +189,25 @@ export class ExcelGenerator {
         }
         
         // Style based on type
-        if (type === 'excluded') {
-          sheet.getCell(`B${row}`).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFC7CE' }
-          };
-          sheet.getCell(`B${row}`).font = { bold: true };
-        } else if (type === 'business') {
+        if (type === 'high') {
           sheet.getCell(`B${row}`).fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: 'FFC6EFCE' }
+          };
+          sheet.getCell(`B${row}`).font = { bold: true };
+        } else if (type === 'medium') {
+          sheet.getCell(`B${row}`).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFEB9C' }
+          };
+          sheet.getCell(`B${row}`).font = { bold: true };
+        } else if (type === 'low') {
+          sheet.getCell(`B${row}`).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFC7CE' }
           };
           sheet.getCell(`B${row}`).font = { bold: true };
         }
@@ -207,7 +218,7 @@ export class ExcelGenerator {
 
   private static createTurnoverAnalysisSheet(
     workbook: ExcelJS.Workbook, 
-    turnoverSummary: TurnoverSummary,
+    turnoverAnalysis: TurnoverAnalysisSummary,
     report: AnalysisReport
   ) {
     const sheet = workbook.addWorksheet('Turnover Analysis');
@@ -216,105 +227,93 @@ export class ExcelGenerator {
     // Headers
     const headers = [
       'Month', 
-      `Total Credits (${currency})`, 
-      `Cash Deposits (${currency})`, 
-      `Sister Concern (${currency})`, 
-      `Business Turnover (${currency})`, 
-      '% of Total',
-      'Exclusion Rate'
+      `Turnover/Credits (${currency})`, 
+      `Average Balance (${currency})`, 
+      'Avg Balance %',
+      'Days',
+      'Opening Balance',
+      'Closing Balance'
     ];
     const headerRow = sheet.addRow(headers);
     this.styleHeader(headerRow);
     
     // Set column widths
     sheet.getColumn(1).width = 15;
-    sheet.getColumn(2).width = 20;
-    sheet.getColumn(3).width = 20;
-    sheet.getColumn(4).width = 20;
-    sheet.getColumn(5).width = 22;
-    sheet.getColumn(6).width = 12;
-    sheet.getColumn(7).width = 14;
+    sheet.getColumn(2).width = 22;
+    sheet.getColumn(3).width = 22;
+    sheet.getColumn(4).width = 14;
+    sheet.getColumn(5).width = 10;
+    sheet.getColumn(6).width = 18;
+    sheet.getColumn(7).width = 18;
     
-    // Add data rows
-    turnoverSummary.monthlyData.forEach(month => {
+    // Add monthly data rows
+    turnoverAnalysis.monthly.forEach(month => {
       const dataRow = sheet.addRow([
         month.month,
-        month.totalCredits,
-        month.cashDeposits,
-        month.sisterConcern,
-        month.businessTurnover,
-        month.percentageOfTotal / 100,
-        month.exclusionRate / 100
+        month.turnover,
+        month.averageBalance,
+        month.avgBalancePercentage / 100,
+        month.days,
+        month.openingBalance,
+        month.closingBalance
       ]);
       
-      // Format excluded amounts with red fill
-      if (month.cashDeposits > 0) {
-        dataRow.getCell(3).fill = {
+      // Color code avg balance % based on thresholds
+      const avgBalPctCell = dataRow.getCell(4);
+      if (month.avgBalancePercentage >= 100) {
+        avgBalPctCell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFFFC7CE' }
+          fgColor: { argb: 'FFC6EFCE' } // Green - good
         };
-      }
-      
-      if (month.sisterConcern > 0) {
-        dataRow.getCell(4).fill = {
+      } else if (month.avgBalancePercentage >= 50) {
+        avgBalPctCell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFFFC7CE' }
+          fgColor: { argb: 'FFFFEB9C' } // Yellow - moderate
         };
-      }
-      
-      // Format business turnover with green fill
-      dataRow.getCell(5).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFC6EFCE' }
-      };
-      dataRow.getCell(5).font = { bold: true };
-      
-      // Highlight high exclusion rate
-      if (month.exclusionRate > 30) {
-        dataRow.getCell(7).fill = {
+      } else {
+        avgBalPctCell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFFFC000' }
+          fgColor: { argb: 'FFFFC7CE' } // Red - low
         };
       }
+      avgBalPctCell.font = { bold: true };
     });
     
-    // Format currency columns
+    // Format currency and percentage columns
     for (let i = 2; i <= sheet.rowCount; i++) {
-      [2, 3, 4, 5].forEach(col => {
+      [2, 3, 6, 7].forEach(col => {
         sheet.getCell(i, col).numFmt = '#,##0.00';
       });
-      [6, 7].forEach(col => {
-        sheet.getCell(i, col).numFmt = '0.00%';
-      });
+      sheet.getCell(i, 4).numFmt = '0.00%';
     }
     
     // Add totals row
-    const totals = turnoverSummary.monthlyData.reduce(
+    const totals = turnoverAnalysis.monthly.reduce(
       (acc, month) => ({
-        totalCredits: acc.totalCredits + month.totalCredits,
-        cashDeposits: acc.cashDeposits + month.cashDeposits,
-        sisterConcern: acc.sisterConcern + month.sisterConcern,
-        businessTurnover: acc.businessTurnover + month.businessTurnover
+        turnover: acc.turnover + month.turnover,
+        days: acc.days + month.days,
+        weightedBalance: acc.weightedBalance + month.averageBalance * month.days
       }),
-      { totalCredits: 0, cashDeposits: 0, sisterConcern: 0, businessTurnover: 0 }
+      { turnover: 0, days: 0, weightedBalance: 0 }
     );
     
-    const totalExclusionRate = totals.totalCredits > 0
-      ? (totals.cashDeposits + totals.sisterConcern) / totals.totalCredits
-      : 0;
+    const avgBalance = totals.days > 0 ? totals.weightedBalance / totals.days : 0;
+    const avgBalancePct = totals.turnover > 0 ? avgBalance / totals.turnover : 0;
+    
+    const firstMonth = turnoverAnalysis.monthly[0];
+    const lastMonth = turnoverAnalysis.monthly[turnoverAnalysis.monthly.length - 1];
     
     const totalRow = sheet.addRow([
-      'TOTAL',
-      totals.totalCredits,
-      totals.cashDeposits,
-      totals.sisterConcern,
-      totals.businessTurnover,
-      1,
-      totalExclusionRate
+      'TOTAL / AVG',
+      totals.turnover,
+      avgBalance,
+      avgBalancePct,
+      totals.days,
+      firstMonth?.openingBalance || 0,
+      lastMonth?.closingBalance || 0
     ]);
     
     totalRow.font = { bold: true };
@@ -323,18 +322,41 @@ export class ExcelGenerator {
       pattern: 'solid',
       fgColor: { argb: 'FFD9E1F2' }
     };
-    [2, 3, 4, 5].forEach(col => {
+    [2, 3, 6, 7].forEach(col => {
       totalRow.getCell(col).numFmt = '#,##0.00';
     });
-    [6, 7].forEach(col => {
-      totalRow.getCell(col).numFmt = '0.00%';
+    totalRow.getCell(4).numFmt = '0.00%';
+    
+    // Add quarterly summary section
+    const quarterStartRow = sheet.rowCount + 3;
+    sheet.getCell(`A${quarterStartRow}`).value = 'Quarterly Summary';
+    sheet.getCell(`A${quarterStartRow}`).font = { bold: true, size: 12 };
+    sheet.mergeCells(`A${quarterStartRow}:G${quarterStartRow}`);
+    
+    const quarterHeaders = sheet.addRow(['Quarter', 'Months', 'Turnover', 'Avg Balance', 'Avg Balance %', 'Days', '']);
+    this.styleHeader(quarterHeaders);
+    
+    turnoverAnalysis.quarterly.forEach(q => {
+      const qRow = sheet.addRow([
+        q.quarter,
+        q.months.join(', '),
+        q.turnover,
+        q.averageBalance,
+        q.avgBalancePercentage / 100,
+        q.days,
+        ''
+      ]);
+      [3, 4].forEach(col => {
+        qRow.getCell(col).numFmt = '#,##0.00';
+      });
+      qRow.getCell(5).numFmt = '0.00%';
     });
     
     // Add formula note
     const noteRow = sheet.rowCount + 2;
     sheet.getCell(`A${noteRow}`).value = 
-      'Note: Business Turnover = Total Credits - Cash Deposits - Sister Concern Transfers';
-    sheet.getCell(`A${noteRow}`).font = { italic: true, color: { argb: 'FFDC143C' } };
+      'Note: Turnover = Total Credits from Bank Statement | Avg Balance % = (Average Balance / Turnover) × 100';
+    sheet.getCell(`A${noteRow}`).font = { italic: true, color: { argb: 'FF366092' } };
     sheet.mergeCells(`A${noteRow}:G${noteRow}`);
   }
 

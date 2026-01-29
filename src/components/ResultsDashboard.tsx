@@ -15,7 +15,8 @@ import {
   Calendar,
   CalendarIcon,
   RotateCcw,
-  BarChart3
+  BarChart3,
+  FileText
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
@@ -24,15 +25,12 @@ import { Calendar as CalendarComponent } from './ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { cn } from '@/lib/utils';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { TurnoverConfiguration, TurnoverSummary } from '../types/turnover.types';
-import { getDefaultConfiguration } from '../types/turnover.types';
+import type { VATReturn } from '../types/turnoverAnalysis.types';
 import { TransactionTable } from './TransactionTable';
-import { TurnoverConfigurationPanel } from './TurnoverConfiguration';
-import { TurnoverBreakdown } from './TurnoverBreakdown';
-import { HistoricalTurnoverTable } from './HistoricalTurnoverTable';
-import { ExcludedTransactionsList } from './ExcludedTransactionsList';
+import { TurnoverAnalysisView } from './TurnoverAnalysisView';
+import { VATReturnsUpload } from './VATReturnsUpload';
 import { CurrencyService, type CurrencyCode } from '../services/currencyService';
-import { TurnoverCalculator } from '../services/turnoverCalculator';
+import { TurnoverAnalysisService } from '../services/turnoverAnalysisService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 
 interface ResultsDashboardProps {
@@ -49,18 +47,17 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   const { summary, accountInfo } = report;
   const currency = summary.currency || 'AED';
 
-  // Turnover configuration state
-  const [turnoverConfig, setTurnoverConfig] = useState<TurnoverConfiguration>(getDefaultConfiguration());
+  // VAT Returns state
+  const [vatReturns, setVATReturns] = useState<VATReturn[]>([]);
 
-  // Calculate turnover summary based on configuration
-  const turnoverSummary = useMemo<TurnoverSummary>(() => {
-    return TurnoverCalculator.calculateTurnoverSummary(report.transactions, turnoverConfig);
-  }, [report.transactions, turnoverConfig]);
-
-  // Calculate old (incorrect) turnover for comparison
-  const oldTurnover = useMemo(() => {
-    return TurnoverCalculator.calculateOldTurnover(report.transactions);
-  }, [report.transactions]);
+  // Calculate CORRECT turnover analysis (Turnover = Total Credits, Avg Balance % = Avg Balance / Turnover)
+  const turnoverAnalysis = useMemo(() => {
+    return TurnoverAnalysisService.calculateTurnoverAnalysisSummary(
+      report.transactions,
+      report.dailyBalances || [],
+      currency
+    );
+  }, [report.transactions, report.dailyBalances, currency]);
 
   // Date range filter state for daily balance chart
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -214,10 +211,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             )}
           </div>
           <div className="flex flex-wrap gap-3">
-            <TurnoverConfigurationPanel
-              config={turnoverConfig}
-              onConfigChange={setTurnoverConfig}
-            />
             <Button
               onClick={onReset}
               variant="outline"
@@ -312,48 +305,37 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         </div>
       </motion.div>
 
-      {/* Turnover Analysis Section */}
+      {/* Turnover & VAT Analysis Section */}
       <motion.div variants={itemVariants} className="mb-6">
-        <Tabs defaultValue="breakdown" className="w-full">
+        <Tabs defaultValue="turnover" className="w-full">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <BarChart3 className="h-5 w-5 text-success" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
-                  Business Turnover Analysis
+                  Turnover & Average Balance Analysis
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Corrected methodology: Credits - Deposits - Sister Concern
+                  Turnover = Total Credits | Avg Balance % = (Avg Balance / Turnover) × 100
                 </p>
               </div>
             </div>
             <TabsList>
-              <TabsTrigger value="breakdown">Summary</TabsTrigger>
-              <TabsTrigger value="historical">Historical</TabsTrigger>
-              <TabsTrigger value="excluded">Excluded</TabsTrigger>
+              <TabsTrigger value="turnover">Turnover Analysis</TabsTrigger>
+              <TabsTrigger value="vat">VAT Returns</TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="breakdown" className="mt-0">
-            <TurnoverBreakdown
-              summary={turnoverSummary}
-              currency={currency}
-              oldTurnover={oldTurnover}
-            />
+          <TabsContent value="turnover" className="mt-0">
+            <TurnoverAnalysisView summary={turnoverAnalysis} />
           </TabsContent>
 
-          <TabsContent value="historical" className="mt-0">
-            <HistoricalTurnoverTable
-              monthlyData={turnoverSummary.monthlyData}
-              currency={currency}
-            />
-          </TabsContent>
-
-          <TabsContent value="excluded" className="mt-0">
-            <ExcludedTransactionsList
-              transactions={turnoverSummary.excludedTransactions}
+          <TabsContent value="vat" className="mt-0">
+            <VATReturnsUpload
+              vatReturns={vatReturns}
+              onVATReturnsChange={setVATReturns}
               currency={currency}
             />
           </TabsContent>
