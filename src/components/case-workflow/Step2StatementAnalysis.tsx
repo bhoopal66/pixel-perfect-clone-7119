@@ -18,14 +18,15 @@ import {
   File,
   Loader2,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { usePdfParsing } from '@/hooks/usePdfParsing';
-import { ParsedDataPreview } from './ParsedDataPreview';
+import { TransactionAnalysisPreview } from './TransactionAnalysisPreview';
 import type { Case, CaseAnalysisInput } from '@/types/case.types';
 
 interface Step2StatementAnalysisProps {
@@ -177,6 +178,7 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
     declaredTurnover: number;
     periodFrom?: string;
     periodTo?: string;
+    cashAdjustment?: number;
   }) => {
     setDeclaredTurnover(data.declaredTurnover.toString());
     if (data.periodFrom) {
@@ -184,6 +186,9 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
     }
     if (data.periodTo) {
       setPeriodTo(data.periodTo);
+    }
+    if (data.cashAdjustment !== undefined && data.cashAdjustment > 0) {
+      setCashAdjustment(data.cashAdjustment.toString());
     }
     setShowParsedPreview(false);
     toast.success('Extracted data applied to form');
@@ -331,8 +336,9 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
 
           {/* Parsed Data Preview */}
           {showParsedPreview && parsedData && (
-            <ParsedDataPreview
+            <TransactionAnalysisPreview
               data={parsedData}
+              fileName={uploadedFileName || 'Statement'}
               onApply={handleApplyParsedData}
               onDismiss={handleDismissParsedData}
             />
