@@ -33,7 +33,9 @@ export interface LoanCase {
   applicantPhone: string;
   applicantEmail: string;
   monthlySalary: number;
-  employer: string;
+  companyName: string;              // Renamed from employer
+  agentReference: string;           // New field
+  analystName: string;              // New field
   
   // Loan Details
   lender: LenderType;

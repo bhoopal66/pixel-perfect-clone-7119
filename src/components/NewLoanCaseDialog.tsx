@@ -31,7 +31,9 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     applicantPhone: '',
     applicantEmail: '',
     monthlySalary: 0,
-    employer: '',
+    companyName: '',
+    agentReference: '',
+    analystName: '',
     lender: 'RAK' as LenderType,
     productType: 'cash' as ProductType,
     loanAmount: 50000,
@@ -74,7 +76,9 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       applicantPhone: formData.applicantPhone,
       applicantEmail: formData.applicantEmail,
       monthlySalary: formData.monthlySalary,
-      employer: formData.employer,
+      companyName: formData.companyName,
+      agentReference: formData.agentReference,
+      analystName: formData.analystName,
       lender: formData.lender,
       productType: formData.productType,
       loanAmount: formData.loanAmount,
@@ -103,7 +107,9 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       applicantPhone: '',
       applicantEmail: '',
       monthlySalary: 0,
-      employer: '',
+      companyName: '',
+      agentReference: '',
+      analystName: '',
       lender: 'RAK',
       productType: 'cash',
       loanAmount: 50000,
@@ -161,12 +167,28 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
                   placeholder="15000"
                 />
               </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Employer</Label>
+              <div className="space-y-2">
+                <Label>Company Name</Label>
                 <Input
-                  value={formData.employer}
-                  onChange={(e) => setFormData({ ...formData, employer: e.target.value })}
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                   placeholder="Company name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Agent Reference</Label>
+                <Input
+                  value={formData.agentReference}
+                  onChange={(e) => setFormData({ ...formData, agentReference: e.target.value })}
+                  placeholder="Agent reference code"
+                />
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label>Analyst Name</Label>
+                <Input
+                  value={formData.analystName}
+                  onChange={(e) => setFormData({ ...formData, analystName: e.target.value })}
+                  placeholder="Analyst handling the case"
                 />
               </div>
             </div>
