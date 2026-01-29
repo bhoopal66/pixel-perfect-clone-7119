@@ -344,23 +344,6 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
             />
           )}
 
-          {/* Manual URL Input (Alternative) */}
-          <div className="space-y-2">
-            <Label htmlFor="statement_pdf_url" className="text-xs text-muted-foreground">
-              Or paste a direct URL to the statement
-            </Label>
-            <Input
-              id="statement_pdf_url"
-              type="url"
-              placeholder="https://..."
-              value={statementPdfUrl}
-              onChange={(e) => {
-                setStatementPdfUrl(e.target.value);
-                setUploadedFileName(null);
-              }}
-              className="text-sm"
-            />
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
