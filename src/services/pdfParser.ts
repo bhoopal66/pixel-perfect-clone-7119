@@ -87,6 +87,9 @@ export class PDFParser {
       { name: 'Emirates NBD', transactions: this.tryEmiratesNBDPattern(pdfText) },
       { name: 'FAB', transactions: this.tryFABPattern(pdfText) },
       { name: 'Mashreq', transactions: this.tryMashreqPattern(pdfText) },
+      { name: 'CBD', transactions: this.tryCBDPattern(pdfText) },
+      { name: 'DIB', transactions: this.tryDIBPattern(pdfText) },
+      { name: 'RAK Bank', transactions: this.tryRAKBankPattern(pdfText) },
       { name: 'Generic Multi-Column', transactions: this.tryGenericMultiColumnPattern(pdfText) },
       { name: 'Generic Single Amount', transactions: this.tryGenericSingleAmountPattern(pdfText) },
       { name: 'Line-by-Line', transactions: this.tryLineByLinePattern(pdfText) },
@@ -187,7 +190,175 @@ export class PDFParser {
     return transactions;
   }
 
-  // Pattern 5: Generic Multi-Column - Date Description Amount Amount Balance
+  // Pattern 5: CBD (Commercial Bank of Dubai) - DD/MM/YYYY Reference Description Debit Credit Balance
+  private static tryCBDPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    // CBD format: Date | Reference | Description | Debit | Credit | Balance
+    const pattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Z0-9]{8,})\s+([A-Za-z][^\d]{3,40}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+      const credit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          reference: match[2],
+          description: match[3].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[6].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative CBD pattern: DD-MMM-YYYY format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}-[A-Za-z]{3}-\d{4})\s+([^\d]{5,50}?)\s+([\d,]+\.\d{2})\s*([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amounts = [match[3], match[4], match[5]].filter(Boolean).map(a => parseFloat(a!.replace(/,/g, '')));
+        if (amounts.length >= 2) {
+          const desc = match[2].toLowerCase();
+          const isCredit = desc.includes('credit') || desc.includes('deposit') || desc.includes('salary');
+          transactions.push({
+            date: match[1],
+            description: match[2].trim(),
+            debit: isCredit ? 0 : amounts[0],
+            credit: isCredit ? amounts[0] : 0,
+            balance: amounts[amounts.length - 1]
+          });
+        }
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 6: DIB (Dubai Islamic Bank) - uses Islamic banking terminology
+  private static tryDIBPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    // DIB format: Date | Value Date | Reference | Description | Debit | Credit | Balance
+    const pattern = /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})?\s*([A-Z0-9]{6,})?\s+([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      const credit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          valueDate: match[2],
+          reference: match[3],
+          description: match[4].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[7].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative DIB pattern with different date format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}-[A-Za-z]{3}-\d{2,4})\s+([A-Za-z][^\d]{3,60}?)\s+([\d,]+\.\d{2})\s*(CR|DR)?\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[3].replace(/,/g, ''));
+        const indicator = match[4]?.toUpperCase() || '';
+        const balance = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+        const desc = match[2].toLowerCase();
+        // Islamic banking terms: Murabaha (financing), Wakala (agency), Ijarah (lease)
+        const isCredit = indicator === 'CR' || 
+                         desc.includes('credit') || desc.includes('deposit') || 
+                         desc.includes('salary') || desc.includes('profit') ||
+                         desc.includes('wakala') || desc.includes('received');
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+          balance
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 7: RAK Bank (National Bank of Ras Al Khaimah)
+  private static tryRAKBankPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    // RAK Bank format: Date | Particulars/Description | Cheque No | Debit | Credit | Balance
+    const pattern = /(\d{2}-[A-Za-z]{3}-\d{4})\s+([A-Za-z][^\d]{3,50}?)\s*(\d{6})?\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    let match;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+      const credit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          reference: match[3],
+          debit,
+          credit,
+          balance: parseFloat(match[6].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative RAK Bank pattern: DD/MM/YYYY format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z][A-Za-z0-9\s\-\/\*#]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})(?:\s+([\d,]+\.\d{2}))?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount1 = parseFloat(match[3].replace(/,/g, ''));
+        const amount2 = parseFloat(match[4].replace(/,/g, ''));
+        const amount3 = match[5] ? parseFloat(match[5].replace(/,/g, '')) : null;
+        
+        if (amount3 !== null) {
+          // Three amounts: Debit, Credit, Balance
+          transactions.push({
+            date: match[1],
+            description: match[2].trim(),
+            debit: amount1,
+            credit: amount2,
+            balance: amount3
+          });
+        } else {
+          // Two amounts: Transaction and Balance
+          const desc = match[2].toLowerCase();
+          const isDebit = desc.includes('payment') || desc.includes('withdrawal') || 
+                          desc.includes('purchase') || desc.includes('debit') ||
+                          desc.includes('transfer to') || desc.includes('atm');
+          const txnAmount = Math.min(amount1, amount2);
+          const balance = Math.max(amount1, amount2);
+          transactions.push({
+            date: match[1],
+            description: match[2].trim(),
+            debit: isDebit ? txnAmount : 0,
+            credit: isDebit ? 0 : txnAmount,
+            balance
+          });
+        }
+      }
+    }
+    
+    // Third pattern: Single amount with DR/CR indicator
+    if (transactions.length === 0) {
+      const thirdPattern = /(\d{2}[-\/]\d{2}[-\/]\d{2,4})\s+([A-Za-z][^\d]{3,50}?)\s+([\d,]+\.\d{2})\s*(DR|CR)?\s*([\d,]+\.\d{2})?/g;
+      while ((match = thirdPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[3].replace(/,/g, ''));
+        const indicator = match[4]?.toUpperCase() || '';
+        const balance = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+        const desc = match[2].toLowerCase();
+        const isCredit = indicator === 'CR' || 
+                         desc.includes('credit') || desc.includes('deposit');
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+          balance
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 8: Generic Multi-Column - Date Description Amount Amount Balance
   private static tryGenericMultiColumnPattern(pdfText: string): ExtractedTransaction[] {
     const transactions: ExtractedTransaction[] = [];
     // Flexible date + description + 2-3 amounts pattern
