@@ -182,11 +182,11 @@ const Index = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl gradient-primary">
-                <FileSpreadsheet className="h-6 w-6 text-primary-foreground" />
+                <Briefcase className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">Bank Statement Analyzer</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">Transform PDFs into insights</p>
+                <h1 className="text-lg font-bold text-foreground">Case Management</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">Loan Processing & Analysis</p>
               </div>
             </div>
             
@@ -328,9 +328,9 @@ const Index = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg gradient-primary">
-                <FileSpreadsheet className="h-4 w-4 text-primary-foreground" />
+                <Briefcase className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="text-sm font-medium text-foreground">Bank Statement Analyzer</span>
+              <span className="text-sm font-medium text-foreground">Case Management</span>
             </div>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} All rights reserved. Your data is processed locally.
