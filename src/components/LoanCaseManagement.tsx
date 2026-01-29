@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
-import type { LoanCase, LoanStatus, LenderType } from '../types/loanCase.types';
+import type { LoanCase, LoanStatus, LenderType, ProductType } from '../types/loanCase.types';
 import { LENDERS } from '../types/loanCase.types';
 import { LenderComparison } from './LenderComparison';
 import { NewLoanCaseDialog } from './NewLoanCaseDialog';
@@ -39,6 +39,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LoanStatus | 'all'>('all');
   const [lenderFilter, setLenderFilter] = useState<LenderType | 'all'>('all');
+  const [productFilter, setProductFilter] = useState<ProductType | 'all'>('all');
   const [showNewCaseDialog, setShowNewCaseDialog] = useState(false);
   const [selectedCase, setSelectedCase] = useState<LoanCase | null>(null);
 
@@ -52,9 +53,10 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
         c.applicantName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
       const matchesLender = lenderFilter === 'all' || c.lender === lenderFilter;
-      return matchesSearch && matchesStatus && matchesLender;
+      const matchesProduct = productFilter === 'all' || c.productType === productFilter;
+      return matchesSearch && matchesStatus && matchesLender && matchesProduct;
     });
-  }, [cases, searchQuery, statusFilter, lenderFilter]);
+  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter]);
 
   // Statistics
   const stats = useMemo(() => ({
@@ -220,6 +222,16 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={productFilter} onValueChange={(v) => setProductFilter(v as ProductType | 'all')}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="cash">Cash Loan</SelectItem>
+                      <SelectItem value="pos">POS</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardHeader>
@@ -238,6 +250,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                         <TableHead>Case #</TableHead>
                         <TableHead>Applicant</TableHead>
                         <TableHead>Lender</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead className="text-right">EMI</TableHead>
                         <TableHead>Status</TableHead>
@@ -256,10 +269,12 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
-                              <Badge variant="outline" className="w-fit">{LENDERS[loanCase.lender].shortName}</Badge>
-                              <span className="text-[10px] text-muted-foreground mt-0.5 uppercase">{loanCase.productType}</span>
-                            </div>
+                            <Badge variant="outline" className="w-fit">{LENDERS[loanCase.lender].shortName}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={loanCase.productType === 'pos' ? 'secondary' : 'outline'} className="text-xs uppercase">
+                              {loanCase.productType}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(loanCase.loanAmount)}
