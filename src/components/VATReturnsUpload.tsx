@@ -19,6 +19,7 @@ import {
   Edit3
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { VATStatisticsSection } from './VATStatisticsSection';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
@@ -658,44 +659,8 @@ export const VATReturnsUpload: React.FC<VATReturnsUploadProps> = ({
         </Collapsible>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Total Output VAT</p>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(totalOutputVAT)}</p>
-            <p className="text-xs text-muted-foreground">VAT collected on sales</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Total Input VAT</p>
-            <p className="text-2xl font-bold text-success">{formatCurrency(totalInputVAT)}</p>
-            <p className="text-xs text-muted-foreground">VAT paid on purchases</p>
-          </CardContent>
-        </Card>
-
-        <Card className={cn(netVAT >= 0 ? 'border-destructive/30' : 'border-success/30')}>
-          <CardContent className="pt-6">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Net VAT Position</p>
-            <p className={cn("text-2xl font-bold", netVAT >= 0 ? 'text-destructive' : 'text-success')}>
-              {formatCurrency(Math.abs(netVAT))}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {netVAT >= 0 ? 'Payable to FTA' : 'Refundable from FTA'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Returns Submitted</p>
-            <p className="text-2xl font-bold text-foreground">{vatReturns.length}</p>
-            <p className="text-xs text-muted-foreground">periods covered</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* VAT Statistics Section */}
+      <VATStatisticsSection vatReturns={vatReturns} currency={currency} />
 
       {/* VAT Returns Table */}
       <Card>
