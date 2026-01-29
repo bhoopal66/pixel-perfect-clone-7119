@@ -25,7 +25,8 @@ import { Calendar as CalendarComponent } from './ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { cn } from '@/lib/utils';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { VATReturn } from '../types/turnover.types';
+import type { VATReturn, SisterCompany } from '../types/turnover.types';
+import { DEFAULT_SISTER_COMPANIES } from '../types/turnover.types';
 import { TransactionTable } from './TransactionTable';
 import { VATReturnsUpload } from './VATReturnsUpload';
 import { CurrencyService, type CurrencyCode } from '../services/currencyService';
@@ -47,7 +48,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
   // VAT Returns state
   const [vatReturns, setVATReturns] = useState<VATReturn[]>([]);
-
+  
+  // Sister companies state
+  const [sisterCompanies, setSisterCompanies] = useState<SisterCompany[]>(DEFAULT_SISTER_COMPANIES);
 
   // Date range filter state for daily balance chart
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -313,6 +316,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <VATReturnsUpload
           vatReturns={vatReturns}
           onVATReturnsChange={setVATReturns}
+          sisterCompanies={sisterCompanies}
+          onSisterCompaniesChange={setSisterCompanies}
           currency={currency}
         />
       </motion.div>

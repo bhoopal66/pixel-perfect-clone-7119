@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Upload, 
@@ -9,33 +10,45 @@ import {
   Eye,
   Download,
   Plus,
-  X
+  X,
+  Building2,
+  Info
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Checkbox } from './ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from './ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { cn } from '@/lib/utils';
-import type { VATReturn } from '../types/turnover.types';
+import type { VATReturn, SisterCompany } from '../types/turnover.types';
 import type { CurrencyCode } from '../services/currencyService';
 import { CurrencyService } from '../services/currencyService';
+import { toast } from 'sonner';
 
 interface VATReturnsUploadProps {
   vatReturns: VATReturn[];
   onVATReturnsChange: (returns: VATReturn[]) => void;
+  sisterCompanies?: SisterCompany[];
+  onSisterCompaniesChange?: (companies: SisterCompany[]) => void;
   currency?: CurrencyCode;
 }
 
 export const VATReturnsUpload: React.FC<VATReturnsUploadProps> = ({
   vatReturns,
   onVATReturnsChange,
+  sisterCompanies = [],
+  onSisterCompaniesChange,
   currency = 'AED'
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSisterOpen, setIsSisterOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [newReturn, setNewReturn] = useState<Partial<VATReturn>>({
     period: '',
     startDate: '',
@@ -49,6 +62,49 @@ export const VATReturnsUpload: React.FC<VATReturnsUploadProps> = ({
   });
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
+
+  // File upload dropzone
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const pdfFiles = acceptedFiles.filter(f => f.type === 'application/pdf');
+    if (pdfFiles.length > 0) {
+      setUploadedFiles(prev => [...prev, ...pdfFiles]);
+      toast.success(`${pdfFiles.length} VAT return file(s) uploaded`);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'application/pdf': ['.pdf'] },
+    multiple: true
+  });
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Sister company management
+  const addSisterCompany = () => {
+    if (!onSisterCompaniesChange) return;
+    const newCompany: SisterCompany = {
+      id: Date.now().toString(),
+      name: '',
+      active: true,
+      notes: ''
+    };
+    onSisterCompaniesChange([...sisterCompanies, newCompany]);
+  };
+
+  const updateSisterCompany = (id: string, field: keyof SisterCompany, value: string | boolean) => {
+    if (!onSisterCompaniesChange) return;
+    onSisterCompaniesChange(
+      sisterCompanies.map(c => c.id === id ? { ...c, [field]: value } : c)
+    );
+  };
+
+  const removeSisterCompany = (id: string) => {
+    if (!onSisterCompaniesChange) return;
+    onSisterCompaniesChange(sisterCompanies.filter(c => c.id !== id));
+  };
 
   const handleAddReturn = () => {
     if (!newReturn.period || !newReturn.startDate || !newReturn.endDate) return;
@@ -106,6 +162,144 @@ export const VATReturnsUpload: React.FC<VATReturnsUploadProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* VAT File Upload Section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Upload className="h-5 w-5 text-primary" />
+            Upload VAT Return Files
+          </CardTitle>
+          <CardDescription>
+            Upload PDF copies of your VAT returns for record keeping
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div
+            {...getRootProps()}
+            className={cn(
+              "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+              isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+            )}
+          >
+            <input {...getInputProps()} />
+            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            {isDragActive ? (
+              <p className="text-sm text-primary">Drop VAT return files here...</p>
+            ) : (
+              <div>
+                <p className="text-sm text-muted-foreground">Drag & drop VAT return PDFs here, or click to browse</p>
+                <p className="text-xs text-muted-foreground mt-1">Accepts PDF files only</p>
+              </div>
+            )}
+          </div>
+          
+          {uploadedFiles.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Uploaded Files</p>
+              {uploadedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm">{file.name}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-7 w-7">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Sister Concern Section (if applicable) */}
+      {onSisterCompaniesChange && (
+        <Collapsible open={isSisterOpen} onOpenChange={setIsSisterOpen}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle className="text-base">Sister Concern / Related Parties</CardTitle>
+                      <CardDescription>
+                        Exclude transfers from related companies (if applicable)
+                      </CardDescription>
+                    </div>
+                    {sisterCompanies.filter(c => c.active).length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {sisterCompanies.filter(c => c.active).length} active
+                      </Badge>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    {isSisterOpen ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 bg-accent/10 rounded-lg text-sm">
+                    <Info className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                    <p className="text-muted-foreground">
+                      Add sister companies or related parties whose transactions should be excluded from business turnover calculations.
+                    </p>
+                  </div>
+                  
+                  {sisterCompanies.map((company) => (
+                    <motion.div
+                      key={company.id}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                        company.active ? "bg-success/5 border-success/20" : "bg-muted/30 border-border"
+                      )}
+                    >
+                      <Checkbox
+                        checked={company.active}
+                        onCheckedChange={(checked) => updateSisterCompany(company.id, 'active', !!checked)}
+                      />
+                      <Input
+                        value={company.name}
+                        onChange={(e) => updateSisterCompany(company.id, 'name', e.target.value)}
+                        placeholder="Company name"
+                        className="flex-1 h-8"
+                      />
+                      <Input
+                        value={company.notes}
+                        onChange={(e) => updateSisterCompany(company.id, 'notes', e.target.value)}
+                        placeholder="Notes (optional)"
+                        className="w-40 h-8"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSisterCompany(company.id)}
+                        className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  ))}
+                  
+                  <Button variant="outline" size="sm" onClick={addSisterCompany} className="gap-1">
+                    <Plus className="h-4 w-4" />
+                    Add Company
+                  </Button>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
