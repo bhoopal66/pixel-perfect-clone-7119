@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           abcd_fee_amount: number
           adjusted_turnover: number
+          agent_reference: string
           bank_name: string
           case_number: string | null
           cash_adjustment: number
@@ -54,6 +55,7 @@ export type Database = {
         Insert: {
           abcd_fee_amount?: number
           adjusted_turnover?: number
+          agent_reference?: string
           bank_name: string
           case_number?: string | null
           cash_adjustment?: number
@@ -90,6 +92,7 @@ export type Database = {
         Update: {
           abcd_fee_amount?: number
           adjusted_turnover?: number
+          agent_reference?: string
           bank_name?: string
           case_number?: string | null
           cash_adjustment?: number
