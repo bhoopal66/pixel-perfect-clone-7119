@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      loan_cases: {
+        Row: {
+          agent_reference: string
+          analyst_name: string
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string
+          approved_at: string | null
+          case_number: string
+          company_name: string
+          created_at: string
+          disbursed_at: string | null
+          documents: Json
+          emi: number
+          id: string
+          interest_rate: number
+          lender: string
+          loan_amount: number
+          monthly_salary: number
+          notes: string | null
+          processing_fee: number
+          product_type: string
+          purpose: string | null
+          status: string
+          submitted_at: string | null
+          tenure: number
+          total_interest: number
+          total_payable: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agent_reference: string
+          analyst_name: string
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string
+          approved_at?: string | null
+          case_number: string
+          company_name: string
+          created_at?: string
+          disbursed_at?: string | null
+          documents?: Json
+          emi?: number
+          id?: string
+          interest_rate?: number
+          lender: string
+          loan_amount?: number
+          monthly_salary?: number
+          notes?: string | null
+          processing_fee?: number
+          product_type?: string
+          purpose?: string | null
+          status?: string
+          submitted_at?: string | null
+          tenure?: number
+          total_interest?: number
+          total_payable?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agent_reference?: string
+          analyst_name?: string
+          applicant_email?: string
+          applicant_name?: string
+          applicant_phone?: string
+          approved_at?: string | null
+          case_number?: string
+          company_name?: string
+          created_at?: string
+          disbursed_at?: string | null
+          documents?: Json
+          emi?: number
+          id?: string
+          interest_rate?: number
+          lender?: string
+          loan_amount?: number
+          monthly_salary?: number
+          notes?: string | null
+          processing_fee?: number
+          product_type?: string
+          purpose?: string | null
+          status?: string
+          submitted_at?: string | null
+          tenure?: number
+          total_interest?: number
+          total_payable?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       loan_eligibility: {
         Row: {
           adjusted_turnover: number

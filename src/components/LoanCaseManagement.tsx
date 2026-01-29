@@ -19,7 +19,8 @@ import {
   ArrowDown,
   Download,
   FileSpreadsheet,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -37,6 +38,7 @@ import { NewLoanCaseDialog } from './NewLoanCaseDialog';
 import { LoanCaseDetail } from './LoanCaseDetail';
 import { CurrencyService } from '../services/currencyService';
 import { useAuth } from '@/hooks/useAuth';
+import { useLoanCases } from '@/hooks/useLoanCases';
 import { exportToCSV, exportToExcel } from '@/services/exportService';
 import { toast } from 'sonner';
 
@@ -46,7 +48,7 @@ interface LoanCaseManagementProps {
 
 export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency = 'AED' }) => {
   const { isAdmin, signOut, user } = useAuth();
-  const [cases, setCases] = useState<LoanCase[]>([]);
+  const { cases, isLoading, addCase, updateCase, deleteCase } = useLoanCases();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LoanStatus | 'all'>('all');
   const [lenderFilter, setLenderFilter] = useState<LenderType | 'all'>('all');
@@ -190,19 +192,25 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     return [...new Set(refs)].sort();
   }, [cases]);
 
-  const handleAddCase = (newCase: LoanCase) => {
-    setCases(prev => [...prev, newCase]);
-    setShowNewCaseDialog(false);
+  const handleAddCase = async (newCase: LoanCase) => {
+    const success = await addCase(newCase);
+    if (success) {
+      setShowNewCaseDialog(false);
+    }
   };
 
-  const handleUpdateCase = (updatedCase: LoanCase) => {
-    setCases(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    setSelectedCase(updatedCase);
+  const handleUpdateCase = async (updatedCase: LoanCase) => {
+    const success = await updateCase(updatedCase);
+    if (success) {
+      setSelectedCase(updatedCase);
+    }
   };
 
-  const handleDeleteCase = (id: string) => {
-    setCases(prev => prev.filter(c => c.id !== id));
-    setSelectedCase(null);
+  const handleDeleteCase = async (id: string) => {
+    const success = await deleteCase(id);
+    if (success) {
+      setSelectedCase(null);
+    }
   };
 
   const getStatusBadge = (status: LoanStatus) => {
@@ -402,7 +410,12 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
               </div>
             </CardHeader>
             <CardContent>
-              {filteredCases.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
+                  <p>Loading loan cases...</p>
+                </div>
+              ) : filteredCases.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No loan cases yet</p>
