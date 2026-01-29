@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { SUPPORTED_BANKS } from '@/hooks/usePdfParsing';
 import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 
@@ -76,17 +77,45 @@ export const ParsedTransactionPreview: React.FC<ParsedTransactionPreviewProps> =
         </Button>
         <div className="flex items-center gap-2">
           {detectedBankLabel && (
-            <Badge 
-              variant="secondary" 
-              className={`gap-1 ${
-                detectedBank?.confidence === 'high' ? 'bg-success/10 text-success border-success/30' :
-                detectedBank?.confidence === 'medium' ? 'bg-primary/10 text-primary border-primary/30' :
-                'bg-warning/10 text-warning border-warning/30'
-              }`}
-            >
-              {detectedBank?.confidence === 'high' && <CheckCircle className="h-3 w-3" />}
-              {detectedBankLabel}
-            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="secondary" 
+                    className={`gap-1 cursor-help ${
+                      detectedBank?.confidence === 'high' ? 'bg-success/10 text-success border-success/30' :
+                      detectedBank?.confidence === 'medium' ? 'bg-primary/10 text-primary border-primary/30' :
+                      'bg-warning/10 text-warning border-warning/30'
+                    }`}
+                  >
+                    {detectedBank?.confidence === 'high' && <CheckCircle className="h-3 w-3" />}
+                    {detectedBankLabel}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="font-medium text-xs">
+                      Detected with {detectedBank?.confidence} confidence
+                    </p>
+                    {detectedBank?.matchedPatterns && detectedBank.matchedPatterns.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        <p className="mb-1">Matched patterns:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {detectedBank.matchedPatterns.slice(0, 5).map((pattern, idx) => (
+                            <li key={idx} className="truncate">{pattern}</li>
+                          ))}
+                          {detectedBank.matchedPatterns.length > 5 && (
+                            <li className="text-muted-foreground/70">
+                              +{detectedBank.matchedPatterns.length - 5} more
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <Badge variant="outline" className="gap-2">
             <FileText className="h-3 w-3" />

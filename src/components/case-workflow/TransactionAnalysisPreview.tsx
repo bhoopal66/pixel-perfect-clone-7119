@@ -25,6 +25,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '../ui/collapsible';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 interface TransactionAnalysisPreviewProps {
   data: ParsedStatementData;
@@ -119,19 +125,47 @@ export const TransactionAnalysisPreview: React.FC<TransactionAnalysisPreviewProp
         </div>
         <div className="flex items-center gap-2">
           {detectedBankLabel && (
-            <Badge 
-              variant="secondary" 
-              className={cn(
-                "gap-1.5",
-                detectedBank?.confidence === 'high' ? 'bg-success/20 text-success border-success/40' :
-                detectedBank?.confidence === 'medium' ? 'bg-primary/20 text-primary border-primary/40' :
-                'bg-warning/20 text-warning border-warning/40'
-              )}
-            >
-              <Building2 className="h-3 w-3" />
-              {detectedBankLabel}
-              {detectedBank?.confidence === 'high' && <CheckCircle className="h-3 w-3" />}
-            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="secondary" 
+                    className={cn(
+                      "gap-1.5 cursor-help",
+                      detectedBank?.confidence === 'high' ? 'bg-success/20 text-success border-success/40' :
+                      detectedBank?.confidence === 'medium' ? 'bg-primary/20 text-primary border-primary/40' :
+                      'bg-warning/20 text-warning border-warning/40'
+                    )}
+                  >
+                    <Building2 className="h-3 w-3" />
+                    {detectedBankLabel}
+                    {detectedBank?.confidence === 'high' && <CheckCircle className="h-3 w-3" />}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="font-medium text-xs">
+                      Detected with {detectedBank?.confidence} confidence
+                    </p>
+                    {detectedBank?.matchedPatterns && detectedBank.matchedPatterns.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        <p className="mb-1">Matched patterns:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {detectedBank.matchedPatterns.slice(0, 5).map((pattern, idx) => (
+                            <li key={idx} className="truncate">{pattern}</li>
+                          ))}
+                          {detectedBank.matchedPatterns.length > 5 && (
+                            <li className="text-muted-foreground/70">
+                              +{detectedBank.matchedPatterns.length - 5} more
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <Badge variant="outline" className="text-success border-success">
             Auto-Parsed
