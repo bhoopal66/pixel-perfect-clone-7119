@@ -96,6 +96,17 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [productTypeFilter, setProductTypeFilter] = useState<string>('all');
 
+  const hasActiveFilters = searchTerm || caseNumberFilter || dateFrom || dateTo || statusFilter !== 'all' || productTypeFilter !== 'all';
+
+  const resetAllFilters = () => {
+    setSearchTerm('');
+    setCaseNumberFilter('');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setStatusFilter('all');
+    setProductTypeFilter('all');
+  };
+
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
   const loadCases = async () => {
@@ -393,6 +404,17 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
                   ))}
                 </SelectContent>
               </Select>
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetAllFilters}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="mr-1 h-3 w-3" />
+                  Reset
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
