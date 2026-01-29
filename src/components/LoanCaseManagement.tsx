@@ -127,7 +127,9 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     approved: cases.filter(c => c.status === 'approved').length,
     disbursed: cases.filter(c => c.status === 'disbursed').length,
     rejected: cases.filter(c => c.status === 'rejected').length,
-    totalAmount: cases.filter(c => c.status === 'disbursed').reduce((sum, c) => sum + c.loanAmount, 0)
+    totalAmount: cases.filter(c => c.status === 'disbursed').reduce((sum, c) => sum + c.loanAmount, 0),
+    cashLoans: cases.filter(c => c.productType === 'cash').length,
+    posLoans: cases.filter(c => c.productType === 'pos').length
   }), [cases]);
 
   const handleAddCase = (newCase: LoanCase) => {
@@ -180,7 +182,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -225,7 +227,24 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
             </div>
           </CardContent>
         </Card>
-        <Card className="col-span-2 md:col-span-1">
+        <Card>
+          <CardContent className="pt-4">
+            <div>
+              <p className="text-xs text-muted-foreground">By Product Type</p>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">CASH</Badge>
+                  <span className="text-lg font-bold">{stats.cashLoans}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">POS</Badge>
+                  <span className="text-lg font-bold">{stats.posLoans}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
           <CardContent className="pt-4">
             <div>
               <p className="text-xs text-muted-foreground">Total Disbursed</p>
