@@ -61,7 +61,7 @@ interface CalculatedValues {
   abcd_fee_amount: number;
   total_with_abcd: number;
   // Eligibility method
-  eligibility_method: 'Standard' | 'Alternative';
+  eligibility_method: 'Standard' | 'Reverse';
 }
 
 export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
@@ -183,7 +183,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     let eligibleMultiplier: number;
     let eligibilityStatus: EligibilityStatus;
     let varianceBucket: VarianceBucket;
-    let eligibilityMethod: 'Standard' | 'Alternative' = 'Standard';
+    let eligibilityMethod: 'Standard' | 'Reverse' = 'Standard';
 
     if (variancePercent <= 10) {
       eligibleMultiplier = 8;
@@ -205,11 +205,11 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     let abcdFeeAmount = 0;
     let totalWithAbcd = 0;
 
-    // Check for Alternative Eligibility (RAK POS only, variance > 25%)
-    if (productType === 'rak_pos' && variancePercent > 25 && adjustedTurnover > 0) {
-      // Alternative method: Loan = Adjusted Turnover, ABCD = 1% of Adjusted
-      eligibilityMethod = 'Alternative';
-      eligibilityStatus = 'Eligible (Alternative)';
+    // Check for Reverse Eligibility (RAK POS only, variance > 25% OR multiplier = 0)
+    if (productType === 'rak_pos' && eligibleMultiplier <= 0 && adjustedTurnover > 0) {
+      // REVERSE method: Loan = Adjusted Turnover, ABCT = 1% of Adjusted
+      eligibilityMethod = 'Reverse';
+      eligibilityStatus = 'Eligible (Reverse)';
       eligibleLoanAmount = adjustedTurnover;
       abcdFeeRate = 0.01;
       abcdFeeAmount = Math.round(adjustedTurnover * 0.01 * 100) / 100;
@@ -287,7 +287,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         return <CheckCircle className="h-5 w-5 text-success" />;
       case 'Eligible (Reduced)':
         return <AlertCircle className="h-5 w-5 text-warning" />;
-      case 'Eligible (Alternative)':
+      case 'Eligible (Reverse)':
         return <RefreshCw className="h-5 w-5 text-orange-500" />;
       case 'Not Eligible':
         return <XCircle className="h-5 w-5 text-destructive" />;
@@ -303,7 +303,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         return 'bg-success/20 text-success border-success/30';
       case 'warning':
         return 'bg-warning/20 text-warning border-warning/30';
-      case 'alternative':
+      case 'reverse':
         return 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-200 dark:border-orange-700';
       case 'destructive':
         return 'bg-destructive/20 text-destructive border-destructive/30';
@@ -509,7 +509,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
           "border-2 transition-colors",
           calculated?.eligibility_status === 'Eligible' && "border-success/50",
           calculated?.eligibility_status === 'Eligible (Reduced)' && "border-warning/50",
-          calculated?.eligibility_status === 'Eligible (Alternative)' && "border-orange-500/50",
+          calculated?.eligibility_status === 'Eligible (Reverse)' && "border-orange-500/50",
           calculated?.eligibility_status === 'Not Eligible' && "border-destructive/50"
         )}>
           <CardHeader>
@@ -527,24 +527,24 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
           <CardContent className="space-y-4">
             {calculated && (
               <>
-                {/* Alternative Method Alert - RAK POS Only */}
-                {isRAKPOS && calculated.eligibility_method === 'Alternative' && (
+                {/* Reverse Method Alert - RAK POS Only */}
+                {isRAKPOS && calculated.eligibility_method === 'Reverse' && (
                   <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/30">
                     <RefreshCw className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="text-orange-800 dark:text-orange-200">
                       <div className="space-y-2">
-                        <p className="font-semibold">🔄 Alternative Eligibility Method</p>
+                        <p className="font-semibold">🔄 Reverse Eligibility Method</p>
                         <p className="text-sm">
-                          Normal eligibility failed (variance {calculated.variance_percent.toFixed(2)}% &gt; 25%). 
-                          Using <strong>ABCT reversal calculation</strong>:
+                          Normal eligibility failed (variance {calculated.variance_percent.toFixed(2)}% &gt; 25%, multiplier = 0). 
+                          Using <strong>Reverse ABCT calculation</strong>:
                         </p>
                         <div className="text-xs space-y-1 p-2 bg-orange-100 dark:bg-orange-900/50 rounded font-mono">
-                          <p>Loan Amount = Adjusted Turnover = {formatCurrency(calculated.adjusted_turnover)}</p>
-                          <p>ABCT Fee = Adjusted × 1% = {formatCurrency(calculated.abcd_fee_amount)}</p>
-                          <p className="font-bold">Total = {formatCurrency(calculated.total_with_abcd)}</p>
+                          <p>ABCT = 1% × Adjusted Turnover = {formatCurrency(calculated.abcd_fee_amount)}</p>
+                          <p>Eligible Loan = ABCT ÷ 1% = Adjusted Turnover = {formatCurrency(calculated.adjusted_turnover)}</p>
+                          <p className="font-bold">Total with ABCT = {formatCurrency(calculated.total_with_abcd)}</p>
                         </div>
-                        <p className="text-xs italic">
-                          Since ABCT = 1% of Adjusted Turnover AND ABCT = 1% of Loan, therefore Loan = Adjusted Turnover
+                        <p className="text-xs italic text-orange-700 dark:text-orange-300 font-medium">
+                          👉 Eligibility derived using reverse method: Loan = Adjusted Turnover (ABCT @1%)
                         </p>
                       </div>
                     </AlertDescription>
@@ -678,14 +678,14 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   "p-4 rounded-lg text-center mt-4",
                   calculated.eligibility_status === 'Eligible' && "bg-success/10 border border-success/30",
                   calculated.eligibility_status === 'Eligible (Reduced)' && "bg-warning/10 border border-warning/30",
-                  calculated.eligibility_status === 'Eligible (Alternative)' && "bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700",
+                  calculated.eligibility_status === 'Eligible (Reverse)' && "bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700",
                   calculated.eligibility_status === 'Not Eligible' && "bg-destructive/10 border border-destructive/30",
                   calculated.eligibility_status === 'Insufficient Data' && "bg-muted"
                 )}>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
                     Eligible Loan Amount
-                    {calculated.eligibility_method === 'Alternative' && (
-                      <span className="ml-2 text-orange-600">(Alternative)</span>
+                    {calculated.eligibility_method === 'Reverse' && (
+                      <span className="ml-2 text-orange-600">(Reverse Method)</span>
                     )}
                   </p>
                   <p className="text-2xl font-bold font-mono">
@@ -741,8 +741,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   {isRAKPOS && calculated.eligibility_method === 'Standard' && (
                     <p>Total = Eligible Amount + (Eligible Amount × 1% ABCT Fee)</p>
                   )}
-                  {isRAKPOS && calculated.eligibility_method === 'Alternative' && (
-                    <p className="text-orange-600 font-semibold">Alternative: Loan = Adjusted Turnover, ABCT = Adjusted × 1%</p>
+                  {isRAKPOS && calculated.eligibility_method === 'Reverse' && (
+                    <p className="text-orange-600 font-semibold">Reverse Method: Loan = Adjusted Turnover (ABCT @1%)</p>
                   )}
                 </div>
               </>

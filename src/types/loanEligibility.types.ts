@@ -1,9 +1,9 @@
 // Loan Eligibility Types
 
-export type EligibilityStatus = 'Eligible' | 'Eligible (Reduced)' | 'Eligible (Alternative)' | 'Not Eligible' | 'Insufficient Data';
+export type EligibilityStatus = 'Eligible' | 'Eligible (Reduced)' | 'Eligible (Reverse)' | 'Not Eligible' | 'Insufficient Data';
 export type VarianceBucket = '<=10%' | '11%-25%' | '>25%' | 'N/A';
 export type ProductType = 'standard' | 'rak_pos' | 'wio_pos';
-export type EligibilityMethod = 'Standard' | 'Alternative';
+export type EligibilityMethod = 'Standard' | 'Reverse';
 
 export interface LoanEligibility {
   id: string;
@@ -39,7 +39,7 @@ export interface LoanEligibility {
   abcd_fee_amount: number;
   total_with_abcd: number;
   
-  // Eligibility method (Standard or Alternative for RAK POS)
+  // Eligibility method (Standard or Reverse for RAK POS)
   eligibility_method: EligibilityMethod;
   
   // Metadata
@@ -87,14 +87,14 @@ export const POS_CAP_RATES: Record<ProductType, number> = {
 };
 
 // Helper to get RAG color for status
-export function getStatusColor(status: EligibilityStatus): 'success' | 'warning' | 'destructive' | 'muted' | 'alternative' {
+export function getStatusColor(status: EligibilityStatus): 'success' | 'warning' | 'destructive' | 'muted' | 'reverse' {
   switch (status) {
     case 'Eligible':
       return 'success';
     case 'Eligible (Reduced)':
       return 'warning';
-    case 'Eligible (Alternative)':
-      return 'alternative';
+    case 'Eligible (Reverse)':
+      return 'reverse';
     case 'Not Eligible':
       return 'destructive';
     case 'Insufficient Data':

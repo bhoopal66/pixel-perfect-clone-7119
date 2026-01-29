@@ -413,9 +413,9 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {record.eligibility_method === 'Alternative' ? (
+                            {record.eligibility_method === 'Reverse' ? (
                               <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200 text-xs">
-                                Alternative
+                                Reverse
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="text-xs">
