@@ -13,7 +13,10 @@ import {
   ArrowRight,
   Eye,
   Trash2,
-  Calculator
+  Calculator,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -42,12 +45,48 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
   const [productFilter, setProductFilter] = useState<ProductType | 'all'>('all');
   const [showNewCaseDialog, setShowNewCaseDialog] = useState(false);
   const [selectedCase, setSelectedCase] = useState<LoanCase | null>(null);
+  
+  // Sorting state
+  type SortField = 'date' | 'amount' | 'status' | null;
+  type SortDirection = 'asc' | 'desc';
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
 
-  // Filter cases
+  // Status order for sorting
+  const statusOrder: Record<LoanStatus, number> = {
+    draft: 0,
+    submitted: 1,
+    under_review: 2,
+    approved: 3,
+    disbursed: 4,
+    rejected: 5
+  };
+
+  // Handle sort toggle
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  // Sort icon component
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-3 w-3 ml-1" />
+      : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
+  // Filter and sort cases
   const filteredCases = useMemo(() => {
-    return cases.filter(c => {
+    let result = cases.filter(c => {
       const matchesSearch = 
         c.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.applicantName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -56,7 +95,30 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       const matchesProduct = productFilter === 'all' || c.productType === productFilter;
       return matchesSearch && matchesStatus && matchesLender && matchesProduct;
     });
-  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter]);
+
+    // Apply sorting
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        let comparison = 0;
+        
+        switch (sortField) {
+          case 'date':
+            comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            break;
+          case 'amount':
+            comparison = a.loanAmount - b.loanAmount;
+            break;
+          case 'status':
+            comparison = statusOrder[a.status] - statusOrder[b.status];
+            break;
+        }
+        
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter, sortField, sortDirection]);
 
   // Statistics
   const stats = useMemo(() => ({
@@ -251,10 +313,34 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                         <TableHead>Applicant</TableHead>
                         <TableHead>Lender</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead 
+                          className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                          onClick={() => handleSort('amount')}
+                        >
+                          <div className="flex items-center justify-end">
+                            Amount
+                            <SortIcon field="amount" />
+                          </div>
+                        </TableHead>
                         <TableHead className="text-right">EMI</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 select-none"
+                          onClick={() => handleSort('status')}
+                        >
+                          <div className="flex items-center">
+                            Status
+                            <SortIcon field="status" />
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 select-none"
+                          onClick={() => handleSort('date')}
+                        >
+                          <div className="flex items-center">
+                            Date
+                            <SortIcon field="date" />
+                          </div>
+                        </TableHead>
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
