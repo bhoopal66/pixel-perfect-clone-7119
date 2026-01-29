@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { CurrencyService } from '@/services/currencyService';
 import { LoanEligibilityService } from '@/services/loanEligibilityService';
 import { LoanEligibilityForm } from './LoanEligibilityForm';
+import { useAuth } from '@/hooks/useAuth';
 import type { 
   LoanEligibility, 
   LoanEligibilityInput, 
@@ -43,6 +44,7 @@ interface LoanEligibilityDashboardProps {
 export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> = ({ 
   currency = 'AED' 
 }) => {
+  const { isAdmin } = useAuth();
   const [records, setRecords] = useState<LoanEligibility[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -439,15 +441,17 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(record.id)}
-                                className="text-destructive hover:text-destructive"
-                                title="Delete record"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(record.id)}
+                                  className="text-destructive hover:text-destructive"
+                                  title="Delete record"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
