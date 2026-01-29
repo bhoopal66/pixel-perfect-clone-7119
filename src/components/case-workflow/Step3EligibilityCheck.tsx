@@ -56,9 +56,14 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
-  // EMI Calculator state
-  const [interestRate, setInterestRate] = useState('12');
-  const [tenure, setTenure] = useState('12');
+  // EMI Calculator state - initialize from case data
+  const [interestRate, setInterestRate] = useState(
+    caseData.interest_rate?.toString() || '12'
+  );
+  const [tenure, setTenure] = useState(
+    caseData.tenure_months?.toString() || '12'
+  );
+  const [emiHasChanges, setEmiHasChanges] = useState(false);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
   const isPOS = isPOSProduct(caseData.product_type);
@@ -92,11 +97,42 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
     setHasChanges(posMonthlyTurnover !== (caseData.pos_monthly_turnover?.toString() || ''));
   }, [posMonthlyTurnover, caseData.pos_monthly_turnover]);
 
+  // Track EMI changes
+  useEffect(() => {
+    const currentRate = parseFloat(interestRate) || 12;
+    const currentTenure = parseInt(tenure) || 12;
+    const savedRate = caseData.interest_rate || 12;
+    const savedTenure = caseData.tenure_months || 12;
+    
+    setEmiHasChanges(currentRate !== savedRate || currentTenure !== savedTenure);
+  }, [interestRate, tenure, caseData.interest_rate, caseData.tenure_months]);
+
   const handleUpdatePOS = async () => {
+    const emiCalc = calculateEMI();
     await onUpdatePOS({
-      pos_monthly_turnover: parseFloat(posMonthlyTurnover) || 0
+      pos_monthly_turnover: parseFloat(posMonthlyTurnover) || 0,
+      interest_rate: parseFloat(interestRate) || 12,
+      tenure_months: parseInt(tenure) || 12,
+      monthly_emi: emiCalc.emi,
+      total_interest: emiCalc.totalInterest,
+      total_payable: emiCalc.totalPayable
     });
     setHasChanges(false);
+    setEmiHasChanges(false);
+  };
+
+  const handleSaveEMI = async () => {
+    const emiCalc = calculateEMI();
+    await onUpdatePOS({
+      pos_monthly_turnover: parseFloat(posMonthlyTurnover) || 0,
+      interest_rate: parseFloat(interestRate) || 12,
+      tenure_months: parseInt(tenure) || 12,
+      monthly_emi: emiCalc.emi,
+      total_interest: emiCalc.totalInterest,
+      total_payable: emiCalc.totalPayable
+    });
+    setEmiHasChanges(false);
+    toast.success('EMI details saved');
   };
 
   const handleExportExcel = async () => {
@@ -357,10 +393,22 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
           {/* EMI Calculator */}
           {caseData.eligible_loan_amount > 0 && (
             <div className="p-4 bg-muted/30 rounded-lg border">
-              <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-                <Calculator className="h-4 w-4" />
-                EMI Calculator
-              </h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  EMI Calculator
+                </h4>
+                {emiHasChanges && (
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveEMI}
+                    disabled={isLoading}
+                  >
+                    <RefreshCw className={cn("h-3 w-3 mr-1", isLoading && "animate-spin")} />
+                    Save EMI
+                  </Button>
+                )}
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
