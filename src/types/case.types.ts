@@ -93,6 +93,23 @@ export const BANK_OPTIONS = [
   'CBD'
 ] as const;
 
+// Default interest rates per bank (annual %)
+export const BANK_INTEREST_RATES: Record<string, number> = {
+  'RAKBANK': 12,
+  'WIO': 10,
+  'Mashreq': 11.5,
+  'Emirates NBD': 11,
+  'ADCB': 10.5,
+  'FAB': 10.5,
+  'DIB': 11,
+  'CBD': 12
+};
+
+// Get default interest rate for a bank
+export function getDefaultInterestRate(bankName: string): number {
+  return BANK_INTEREST_RATES[bankName] ?? 12;
+}
+
 // Product type labels
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   standard: 'Standard Loan',

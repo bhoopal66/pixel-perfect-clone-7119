@@ -30,7 +30,9 @@ import { exportSingleCaseToExcel, exportSingleCaseToPDF } from '@/services/caseE
 import { 
   isPOSProduct, 
   PRODUCT_TYPE_LABELS, 
-  getEligibilityStatusColor 
+  getEligibilityStatusColor,
+  BANK_INTEREST_RATES,
+  getDefaultInterestRate
 } from '@/types/case.types';
 import type { Case, CaseEligibilityInput, EligibilityStatus } from '@/types/case.types';
 
@@ -56,9 +58,12 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
-  // EMI Calculator state - initialize from case data
+  // EMI Calculator state - initialize from case data or bank default
+  const defaultBankRate = getDefaultInterestRate(caseData.bank_name);
   const [interestRate, setInterestRate] = useState(
-    caseData.interest_rate?.toString() || '12'
+    caseData.interest_rate && caseData.interest_rate !== 12 
+      ? caseData.interest_rate.toString() 
+      : defaultBankRate.toString()
   );
   const [tenure, setTenure] = useState(
     caseData.tenure_months?.toString() || '12'
@@ -412,17 +417,34 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
-                  <Label htmlFor="interest_rate">Annual Interest Rate (%)</Label>
-                  <Input
-                    id="interest_rate"
-                    type="number"
-                    placeholder="12"
-                    value={interestRate}
-                    onChange={(e) => setInterestRate(e.target.value)}
-                    min="0"
-                    max="50"
-                    step="0.1"
-                  />
+                  <Label htmlFor="interest_rate">
+                    Annual Interest Rate (%)
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      {caseData.bank_name} default: {defaultBankRate}%
+                    </span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="interest_rate"
+                      type="number"
+                      placeholder="12"
+                      value={interestRate}
+                      onChange={(e) => setInterestRate(e.target.value)}
+                      min="0"
+                      max="50"
+                      step="0.1"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInterestRate(defaultBankRate.toString())}
+                      className="text-xs whitespace-nowrap"
+                    >
+                      Reset
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tenure">Tenure (Months)</Label>
