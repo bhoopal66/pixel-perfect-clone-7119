@@ -7,6 +7,7 @@ import { ResultsDashboard } from '../components/ResultsDashboard';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { LoanEligibilityDashboard } from '../components/LoanEligibilityDashboard';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { WelcomeModal } from '../components/WelcomeModal';
 import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
 import { CurrencyService } from '../services/currencyService';
@@ -177,6 +178,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Welcome Modal for First-Time Users */}
+      <WelcomeModal onSelectModule={(module) => setActiveTab(module)} />
+
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
