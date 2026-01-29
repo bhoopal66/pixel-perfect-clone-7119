@@ -16,7 +16,10 @@ import {
   Calculator,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Download,
+  FileSpreadsheet,
+  LogOut
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -25,6 +28,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { LoanCase, LoanStatus, LenderType, ProductType } from '../types/loanCase.types';
 import { LENDERS } from '../types/loanCase.types';
@@ -32,12 +36,16 @@ import { LenderComparison } from './LenderComparison';
 import { NewLoanCaseDialog } from './NewLoanCaseDialog';
 import { LoanCaseDetail } from './LoanCaseDetail';
 import { CurrencyService } from '../services/currencyService';
+import { useAuth } from '@/hooks/useAuth';
+import { exportToCSV, exportToExcel } from '@/services/exportService';
+import { toast } from 'sonner';
 
 interface LoanCaseManagementProps {
   currency?: 'AED' | 'USD';
 }
 
 export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency = 'AED' }) => {
+  const { isAdmin, signOut, user } = useAuth();
   const [cases, setCases] = useState<LoanCase[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LoanStatus | 'all'>('all');
@@ -45,6 +53,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
   const [productFilter, setProductFilter] = useState<ProductType | 'all'>('all');
   const [showNewCaseDialog, setShowNewCaseDialog] = useState(false);
   const [selectedCase, setSelectedCase] = useState<LoanCase | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Sorting state
   type SortField = 'date' | 'amount' | 'status' | null;
@@ -53,6 +62,39 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
+
+  // Export handlers
+  const handleExportCSV = () => {
+    if (cases.length === 0) {
+      toast.error('No cases to export');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      exportToCSV(cases, `loan_cases_${new Date().toISOString().split('T')[0]}.csv`);
+      toast.success('CSV exported successfully');
+    } catch (err) {
+      toast.error('Failed to export CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (cases.length === 0) {
+      toast.error('No cases to export');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportToExcel(cases, `loan_cases_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Excel file exported successfully');
+    } catch (err) {
+      toast.error('Failed to export Excel file');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Status order for sorting
   const statusOrder: Record<LoanStatus, number> = {
@@ -173,12 +215,41 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Cash Loans Case Management</h1>
-          <p className="text-sm text-muted-foreground">Track and manage loan applications</p>
+          <p className="text-sm text-muted-foreground">
+            Track and manage loan applications
+            {isAdmin && <Badge variant="secondary" className="ml-2 text-[10px]">ADMIN</Badge>}
+          </p>
         </div>
-        <Button onClick={() => setShowNewCaseDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Loan Case
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Admin Export Button */}
+          {isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2" disabled={isExporting || cases.length === 0}>
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button onClick={() => setShowNewCaseDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Loan Case
+          </Button>
+          <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
