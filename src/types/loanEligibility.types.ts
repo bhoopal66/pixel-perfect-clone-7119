@@ -34,7 +34,7 @@ export interface LoanEligibility {
   pos_eligible_turnover: number;
   turnover_basis: number;
   
-  // ABCD Fee fields (RAK POS only)
+  // ABCT Fee fields (RAK POS only)
   abcd_fee_rate: number;
   abcd_fee_amount: number;
   total_with_abcd: number;

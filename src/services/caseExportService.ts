@@ -25,7 +25,7 @@ export function exportCasesToCSV(cases: Case[], filename: string = 'cases.csv'):
     'Turnover Basis',
     'Eligibility Method',
     'Eligible Loan Amount',
-    'ABCD Fee (1%)',
+    'ABCT Fee (1%)',
     'Total Payable',
     'Eligibility Status',
     'Created At',
@@ -114,7 +114,7 @@ export async function exportCasesToExcel(cases: Case[], filename: string = 'case
   }, {} as Record<string, number>);
 
   const totalEligibleAmount = cases.reduce((sum, c) => sum + c.eligible_loan_amount, 0);
-  const totalABCDFees = cases.reduce((sum, c) => sum + c.abcd_fee_amount, 0);
+  const totalABCTFees = cases.reduce((sum, c) => sum + c.abcd_fee_amount, 0);
 
   summarySheet.addRows([
     { metric: 'Total Cases', value: cases.length },
@@ -130,8 +130,8 @@ export async function exportCasesToExcel(cases: Case[], filename: string = 'case
     { metric: '', value: '' },
     { metric: '--- Totals ---', value: '' },
     { metric: 'Total Eligible Loan Amount', value: totalEligibleAmount },
-    { metric: 'Total ABCD Fees (1%)', value: totalABCDFees },
-    { metric: 'Total Payable', value: totalEligibleAmount + totalABCDFees },
+    { metric: 'Total ABCT Fees (1%)', value: totalABCTFees },
+    { metric: 'Total Payable', value: totalEligibleAmount + totalABCTFees },
   ]);
 
   // Style summary header
@@ -167,7 +167,7 @@ export async function exportCasesToExcel(cases: Case[], filename: string = 'case
     { header: 'Turnover Basis', key: 'turnover_basis', width: 15 },
     { header: 'Method', key: 'method', width: 18 },
     { header: 'Eligible Loan', key: 'eligible_loan', width: 16 },
-    { header: 'ABCD Fee (1%)', key: 'abcd_fee', width: 14 },
+    { header: 'ABCT Fee (1%)', key: 'abcd_fee', width: 14 },
     { header: 'Total Payable', key: 'total_payable', width: 15 },
     { header: 'Eligibility Status', key: 'eligibility_status', width: 18 },
     { header: 'Created', key: 'created_at', width: 12 },
