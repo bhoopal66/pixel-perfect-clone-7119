@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,14 +10,15 @@ import {
   CreditCard,
   PieChart,
   RefreshCw,
-  Globe
+  Globe,
+  Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import type { AnalysisReport } from '../types/transaction.types';
 import { TransactionTable } from './TransactionTable';
 import { CurrencyService, type CurrencyCode } from '../services/currencyService';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 
 interface ResultsDashboardProps {
   report: AnalysisReport;
@@ -91,6 +92,35 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     'hsl(280 70% 60%)',
     'hsl(30 80% 55%)'
   ];
+
+  // Prepare daily closing balance chart data - sample every nth day for better visualization
+  const dailyClosingChartData = useMemo(() => {
+    const dailyBalances = report.dailyBalances;
+    if (!dailyBalances || dailyBalances.length === 0) return [];
+    
+    // For large datasets, sample to show ~60 points for readability
+    const step = Math.max(1, Math.floor(dailyBalances.length / 60));
+    
+    return dailyBalances
+      .filter((_, index) => index % step === 0 || index === dailyBalances.length - 1)
+      .map(day => ({
+        date: new Date(day.date).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        fullDate: day.date,
+        closingBalance: day.closingBalance,
+        hasTransactions: day.hasTransactions,
+        month: day.month
+      }));
+  }, [report.dailyBalances]);
+
+  // Calculate average daily closing balance
+  const averageDailyClosing = useMemo(() => {
+    if (!report.dailyBalances || report.dailyBalances.length === 0) return 0;
+    const sum = report.dailyBalances.reduce((acc, day) => acc + day.closingBalance, 0);
+    return sum / report.dailyBalances.length;
+  }, [report.dailyBalances]);
 
   return (
     <motion.div
@@ -361,6 +391,131 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
         </motion.div>
       </div>
+
+      {/* Daily Closing Balance Trend Chart */}
+      <motion.div variants={itemVariants} className="card-elevated p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-accent/10">
+              <Calendar className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Daily Closing Balance Trend
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {report.dailyBalances?.length || 0} days tracked • End-of-day balances
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Average Daily Closing</p>
+            <p className="text-lg font-bold text-accent">
+              {formatCurrency(averageDailyClosing)}
+            </p>
+          </div>
+        </div>
+        
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={dailyClosingChartData}>
+              <defs>
+                <linearGradient id="colorClosingBalance" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="date" 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={11}
+                tickLine={false}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={11}
+                tickFormatter={(v) => `${(v/1000).toFixed(0)}K`}
+                tickLine={false}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}
+                formatter={(value: number, name: string, props: any) => [
+                  `${formatCurrency(value)}`,
+                  'Closing Balance'
+                ]}
+                labelFormatter={(label, payload) => {
+                  if (payload?.[0]?.payload) {
+                    const data = payload[0].payload;
+                    return (
+                      <div>
+                        <div className="font-medium">{data.fullDate}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {data.hasTransactions ? '✓ Transaction day' : '→ Carried forward'}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return label;
+                }}
+              />
+              <ReferenceLine 
+                y={averageDailyClosing} 
+                stroke="hsl(var(--accent))" 
+                strokeDasharray="5 5"
+                strokeWidth={2}
+                label={{ 
+                  value: 'Avg', 
+                  position: 'right',
+                  fill: 'hsl(var(--accent))',
+                  fontSize: 11
+                }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="closingBalance" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill="url(#colorClosingBalance)" 
+              />
+              <Line
+                type="monotone"
+                dataKey="closingBalance"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ 
+                  r: 6, 
+                  fill: 'hsl(var(--primary))',
+                  stroke: 'hsl(var(--background))',
+                  strokeWidth: 2
+                }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        
+        <div className="mt-4 flex items-center gap-6 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-primary"></div>
+            <span>Daily Closing Balance</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-0.5 bg-accent" style={{ borderStyle: 'dashed' }}></div>
+            <span>Average ({formatCurrency(averageDailyClosing)})</span>
+          </div>
+          <div className="ml-auto text-muted-foreground/70">
+            Closing balance = last transaction balance of each day
+          </div>
+        </div>
+      </motion.div>
 
       {/* Monthly Balances Table */}
       <motion.div variants={itemVariants} className="card-elevated p-6 mb-6">
