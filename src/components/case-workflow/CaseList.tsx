@@ -11,6 +11,12 @@ import {
   TableHeader, 
   TableRow 
 } from '../ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { 
   Plus, 
   Search, 
@@ -19,12 +25,16 @@ import {
   Trash2,
   Building2,
   CreditCard,
-  FileText
+  FileText,
+  Download,
+  FileSpreadsheet,
+  FileDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CurrencyService } from '@/services/currencyService';
 import { CaseService } from '@/services/caseService';
+import { exportCasesToCSV, exportCasesToExcel } from '@/services/caseExportService';
 import { 
   STATUS_CONFIG, 
   PRODUCT_TYPE_LABELS, 
@@ -44,6 +54,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [cases, setCases] = useState<Case[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
@@ -76,6 +87,34 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
     }
   };
 
+  const handleExportCSV = () => {
+    if (cases.length === 0) {
+      toast.error('No cases to export');
+      return;
+    }
+    const filename = `cases_${new Date().toISOString().split('T')[0]}.csv`;
+    exportCasesToCSV(cases, filename);
+    toast.success('CSV exported successfully');
+  };
+
+  const handleExportExcel = async () => {
+    if (cases.length === 0) {
+      toast.error('No cases to export');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const filename = `cases_${new Date().toISOString().split('T')[0]}.xlsx`;
+      await exportCasesToExcel(cases, filename);
+      toast.success('Excel exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const filteredCases = cases.filter(c => 
     c.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.bank_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -99,10 +138,33 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
             Unified workflow for bank statement analysis and loan eligibility
           </p>
         </div>
-        <Button onClick={onNewCase}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Case
-        </Button>
+        <div className="flex gap-2">
+          {/* Export Button - Admin Only */}
+          {isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isExporting || cases.length === 0}>
+                  <Download className={cn("mr-2 h-4 w-4", isExporting && "animate-spin")} />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button onClick={onNewCase}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Case
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
