@@ -17,12 +17,15 @@ import {
   X,
   File,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { usePdfParsing } from '@/hooks/usePdfParsing';
+import { ParsedDataPreview } from './ParsedDataPreview';
 import type { Case, CaseAnalysisInput } from '@/types/case.types';
 
 interface Step2StatementAnalysisProps {
@@ -51,6 +54,9 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [showParsedPreview, setShowParsedPreview] = useState(false);
+
+  const { isParsing, parsedData, parseFile, clearParsedData } = usePdfParsing();
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
@@ -124,13 +130,19 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
       setStatementPdfUrl(urlData.publicUrl);
       setUploadedFileName(file.name);
       toast.success('File uploaded successfully');
+
+      // Parse the PDF to extract data
+      const result = await parseFile(file);
+      if (result && result.transactions.length > 0) {
+        setShowParsedPreview(true);
+      }
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload file');
     } finally {
       setIsUploading(false);
     }
-  }, [caseData.id]);
+  }, [caseData.id, parseFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -157,6 +169,28 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
     }
     setStatementPdfUrl('');
     setUploadedFileName(null);
+    clearParsedData();
+    setShowParsedPreview(false);
+  };
+
+  const handleApplyParsedData = (data: {
+    declaredTurnover: number;
+    periodFrom?: string;
+    periodTo?: string;
+  }) => {
+    setDeclaredTurnover(data.declaredTurnover.toString());
+    if (data.periodFrom) {
+      setPeriodFrom(data.periodFrom);
+    }
+    if (data.periodTo) {
+      setPeriodTo(data.periodTo);
+    }
+    setShowParsedPreview(false);
+    toast.success('Extracted data applied to form');
+  };
+
+  const handleDismissParsedData = () => {
+    setShowParsedPreview(false);
   };
 
   const validate = (): boolean => {
@@ -230,10 +264,12 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
               )}
             >
               <input {...getInputProps()} />
-              {isUploading ? (
+              {isUploading || isParsing ? (
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Uploading...</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isUploading ? 'Uploading...' : 'Parsing statement...'}
+                  </p>
                 </div>
               ) : isDragActive ? (
                 <div className="flex flex-col items-center gap-2">
@@ -252,6 +288,10 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
                     <p className="text-xs text-muted-foreground mt-1">
                       or click to browse (max 10MB)
                     </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-primary mt-1">
+                    <Sparkles className="h-3 w-3" />
+                    <span>Auto-extracts turnover from supported formats</span>
                   </div>
                 </div>
               )}
@@ -287,6 +327,15 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
                 </Button>
               </div>
             </div>
+          )}
+
+          {/* Parsed Data Preview */}
+          {showParsedPreview && parsedData && (
+            <ParsedDataPreview
+              data={parsedData}
+              onApply={handleApplyParsedData}
+              onDismiss={handleDismissParsedData}
+            />
           )}
 
           {/* Manual URL Input (Alternative) */}
