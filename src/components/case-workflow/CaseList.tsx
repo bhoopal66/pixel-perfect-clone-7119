@@ -28,7 +28,8 @@ import {
   FileText,
   Download,
   FileSpreadsheet,
-  FileDown
+  FileDown,
+  Hash
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [cases, setCases] = useState<Case[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [caseNumberFilter, setCaseNumberFilter] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
@@ -115,11 +117,16 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
     }
   };
 
-  const filteredCases = cases.filter(c => 
-    c.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.bank_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.case_number && c.case_number.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredCases = cases.filter(c => {
+    const matchesSearch = 
+      c.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.bank_name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCaseNumber = !caseNumberFilter || 
+      (c.case_number && c.case_number.toLowerCase().includes(caseNumberFilter.toLowerCase()));
+    
+    return matchesSearch && matchesCaseNumber;
+  });
 
   // Stats
   const stats = {
@@ -218,12 +225,21 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle className="text-base">All Cases</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Case number..."
+                  className="pl-9 w-[160px] font-mono text-sm"
+                  value={caseNumberFilter}
+                  onChange={(e) => setCaseNumberFilter(e.target.value)}
+                />
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search cases..."
-                  className="pl-9 w-[200px]"
+                  placeholder="Client or bank..."
+                  className="pl-9 w-[180px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
