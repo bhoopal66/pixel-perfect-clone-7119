@@ -12,8 +12,11 @@ import {
   ChevronUp,
   Sparkles,
   Check,
-  X
+  X,
+  Building2,
+  CheckCircle
 } from 'lucide-react';
+import { SUPPORTED_BANKS } from '@/hooks/usePdfParsing';
 import { CurrencyService } from '@/services/currencyService';
 import { cn } from '@/lib/utils';
 import type { ParsedStatementData } from '@/hooks/usePdfParsing';
@@ -45,6 +48,12 @@ export const TransactionAnalysisPreview: React.FC<TransactionAnalysisPreviewProp
 }) => {
   const [showTransactions, setShowTransactions] = React.useState(false);
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
+
+  // Get detected bank info
+  const detectedBank = data.detectedBank;
+  const detectedBankLabel = detectedBank?.detectedBank 
+    ? SUPPORTED_BANKS.find(b => b.value === detectedBank.detectedBank)?.label || detectedBank.detectedBank
+    : null;
 
   // Calculate cash deposits from transactions (based on description matching)
   const cashDeposits = data.transactions
@@ -108,9 +117,26 @@ export const TransactionAnalysisPreview: React.FC<TransactionAnalysisPreviewProp
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="text-success border-success">
-          Auto-Parsed
-        </Badge>
+        <div className="flex items-center gap-2">
+          {detectedBankLabel && (
+            <Badge 
+              variant="secondary" 
+              className={cn(
+                "gap-1.5",
+                detectedBank?.confidence === 'high' ? 'bg-success/20 text-success border-success/40' :
+                detectedBank?.confidence === 'medium' ? 'bg-primary/20 text-primary border-primary/40' :
+                'bg-warning/20 text-warning border-warning/40'
+              )}
+            >
+              <Building2 className="h-3 w-3" />
+              {detectedBankLabel}
+              {detectedBank?.confidence === 'high' && <CheckCircle className="h-3 w-3" />}
+            </Badge>
+          )}
+          <Badge variant="outline" className="text-success border-success">
+            Auto-Parsed
+          </Badge>
+        </div>
       </div>
 
       {/* Summary Cards */}
