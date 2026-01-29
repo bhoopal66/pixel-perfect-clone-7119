@@ -60,6 +60,8 @@ interface CalculatedValues {
   abcd_fee_rate: number;
   abcd_fee_amount: number;
   total_with_abcd: number;
+  // Eligibility method
+  eligibility_method: 'Standard' | 'Alternative';
 }
 
 export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
@@ -153,7 +155,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         turnover_basis: turnoverBasis,
         abcd_fee_rate: 0,
         abcd_fee_amount: 0,
-        total_with_abcd: 0
+        total_with_abcd: 0,
+        eligibility_method: 'Standard'
       });
       setWarnings(newWarnings);
       return;
@@ -180,6 +183,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     let eligibleMultiplier: number;
     let eligibilityStatus: EligibilityStatus;
     let varianceBucket: VarianceBucket;
+    let eligibilityMethod: 'Standard' | 'Alternative' = 'Standard';
 
     if (variancePercent <= 10) {
       eligibleMultiplier = 8;
@@ -195,18 +199,33 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       varianceBucket = '>25%';
     }
 
-    // Calculate eligible loan amount using turnover basis
-    const eligibleLoanAmount = eligibleMultiplier > 0 ? turnoverBasis * eligibleMultiplier : 0;
-
-    // Calculate ABCD fee (1% for RAK POS only)
+    // Calculate eligible loan amount and ABCD fee
+    let eligibleLoanAmount = 0;
     let abcdFeeRate = 0;
     let abcdFeeAmount = 0;
-    let totalWithAbcd = eligibleLoanAmount;
-    
-    if (productType === 'rak_pos' && eligibleLoanAmount > 0) {
-      abcdFeeRate = 0.01; // 1%
-      abcdFeeAmount = Math.round(eligibleLoanAmount * abcdFeeRate * 100) / 100;
+    let totalWithAbcd = 0;
+
+    // Check for Alternative Eligibility (RAK POS only, variance > 25%)
+    if (productType === 'rak_pos' && variancePercent > 25 && adjustedTurnover > 0) {
+      // Alternative method: Loan = Adjusted Turnover, ABCD = 1% of Adjusted
+      eligibilityMethod = 'Alternative';
+      eligibilityStatus = 'Eligible (Alternative)';
+      eligibleLoanAmount = adjustedTurnover;
+      abcdFeeRate = 0.01;
+      abcdFeeAmount = Math.round(adjustedTurnover * 0.01 * 100) / 100;
       totalWithAbcd = eligibleLoanAmount + abcdFeeAmount;
+    } else if (eligibleMultiplier > 0) {
+      // Standard method
+      eligibleLoanAmount = turnoverBasis * eligibleMultiplier;
+      
+      // ABCD fee for RAK POS only
+      if (productType === 'rak_pos' && eligibleLoanAmount > 0) {
+        abcdFeeRate = 0.01;
+        abcdFeeAmount = Math.round(eligibleLoanAmount * abcdFeeRate * 100) / 100;
+        totalWithAbcd = eligibleLoanAmount + abcdFeeAmount;
+      } else {
+        totalWithAbcd = eligibleLoanAmount;
+      }
     }
 
     setCalculated({
@@ -224,7 +243,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       turnover_basis: turnoverBasis,
       abcd_fee_rate: abcdFeeRate,
       abcd_fee_amount: abcdFeeAmount,
-      total_with_abcd: totalWithAbcd
+      total_with_abcd: totalWithAbcd,
+      eligibility_method: eligibilityMethod
     });
     setWarnings(newWarnings);
   }, [vatTurnover, declaredTurnover, cashAdjustment, sisterConcernAdjustment, posMonthlyTurnover, productType, isPOS]);
@@ -267,6 +287,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         return <CheckCircle className="h-5 w-5 text-success" />;
       case 'Eligible (Reduced)':
         return <AlertCircle className="h-5 w-5 text-warning" />;
+      case 'Eligible (Alternative)':
+        return <RefreshCw className="h-5 w-5 text-orange-500" />;
       case 'Not Eligible':
         return <XCircle className="h-5 w-5 text-destructive" />;
       default:
@@ -281,6 +303,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         return 'bg-success/20 text-success border-success/30';
       case 'warning':
         return 'bg-warning/20 text-warning border-warning/30';
+      case 'alternative':
+        return 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-200 dark:border-orange-700';
       case 'destructive':
         return 'bg-destructive/20 text-destructive border-destructive/30';
       default:
@@ -485,6 +509,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
           "border-2 transition-colors",
           calculated?.eligibility_status === 'Eligible' && "border-success/50",
           calculated?.eligibility_status === 'Eligible (Reduced)' && "border-warning/50",
+          calculated?.eligibility_status === 'Eligible (Alternative)' && "border-orange-500/50",
           calculated?.eligibility_status === 'Not Eligible' && "border-destructive/50"
         )}>
           <CardHeader>
@@ -502,6 +527,31 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
           <CardContent className="space-y-4">
             {calculated && (
               <>
+                {/* Alternative Method Alert - RAK POS Only */}
+                {isRAKPOS && calculated.eligibility_method === 'Alternative' && (
+                  <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/30">
+                    <RefreshCw className="h-4 w-4 text-orange-600" />
+                    <AlertDescription className="text-orange-800 dark:text-orange-200">
+                      <div className="space-y-2">
+                        <p className="font-semibold">🔄 Alternative Eligibility Method</p>
+                        <p className="text-sm">
+                          Normal eligibility failed (variance {calculated.variance_percent.toFixed(2)}% &gt; 25%). 
+                          Using <strong>ABCD reversal calculation</strong>:
+                        </p>
+                        <div className="text-xs space-y-1 p-2 bg-orange-100 dark:bg-orange-900/50 rounded font-mono">
+                          <p>Loan Amount = Adjusted Turnover = {formatCurrency(calculated.adjusted_turnover)}</p>
+                          <p>ABCD Fee = Adjusted × 1% = {formatCurrency(calculated.abcd_fee_amount)}</p>
+                          <p className="font-bold">Total = {formatCurrency(calculated.total_with_abcd)}</p>
+                        </div>
+                        <p className="text-xs italic">
+                          Since ABCD = 1% of Adjusted Turnover AND ABCD = 1% of Loan, therefore Loan = Adjusted Turnover
+                        </p>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Adjusted Turnover */}
                 {/* Adjusted Turnover */}
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Adjusted Turnover</span>
@@ -595,11 +645,15 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   "p-4 rounded-lg text-center mt-4",
                   calculated.eligibility_status === 'Eligible' && "bg-success/10 border border-success/30",
                   calculated.eligibility_status === 'Eligible (Reduced)' && "bg-warning/10 border border-warning/30",
+                  calculated.eligibility_status === 'Eligible (Alternative)' && "bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700",
                   calculated.eligibility_status === 'Not Eligible' && "bg-destructive/10 border border-destructive/30",
                   calculated.eligibility_status === 'Insufficient Data' && "bg-muted"
                 )}>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
                     Eligible Loan Amount
+                    {calculated.eligibility_method === 'Alternative' && (
+                      <span className="ml-2 text-orange-600">(Alternative)</span>
+                    )}
                   </p>
                   <p className="text-2xl font-bold font-mono">
                     {formatCurrency(calculated.eligible_loan_amount)}
@@ -651,8 +705,11 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   )}
                   <p>Variance% = |VAT − Adjusted| / MAX(VAT, Adjusted) × 100</p>
                   <p>Eligible Amount = Turnover Basis × Multiplier</p>
-                  {isRAKPOS && (
+                  {isRAKPOS && calculated.eligibility_method === 'Standard' && (
                     <p>Total = Eligible Amount + (Eligible Amount × 1% ABCD Fee)</p>
+                  )}
+                  {isRAKPOS && calculated.eligibility_method === 'Alternative' && (
+                    <p className="text-orange-600 font-semibold">Alternative: Loan = Adjusted Turnover, ABCD = Adjusted × 1%</p>
                   )}
                 </div>
               </>
