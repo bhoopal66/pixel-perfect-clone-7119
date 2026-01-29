@@ -71,6 +71,52 @@ export const getDefaultConfiguration = (): TurnoverConfiguration => ({
   }
 });
 
+// Extended Monthly Turnover with ranking and percentage analysis
+export interface ExtendedMonthlyTurnover extends MonthlyTurnover {
+  totalDebits: number;
+  totalTurnover: number; // Credits + Debits
+  ranking: number; // 1 = highest
+  activityLevel: 'high' | 'medium' | 'low';
+}
+
+// Turnover Analysis Report (per spec)
+export interface TurnoverAnalysisReport {
+  // Period info
+  companyName?: string;
+  analysisStartDate: string;
+  analysisEndDate: string;
+  periodMonths: number;
+  
+  // Overall metrics
+  totalTurnover: number; // Credits + Debits
+  totalCredits: number;
+  totalDebits: number;
+  averageMonthlyTurnover: number;
+  
+  // Volatility analysis
+  volatility: {
+    standardDeviation: number;
+    volatilityPercent: number; // stdDev / average * 100
+    assessment: 'low' | 'moderate' | 'moderate-high' | 'high';
+  };
+  
+  // Monthly breakdown with rankings
+  monthlyBreakdown: ExtendedMonthlyTurnover[];
+  
+  // Key insights
+  highActivityMonths: ExtendedMonthlyTurnover[]; // >20%
+  mediumActivityMonths: ExtendedMonthlyTurnover[]; // 15-20%
+  lowActivityMonths: ExtendedMonthlyTurnover[]; // <15%
+  
+  // Extremes
+  highestMonth: ExtendedMonthlyTurnover | null;
+  lowestMonth: ExtendedMonthlyTurnover | null;
+  
+  // Distribution
+  percentageRange: { min: number; max: number; spread: number };
+  expectedEvenDistribution: number; // 100 / periodMonths
+}
+
 // VAT Return types
 export interface VATReturn {
   id: string;
