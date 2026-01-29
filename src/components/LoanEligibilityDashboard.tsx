@@ -139,8 +139,10 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
     const reduced = records.filter(r => r.eligibility_status === 'Eligible (Reduced)').length;
     const notEligible = records.filter(r => r.eligibility_status === 'Not Eligible').length;
     const totalAmount = records.reduce((sum, r) => sum + r.eligible_loan_amount, 0);
+    const standard = records.filter(r => r.product_type === 'standard').length;
+    const pos = records.filter(r => isPOSProduct(r.product_type)).length;
     
-    return { eligible, reduced, notEligible, total: records.length, totalAmount };
+    return { eligible, reduced, notEligible, total: records.length, totalAmount, standard, pos };
   }, [records]);
 
   const getStatusBadge = (status: EligibilityStatus) => {
@@ -165,7 +167,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -174,6 +176,28 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <FileText className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Standard</p>
+                <p className="text-2xl font-bold">{stats.standard}</p>
+              </div>
+              <Calculator className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">POS Loans</p>
+                <p className="text-2xl font-bold text-primary">{stats.pos}</p>
+              </div>
+              <CreditCard className="h-8 w-8 text-primary/50" />
             </div>
           </CardContent>
         </Card>
@@ -210,7 +234,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
             </div>
           </CardContent>
         </Card>
-        <Card className="col-span-2 md:col-span-1">
+        <Card>
           <CardContent className="pt-4">
             <div>
               <p className="text-xs text-muted-foreground">Total Eligible Amount</p>
