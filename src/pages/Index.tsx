@@ -51,6 +51,29 @@ const Index = () => {
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+  const handleDemoMode = async () => {
+    setAppState('analyzing');
+    
+    // Reset steps
+    setAnalysisSteps(prev => prev.map(s => ({ ...s, status: 'pending' as const })));
+    
+    try {
+      // Quick demo flow
+      for (let i = 0; i < 6; i++) {
+        updateStepStatus(i, 'processing');
+        await delay(300);
+        updateStepStatus(i, 'completed');
+      }
+      
+      const demoReport = ReportBuilder.generateDemoReport();
+      setReport(demoReport);
+      await delay(200);
+      setAppState('results');
+    } catch (error) {
+      console.error('Demo failed:', error);
+    }
+  };
+
   const handleFilesSelected = async (files: File[]) => {
     setAppState('analyzing');
     
@@ -244,7 +267,7 @@ const Index = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {appState === 'upload' && (
-          <FileUpload onFilesSelected={handleFilesSelected} />
+          <FileUpload onFilesSelected={handleFilesSelected} onDemoMode={handleDemoMode} />
         )}
         
         {appState === 'analyzing' && (
