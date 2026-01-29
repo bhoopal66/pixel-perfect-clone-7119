@@ -1,16 +1,30 @@
 import ExcelJS from 'exceljs';
 import type { AnalysisReport } from '../types/transaction.types';
+import type { TurnoverConfiguration, TurnoverSummary } from '../types/turnover.types';
+import { getDefaultConfiguration } from '../types/turnover.types';
+import { TurnoverCalculator } from './turnoverCalculator';
 import { CurrencyService } from './currencyService';
 
 export class ExcelGenerator {
-  static async generateReport(report: AnalysisReport): Promise<Blob> {
+  static async generateReport(
+    report: AnalysisReport, 
+    turnoverConfig?: TurnoverConfiguration
+  ): Promise<Blob> {
     const workbook = new ExcelJS.Workbook();
     
     workbook.creator = 'Bank Statement Analyzer';
     workbook.created = new Date();
+
+    // Use provided config or default
+    const config = turnoverConfig || getDefaultConfiguration();
+    const turnoverSummary = TurnoverCalculator.calculateTurnoverSummary(
+      report.transactions,
+      config
+    );
     
-    // Create all 7 worksheets
-    this.createSummarySheet(workbook, report);
+    // Create all worksheets including new turnover analysis
+    this.createSummarySheet(workbook, report, turnoverSummary);
+    this.createTurnoverAnalysisSheet(workbook, turnoverSummary, report);
     this.createMonthlyBalanceSheet(workbook, report);
     this.createDailyBalanceSheet(workbook, report);
     this.createTransactionGroupingSheet(workbook, report);
@@ -34,7 +48,11 @@ export class ExcelGenerator {
     row.alignment = { horizontal: 'center', vertical: 'middle' };
   }
 
-  private static createSummarySheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
+  private static createSummarySheet(
+    workbook: ExcelJS.Workbook, 
+    report: AnalysisReport,
+    turnoverSummary: TurnoverSummary
+  ) {
     const sheet = workbook.addWorksheet('Summary Dashboard');
     
     sheet.getColumn(1).width = 30;
@@ -128,6 +146,196 @@ export class ExcelGenerator {
       }
       row++;
     });
+
+    // Business Turnover Section
+    row += 1;
+    const turnoverHeader = sheet.getCell(`A${row}`);
+    turnoverHeader.value = 'Business Turnover (Corrected Methodology)';
+    turnoverHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    turnoverHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF228B22' }
+    };
+    sheet.mergeCells(`A${row}:D${row}`);
+
+    row++;
+    sheet.getCell(`A${row}`).value = 'Formula: Business Turnover = Total Credits - Cash Deposits - Sister Concern';
+    sheet.getCell(`A${row}`).font = { italic: true, color: { argb: 'FFDC143C' } };
+    sheet.mergeCells(`A${row}:D${row}`);
+
+    row++;
+    const turnoverData = [
+      ['Total Credits', turnoverSummary.totalCredits, ''],
+      ['Less: Cash Deposits', turnoverSummary.cashDeposits, 'excluded'],
+      ['Less: Sister Concern Transfers', turnoverSummary.sisterConcern, 'excluded'],
+      ['', '', ''],
+      ['Business Turnover', turnoverSummary.businessTurnover, 'business'],
+      ['Exclusion Rate', `${turnoverSummary.exclusionRate.toFixed(2)}%`, '']
+    ];
+
+    turnoverData.forEach(([label, value, type]) => {
+      if (label) {
+        sheet.getCell(`A${row}`).value = label;
+        sheet.getCell(`A${row}`).font = { bold: true };
+        sheet.getCell(`B${row}`).value = value;
+        
+        if (typeof value === 'number') {
+          sheet.getCell(`B${row}`).numFmt = '#,##0.00';
+        }
+        
+        // Style based on type
+        if (type === 'excluded') {
+          sheet.getCell(`B${row}`).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFC7CE' }
+          };
+          sheet.getCell(`B${row}`).font = { bold: true };
+        } else if (type === 'business') {
+          sheet.getCell(`B${row}`).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFC6EFCE' }
+          };
+          sheet.getCell(`B${row}`).font = { bold: true };
+        }
+      }
+      row++;
+    });
+  }
+
+  private static createTurnoverAnalysisSheet(
+    workbook: ExcelJS.Workbook, 
+    turnoverSummary: TurnoverSummary,
+    report: AnalysisReport
+  ) {
+    const sheet = workbook.addWorksheet('Turnover Analysis');
+    const currency = report.summary.currency || 'AED';
+    
+    // Headers
+    const headers = [
+      'Month', 
+      `Total Credits (${currency})`, 
+      `Cash Deposits (${currency})`, 
+      `Sister Concern (${currency})`, 
+      `Business Turnover (${currency})`, 
+      '% of Total',
+      'Exclusion Rate'
+    ];
+    const headerRow = sheet.addRow(headers);
+    this.styleHeader(headerRow);
+    
+    // Set column widths
+    sheet.getColumn(1).width = 15;
+    sheet.getColumn(2).width = 20;
+    sheet.getColumn(3).width = 20;
+    sheet.getColumn(4).width = 20;
+    sheet.getColumn(5).width = 22;
+    sheet.getColumn(6).width = 12;
+    sheet.getColumn(7).width = 14;
+    
+    // Add data rows
+    turnoverSummary.monthlyData.forEach(month => {
+      const dataRow = sheet.addRow([
+        month.month,
+        month.totalCredits,
+        month.cashDeposits,
+        month.sisterConcern,
+        month.businessTurnover,
+        month.percentageOfTotal / 100,
+        month.exclusionRate / 100
+      ]);
+      
+      // Format excluded amounts with red fill
+      if (month.cashDeposits > 0) {
+        dataRow.getCell(3).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFC7CE' }
+        };
+      }
+      
+      if (month.sisterConcern > 0) {
+        dataRow.getCell(4).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFC7CE' }
+        };
+      }
+      
+      // Format business turnover with green fill
+      dataRow.getCell(5).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFC6EFCE' }
+      };
+      dataRow.getCell(5).font = { bold: true };
+      
+      // Highlight high exclusion rate
+      if (month.exclusionRate > 30) {
+        dataRow.getCell(7).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFC000' }
+        };
+      }
+    });
+    
+    // Format currency columns
+    for (let i = 2; i <= sheet.rowCount; i++) {
+      [2, 3, 4, 5].forEach(col => {
+        sheet.getCell(i, col).numFmt = '#,##0.00';
+      });
+      [6, 7].forEach(col => {
+        sheet.getCell(i, col).numFmt = '0.00%';
+      });
+    }
+    
+    // Add totals row
+    const totals = turnoverSummary.monthlyData.reduce(
+      (acc, month) => ({
+        totalCredits: acc.totalCredits + month.totalCredits,
+        cashDeposits: acc.cashDeposits + month.cashDeposits,
+        sisterConcern: acc.sisterConcern + month.sisterConcern,
+        businessTurnover: acc.businessTurnover + month.businessTurnover
+      }),
+      { totalCredits: 0, cashDeposits: 0, sisterConcern: 0, businessTurnover: 0 }
+    );
+    
+    const totalExclusionRate = totals.totalCredits > 0
+      ? (totals.cashDeposits + totals.sisterConcern) / totals.totalCredits
+      : 0;
+    
+    const totalRow = sheet.addRow([
+      'TOTAL',
+      totals.totalCredits,
+      totals.cashDeposits,
+      totals.sisterConcern,
+      totals.businessTurnover,
+      1,
+      totalExclusionRate
+    ]);
+    
+    totalRow.font = { bold: true };
+    totalRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD9E1F2' }
+    };
+    [2, 3, 4, 5].forEach(col => {
+      totalRow.getCell(col).numFmt = '#,##0.00';
+    });
+    [6, 7].forEach(col => {
+      totalRow.getCell(col).numFmt = '0.00%';
+    });
+    
+    // Add formula note
+    const noteRow = sheet.rowCount + 2;
+    sheet.getCell(`A${noteRow}`).value = 
+      'Note: Business Turnover = Total Credits - Cash Deposits - Sister Concern Transfers';
+    sheet.getCell(`A${noteRow}`).font = { italic: true, color: { argb: 'FFDC143C' } };
+    sheet.mergeCells(`A${noteRow}:G${noteRow}`);
   }
 
   private static createMonthlyBalanceSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
