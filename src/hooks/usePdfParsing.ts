@@ -32,6 +32,9 @@ export const SUPPORTED_BANKS = [
   { value: 'DIB', label: 'Dubai Islamic Bank (DIB)' },
   { value: 'RAKBANK', label: 'RAK Bank' },
   { value: 'WIO', label: 'WIO Bank' },
+  { value: 'HSBC', label: 'HSBC' },
+  { value: 'Citibank', label: 'Citibank' },
+  { value: 'Standard Chartered', label: 'Standard Chartered' },
   { value: 'Other', label: 'Other' },
 ] as const;
 

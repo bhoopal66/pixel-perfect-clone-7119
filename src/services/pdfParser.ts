@@ -88,6 +88,9 @@ export class PDFParser {
     'DIB': 'DIB',
     'RAKBANK': 'RAK Bank',
     'WIO': 'Generic Multi-Column', // WIO uses standard multi-column format
+    'HSBC': 'HSBC',
+    'Citibank': 'Citibank',
+    'Standard Chartered': 'Standard Chartered',
     'Other': 'auto'
   };
 
@@ -103,6 +106,9 @@ export class PDFParser {
       { name: 'CBD', fn: () => this.tryCBDPattern(pdfText) },
       { name: 'DIB', fn: () => this.tryDIBPattern(pdfText) },
       { name: 'RAK Bank', fn: () => this.tryRAKBankPattern(pdfText) },
+      { name: 'HSBC', fn: () => this.tryHSBCPattern(pdfText) },
+      { name: 'Citibank', fn: () => this.tryCitibankPattern(pdfText) },
+      { name: 'Standard Chartered', fn: () => this.tryStandardCharteredPattern(pdfText) },
       { name: 'Generic Multi-Column', fn: () => this.tryGenericMultiColumnPattern(pdfText) },
       { name: 'Generic Single Amount', fn: () => this.tryGenericSingleAmountPattern(pdfText) },
       { name: 'Line-by-Line', fn: () => this.tryLineByLinePattern(pdfText) },
@@ -391,7 +397,177 @@ export class PDFParser {
     return transactions;
   }
 
-  // Pattern 8: Generic Multi-Column - Date Description Amount Amount Balance
+  // Pattern 8: HSBC - typically uses DD MMM YYYY format with detailed descriptions
+  private static tryHSBCPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    let match;
+    
+    // HSBC format: DD MMM YYYY | Description | Paid out | Paid in | Balance
+    const pattern = /(\d{2}\s+[A-Za-z]{3}\s+\d{4})\s+([A-Za-z][^\d]{5,60}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[3] ? parseFloat(match[3].replace(/,/g, '')) : 0;
+      const credit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1].replace(/\s+/g, '-'),
+          description: match[2].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[5].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative HSBC pattern: DD-MMM-YY format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}-[A-Za-z]{3}-\d{2,4})\s+([A-Za-z][^\d]{5,50}?)\s+([\d,]+\.\d{2})\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount1 = parseFloat(match[3].replace(/,/g, ''));
+        const amount2 = match[4] ? parseFloat(match[4].replace(/,/g, '')) : null;
+        const desc = match[2].toLowerCase();
+        const isDebit = desc.includes('payment') || desc.includes('withdrawal') || 
+                        desc.includes('purchase') || desc.includes('bill') ||
+                        desc.includes('transfer to') || desc.includes('debit');
+        
+        if (amount2 !== null) {
+          transactions.push({
+            date: match[1],
+            description: match[2].trim(),
+            debit: isDebit ? amount1 : 0,
+            credit: isDebit ? 0 : amount1,
+            balance: amount2
+          });
+        }
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 9: Citibank - uses various date formats with transaction details
+  private static tryCitibankPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    let match;
+    
+    // Citibank format: Date | Post Date | Description | Amount | Balance
+    const pattern = /(\d{2}\/\d{2}\/\d{2,4})\s+(\d{2}\/\d{2}\/\d{2,4})?\s*([A-Za-z][^\d]{5,55}?)\s+([\d,]+\.\d{2})\s*(CR|DR)?\s*([\d,]+\.\d{2})?/g;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const amount = parseFloat(match[4].replace(/,/g, ''));
+      const indicator = match[5]?.toUpperCase() || '';
+      const balance = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+      const desc = match[3].toLowerCase();
+      const isCredit = indicator === 'CR' || 
+                       desc.includes('credit') || desc.includes('deposit') || 
+                       desc.includes('salary') || desc.includes('received') ||
+                       desc.includes('refund') || desc.includes('cashback');
+      
+      transactions.push({
+        date: match[1],
+        valueDate: match[2],
+        description: match[3].trim(),
+        debit: isCredit ? 0 : amount,
+        credit: isCredit ? amount : 0,
+        balance
+      });
+    }
+    
+    // Alternative Citibank pattern: DD MMM format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}\s+[A-Za-z]{3})\s+([A-Za-z][^\d]{5,50}?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[3].replace(/,/g, ''));
+        const balance = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
+        const desc = match[2].toLowerCase();
+        const isDebit = desc.includes('payment') || desc.includes('purchase') || 
+                        desc.includes('withdrawal') || desc.includes('fee');
+        transactions.push({
+          date: match[1],
+          description: match[2].trim(),
+          debit: isDebit ? amount : 0,
+          credit: isDebit ? 0 : amount,
+          balance
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 10: Standard Chartered - typically uses DD-MMM-YYYY with comprehensive details
+  private static tryStandardCharteredPattern(pdfText: string): ExtractedTransaction[] {
+    const transactions: ExtractedTransaction[] = [];
+    let match;
+    
+    // Standard Chartered format: Date | Value Date | Reference | Description | Withdrawals | Deposits | Balance
+    const pattern = /(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{2}-[A-Za-z]{3}-\d{4})?\s*([A-Z0-9]{6,})?\s*([A-Za-z][^\d]{5,50}?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
+    while ((match = pattern.exec(pdfText)) !== null) {
+      const debit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+      const credit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
+      if (debit > 0 || credit > 0) {
+        transactions.push({
+          date: match[1],
+          valueDate: match[2],
+          reference: match[3],
+          description: match[4].trim(),
+          debit,
+          credit,
+          balance: parseFloat(match[7].replace(/,/g, ''))
+        });
+      }
+    }
+    
+    // Alternative SC pattern: simpler format
+    if (transactions.length === 0) {
+      const altPattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z][^\d]{5,55}?)\s+([\d,]+\.\d{2})\s*([\d,]+\.\d{2})?/g;
+      while ((match = altPattern.exec(pdfText)) !== null) {
+        const amount1 = parseFloat(match[3].replace(/,/g, ''));
+        const amount2 = match[4] ? parseFloat(match[4].replace(/,/g, '')) : null;
+        const desc = match[2].toLowerCase();
+        const isDebit = desc.includes('withdrawal') || desc.includes('payment') || 
+                        desc.includes('transfer to') || desc.includes('purchase') ||
+                        desc.includes('debit') || desc.includes('fee');
+        
+        if (amount2 !== null) {
+          transactions.push({
+            date: match[1],
+            description: match[2].trim(),
+            debit: isDebit ? amount1 : 0,
+            credit: isDebit ? 0 : amount1,
+            balance: amount2
+          });
+        } else {
+          transactions.push({
+            date: match[1],
+            description: match[2].trim(),
+            debit: isDebit ? amount1 : 0,
+            credit: isDebit ? 0 : amount1,
+            balance: 0
+          });
+        }
+      }
+    }
+    
+    // Third SC pattern: DD MMM YYYY with spaces
+    if (transactions.length === 0) {
+      const thirdPattern = /(\d{2}\s+[A-Za-z]{3}\s+\d{4})\s+([A-Za-z][^\d]{5,50}?)\s+([\d,]+\.\d{2})\s*(DR|CR)?\s*([\d,]+\.\d{2})?/g;
+      while ((match = thirdPattern.exec(pdfText)) !== null) {
+        const amount = parseFloat(match[3].replace(/,/g, ''));
+        const indicator = match[4]?.toUpperCase() || '';
+        const balance = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
+        const desc = match[2].toLowerCase();
+        const isCredit = indicator === 'CR' || 
+                         desc.includes('credit') || desc.includes('deposit');
+        transactions.push({
+          date: match[1].replace(/\s+/g, '-'),
+          description: match[2].trim(),
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+          balance
+        });
+      }
+    }
+    return transactions;
+  }
+
+  // Pattern 11: Generic Multi-Column - Date Description Amount Amount Balance
   private static tryGenericMultiColumnPattern(pdfText: string): ExtractedTransaction[] {
     const transactions: ExtractedTransaction[] = [];
     // Flexible date + description + 2-3 amounts pattern
