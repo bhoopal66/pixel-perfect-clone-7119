@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { WelcomeModal } from '../components/WelcomeModal';
+import { FileUploadWithPreview } from '../components/FileUploadWithPreview';
+import { QuickAnalysisResults } from '../components/QuickAnalysisResults';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useAuth } from '../hooks/useAuth';
-
+import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 const Index = () => {
   const navigate = useNavigate();
   const { user, isAdmin, signOut } = useAuth();
@@ -22,9 +24,21 @@ const Index = () => {
     { icon: <Shield className="h-6 w-6" />, title: 'Secure Processing', desc: 'Your data stays private' },
   ];
 
-  const [activeTab, setActiveTab] = useState<'cases' | 'loans'>('cases');
+  const [activeTab, setActiveTab] = useState<'cases' | 'loans' | 'analyze'>('cases');
   const [casesView, setCasesView] = useState<'list' | 'workflow'>('list');
   const [editingCaseId, setEditingCaseId] = useState<string | undefined>();
+  const [quickAnalysisData, setQuickAnalysisData] = useState<ParsedStatementData | null>(null);
+  const [quickAnalysisView, setQuickAnalysisView] = useState<'upload' | 'results'>('upload');
+
+  const handleQuickAnalysisConfirmed = (data: ParsedStatementData) => {
+    setQuickAnalysisData(data);
+    setQuickAnalysisView('results');
+  };
+
+  const handleResetQuickAnalysis = () => {
+    setQuickAnalysisData(null);
+    setQuickAnalysisView('upload');
+  };
 
   // Cases tab inline component
   const CasesTab = () => (
@@ -63,11 +77,15 @@ const Index = () => {
             
             {/* Navigation Tabs */}
             <div className="flex items-center gap-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'cases' | 'loans')}>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'cases' | 'loans' | 'analyze')}>
                 <TabsList className="bg-muted/50">
                   <TabsTrigger value="cases" className="gap-2 text-xs sm:text-sm">
                     <FolderOpen className="h-4 w-4" />
                     <span className="hidden sm:inline">Cases</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="analyze" className="gap-2 text-xs sm:text-sm">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Quick Analyze</span>
                   </TabsTrigger>
                   <TabsTrigger value="loans" className="gap-2 text-xs sm:text-sm">
                     <Briefcase className="h-4 w-4" />
@@ -241,6 +259,30 @@ const Index = () => {
 
         {activeTab === 'cases' && (
           <CasesTab />
+        )}
+
+        {activeTab === 'analyze' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {quickAnalysisView === 'upload' ? (
+              <FileUploadWithPreview
+                onAnalysisConfirmed={handleQuickAnalysisConfirmed}
+              />
+            ) : quickAnalysisData ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Quick Analysis Results</h2>
+                  <Button variant="outline" onClick={handleResetQuickAnalysis}>
+                    Analyze Another Statement
+                  </Button>
+                </div>
+                <QuickAnalysisResults data={quickAnalysisData} />
+              </div>
+            ) : null}
+          </motion.div>
         )}
       </main>
 
