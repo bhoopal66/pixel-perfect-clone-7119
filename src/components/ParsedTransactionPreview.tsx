@@ -30,11 +30,16 @@ export const ParsedTransactionPreview: React.FC<ParsedTransactionPreviewProps> =
   const [selectedBank, setSelectedBank] = React.useState<string>('auto');
   const [showAllTransactions, setShowAllTransactions] = React.useState(false);
   
-  const { transactions, totalCredits, totalDebits, periodFrom, periodTo, accountInfo } = data;
+  const { transactions, totalCredits, totalDebits, periodFrom, periodTo, accountInfo, detectedBank } = data;
   const transactionCount = transactions.length;
   const previewCount = 10;
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, previewCount);
   
+  // Get detected bank label
+  const detectedBankLabel = detectedBank?.detectedBank 
+    ? SUPPORTED_BANKS.find(b => b.value === detectedBank.detectedBank)?.label || detectedBank.detectedBank
+    : null;
+
   // Determine extraction quality
   const getExtractionStatus = () => {
     if (transactionCount === 0) return 'error';
@@ -69,10 +74,25 @@ export const ParsedTransactionPreview: React.FC<ParsedTransactionPreviewProps> =
           <ArrowLeft className="h-4 w-4" />
           Back to Upload
         </Button>
-        <Badge variant="outline" className="gap-2">
-          <FileText className="h-3 w-3" />
-          {fileName}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {detectedBankLabel && (
+            <Badge 
+              variant="secondary" 
+              className={`gap-1 ${
+                detectedBank?.confidence === 'high' ? 'bg-success/10 text-success border-success/30' :
+                detectedBank?.confidence === 'medium' ? 'bg-primary/10 text-primary border-primary/30' :
+                'bg-warning/10 text-warning border-warning/30'
+              }`}
+            >
+              {detectedBank?.confidence === 'high' && <CheckCircle className="h-3 w-3" />}
+              {detectedBankLabel}
+            </Badge>
+          )}
+          <Badge variant="outline" className="gap-2">
+            <FileText className="h-3 w-3" />
+            {fileName}
+          </Badge>
+        </div>
       </div>
 
       {/* Status Card */}
