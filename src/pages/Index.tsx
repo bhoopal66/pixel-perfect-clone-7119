@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator, Users, LogOut } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
@@ -12,10 +13,15 @@ import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
 import { CurrencyService } from '../services/currencyService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
 import type { AnalysisReport, AnalysisStep, AppState } from '../types/transaction.types';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, isAdmin, signOut } = useAuth();
   const [appState, setAppState] = useState<AppState>('upload');
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [ratesStatus, setRatesStatus] = useState<'loading' | 'live' | 'default'>('loading');
@@ -240,6 +246,34 @@ const Index = () => {
               
               {/* Theme Toggle */}
               <ThemeToggle />
+
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full">
+                    <Users className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    {user?.email}
+                  </div>
+                  <DropdownMenuSeparator />
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                        <Shield className="h-4 w-4 mr-2" />
+                        User Management
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
