@@ -39,6 +39,7 @@ interface LoanEligibilityFormProps {
   initialData?: LoanEligibility;
   isLoading?: boolean;
   currency?: 'AED' | 'USD';
+  onCancel?: () => void;
 }
 
 interface CalculatedValues {
@@ -61,7 +62,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
   onSubmit,
   initialData,
   isLoading = false,
-  currency = 'AED'
+  currency = 'AED',
+  onCancel
 }) => {
   const [productType, setProductType] = useState<ProductType>(initialData?.product_type || 'standard');
   const [vatTurnover, setVatTurnover] = useState<string>(initialData?.vat_turnover?.toString() || '');
@@ -75,6 +77,22 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
   const isPOS = isPOSProduct(productType);
+  const isEditing = !!initialData;
+
+  // Reset form when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setProductType(initialData.product_type || 'standard');
+      setVatTurnover(initialData.vat_turnover?.toString() || '');
+      setDeclaredTurnover(initialData.declared_turnover?.toString() || '');
+      setCashAdjustment(initialData.cash_adjustment?.toString() || '');
+      setSisterConcernAdjustment(initialData.sister_concern_adjustment?.toString() || '');
+      setPosMonthlyTurnover(initialData.pos_monthly_turnover?.toString() || '');
+      setNotes(initialData.notes || '');
+    } else {
+      handleReset();
+    }
+  }, [initialData?.id]);
 
   // Calculate values on input change
   useEffect(() => {
@@ -378,11 +396,17 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={isLoading} className="flex-1">
                 <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save Eligibility'}
+                {isLoading ? 'Saving...' : isEditing ? 'Update Eligibility' : 'Save Eligibility'}
               </Button>
-              <Button type="button" variant="outline" onClick={handleReset}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
+              {onCancel ? (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" onClick={handleReset}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
