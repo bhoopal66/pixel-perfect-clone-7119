@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { PDFParser, ExtractedTransaction, ExtractedAccountInfo, ExtractedBalances } from '@/services/pdfParser';
+import { PDFParser, ExtractedTransaction, ExtractedAccountInfo, ExtractedBalances, BankDetectionResult } from '@/services/pdfParser';
 import { toast } from 'sonner';
 
 export interface ParsedStatementData {
@@ -11,6 +11,7 @@ export interface ParsedStatementData {
   netTurnover: number;
   periodFrom?: string;
   periodTo?: string;
+  detectedBank?: BankDetectionResult;
 }
 
 export interface UsePdfParsingResult {
@@ -18,6 +19,7 @@ export interface UsePdfParsingResult {
   parsedData: ParsedStatementData | null;
   parseError: string | null;
   parseFile: (file: File, bankHint?: string) => Promise<ParsedStatementData | null>;
+  detectBankFromFile: (file: File) => Promise<BankDetectionResult | null>;
   clearParsedData: () => void;
 }
 
@@ -65,6 +67,23 @@ export function usePdfParsing(): UsePdfParsingResult {
   const [parsedData, setParsedData] = useState<ParsedStatementData | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
 
+  const detectBankFromFile = useCallback(async (file: File): Promise<BankDetectionResult | null> => {
+    try {
+      const pdfData = await PDFParser.parsePDF(file);
+      const detection = PDFParser.detectBank(pdfData.text);
+      
+      if (detection.detectedBank && detection.confidence !== 'none') {
+        const bankLabel = SUPPORTED_BANKS.find(b => b.value === detection.detectedBank)?.label || detection.detectedBank;
+        toast.success(`Detected bank: ${bankLabel} (${detection.confidence} confidence)`);
+      }
+      
+      return detection;
+    } catch (error) {
+      console.error('Bank detection error:', error);
+      return null;
+    }
+  }, []);
+
   const parseFile = useCallback(async (file: File, bankHint?: string): Promise<ParsedStatementData | null> => {
     setIsParsing(true);
     setParseError(null);
@@ -73,15 +92,23 @@ export function usePdfParsing(): UsePdfParsingResult {
       // Parse the PDF
       const pdfData = await PDFParser.parsePDF(file);
       
+      // Auto-detect bank if no hint provided
+      let effectiveBankHint = bankHint;
+      let detectedBank: BankDetectionResult | undefined;
+      
+      if (!bankHint || bankHint === 'auto') {
+        detectedBank = PDFParser.detectBank(pdfData.text);
+        if (detectedBank.detectedBank && detectedBank.confidence !== 'none') {
+          effectiveBankHint = detectedBank.detectedBank;
+          const bankLabel = SUPPORTED_BANKS.find(b => b.value === detectedBank!.detectedBank)?.label || detectedBank.detectedBank;
+          toast.info(`Auto-detected bank: ${bankLabel}`);
+        }
+      }
+      
       // Extract data from the parsed text (pass bank hint if provided)
-      const transactions = PDFParser.extractTransactions(pdfData.text, bankHint);
+      const transactions = PDFParser.extractTransactions(pdfData.text, effectiveBankHint);
       const accountInfo = PDFParser.extractAccountInfo(pdfData.text);
       const balances = PDFParser.extractBalances(pdfData.text);
-
-      // Calculate totals from transactions
-      const totalCredits = transactions.reduce((sum, t) => sum + t.credit, 0);
-      const totalDebits = transactions.reduce((sum, t) => sum + t.debit, 0);
-      const netTurnover = totalCredits; // Credits represent incoming turnover
 
       // Parse period dates from account info
       let periodFrom: string | undefined;
@@ -106,6 +133,10 @@ export function usePdfParsing(): UsePdfParsingResult {
         }
       }
 
+      // Calculate totals from transactions
+      const totalCredits = transactions.reduce((sum, t) => sum + t.credit, 0);
+      const totalDebits = transactions.reduce((sum, t) => sum + t.debit, 0);
+      const netTurnover = totalCredits; // Credits represent incoming turnover
       const result: ParsedStatementData = {
         transactions,
         accountInfo,
@@ -115,6 +146,7 @@ export function usePdfParsing(): UsePdfParsingResult {
         netTurnover,
         periodFrom,
         periodTo,
+        detectedBank,
       };
 
       setParsedData(result);
@@ -147,6 +179,7 @@ export function usePdfParsing(): UsePdfParsingResult {
     parsedData,
     parseError,
     parseFile,
+    detectBankFromFile,
     clearParsedData,
   };
 }

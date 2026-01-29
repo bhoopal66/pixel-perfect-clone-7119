@@ -45,6 +45,12 @@ const DATE_PATTERNS = [
 // Amount pattern: matches numbers with optional commas and decimals
 const AMOUNT_PATTERN = /[\d,]+\.\d{2}/g;
 
+export interface BankDetectionResult {
+  detectedBank: string | null;
+  confidence: 'high' | 'medium' | 'low' | 'none';
+  matchedPatterns: string[];
+}
+
 export class PDFParser {
   static async parsePDF(file: File): Promise<ParsedPDFData> {
     const arrayBuffer = await file.arrayBuffer();
@@ -75,6 +81,210 @@ export class PDFParser {
     return {
       text: fullText,
       pages
+    };
+  }
+
+  // Bank detection patterns - keywords, headers, and identifiers
+  static readonly BANK_DETECTION_PATTERNS: Record<string, { keywords: string[]; weight: number }[]> = {
+    'ADCB': [
+      { keywords: ['Abu Dhabi Commercial Bank', 'ADCB'], weight: 10 },
+      { keywords: ['adcb.com', 'www.adcb.com'], weight: 8 },
+      { keywords: ['ADCB P.O. Box'], weight: 7 },
+    ],
+    'ADIB': [
+      { keywords: ['Abu Dhabi Islamic Bank', 'ADIB'], weight: 10 },
+      { keywords: ['adib.ae', 'www.adib.ae'], weight: 8 },
+      { keywords: ['Islamic Banking', 'Murabaha', 'Wakala'], weight: 5 },
+    ],
+    'Emirates NBD': [
+      { keywords: ['Emirates NBD', 'EmiratesNBD'], weight: 10 },
+      { keywords: ['emiratesnbd.com', 'www.emiratesnbd.com'], weight: 8 },
+      { keywords: ['ENBD', 'E.N.B.D'], weight: 6 },
+    ],
+    'ENBD Business': [
+      { keywords: ['Emirates NBD Business', 'ENBD Business Banking'], weight: 10 },
+      { keywords: ['Business Account Statement', 'Corporate Account'], weight: 5 },
+    ],
+    'Emirates Islamic': [
+      { keywords: ['Emirates Islamic', 'Emirates Islamic Bank'], weight: 10 },
+      { keywords: ['emiratesislamic.ae', 'www.emiratesislamic.ae'], weight: 8 },
+      { keywords: ['Islamic Finance', 'Sharia Compliant'], weight: 5 },
+    ],
+    'FAB': [
+      { keywords: ['First Abu Dhabi Bank', 'FAB'], weight: 10 },
+      { keywords: ['bankfab.com', 'www.bankfab.com'], weight: 8 },
+      { keywords: ['NBAD', 'National Bank of Abu Dhabi', 'FGB', 'First Gulf Bank'], weight: 7 },
+    ],
+    'Mashreq': [
+      { keywords: ['Mashreq', 'Mashreqbank', 'Mashreq Bank'], weight: 10 },
+      { keywords: ['mashreqbank.com', 'www.mashreqbank.com'], weight: 8 },
+      { keywords: ['mashreq.com'], weight: 7 },
+    ],
+    'CBD': [
+      { keywords: ['Commercial Bank of Dubai', 'CBD'], weight: 10 },
+      { keywords: ['cbd.ae', 'www.cbd.ae'], weight: 8 },
+    ],
+    'DIB': [
+      { keywords: ['Dubai Islamic Bank', 'DIB'], weight: 10 },
+      { keywords: ['dib.ae', 'www.dib.ae'], weight: 8 },
+      { keywords: ['Al Islami', 'Islamic Banking'], weight: 4 },
+    ],
+    'RAKBANK': [
+      { keywords: ['RAKBANK', 'RAK Bank', 'National Bank of Ras Al Khaimah'], weight: 10 },
+      { keywords: ['rakbank.ae', 'www.rakbank.ae'], weight: 8 },
+      { keywords: ['NBRAK', 'Ras Al Khaimah'], weight: 6 },
+    ],
+    'NBF': [
+      { keywords: ['National Bank of Fujairah', 'NBF'], weight: 10 },
+      { keywords: ['nbf.ae', 'www.nbf.ae'], weight: 8 },
+      { keywords: ['Fujairah'], weight: 4 },
+    ],
+    'Sharjah Islamic': [
+      { keywords: ['Sharjah Islamic Bank', 'SIB'], weight: 10 },
+      { keywords: ['sib.ae', 'www.sib.ae'], weight: 8 },
+      { keywords: ['Sharjah Islamic'], weight: 7 },
+    ],
+    'UAB': [
+      { keywords: ['United Arab Bank', 'UAB'], weight: 10 },
+      { keywords: ['uab.ae', 'www.uab.ae'], weight: 8 },
+    ],
+    'Al Hilal': [
+      { keywords: ['Al Hilal Bank', 'AlHilal'], weight: 10 },
+      { keywords: ['alhilalbank.ae', 'www.alhilalbank.ae'], weight: 8 },
+    ],
+    'Ajman Bank': [
+      { keywords: ['Ajman Bank'], weight: 10 },
+      { keywords: ['ajmanbank.ae', 'www.ajmanbank.ae'], weight: 8 },
+    ],
+    'CBI': [
+      { keywords: ['Commercial Bank International', 'CBI'], weight: 10 },
+      { keywords: ['cbiuae.com', 'www.cbiuae.com'], weight: 8 },
+    ],
+    'Al Masraf': [
+      { keywords: ['Al Masraf', 'Arab Bank for Investment'], weight: 10 },
+      { keywords: ['almasraf.ae', 'www.almasraf.ae'], weight: 8 },
+    ],
+    'Bank of Sharjah': [
+      { keywords: ['Bank of Sharjah', 'BOS'], weight: 10 },
+      { keywords: ['bankofsharjah.com', 'www.bankofsharjah.com'], weight: 8 },
+    ],
+    'Invest Bank': [
+      { keywords: ['Invest Bank'], weight: 10 },
+      { keywords: ['investbank.ae', 'www.investbank.ae'], weight: 8 },
+    ],
+    'NBQ': [
+      { keywords: ['National Bank of Umm Al Quwain', 'NBQ'], weight: 10 },
+      { keywords: ['nbq.ae', 'www.nbq.ae'], weight: 8 },
+      { keywords: ['Umm Al Quwain'], weight: 5 },
+    ],
+    'WIO': [
+      { keywords: ['Wio Bank', 'WIO'], weight: 10 },
+      { keywords: ['wio.io', 'www.wio.io'], weight: 8 },
+    ],
+    'Liv': [
+      { keywords: ['Liv.', 'Liv Bank', 'Liv by Emirates NBD'], weight: 10 },
+      { keywords: ['liv.me', 'www.liv.me'], weight: 8 },
+    ],
+    'Mashreq Neo': [
+      { keywords: ['Mashreq Neo', 'MashreqNeo'], weight: 10 },
+      { keywords: ['mashreqneo.com'], weight: 8 },
+    ],
+    'YAP': [
+      { keywords: ['YAP', 'YAP UAE'], weight: 10 },
+      { keywords: ['yap.com', 'www.yap.com'], weight: 8 },
+    ],
+    'Arab Bank': [
+      { keywords: ['Arab Bank', 'Arab Bank PLC'], weight: 10 },
+      { keywords: ['arabbank.ae', 'www.arabbank.ae', 'arabbank.com'], weight: 8 },
+    ],
+    'HSBC': [
+      { keywords: ['HSBC', 'Hongkong and Shanghai Banking'], weight: 10 },
+      { keywords: ['hsbc.ae', 'hsbc.com', 'www.hsbc.ae'], weight: 8 },
+    ],
+    'Citibank': [
+      { keywords: ['Citibank', 'Citi'], weight: 10 },
+      { keywords: ['citibank.ae', 'citi.com', 'www.citibank.ae'], weight: 8 },
+    ],
+    'Standard Chartered': [
+      { keywords: ['Standard Chartered', 'StanChart'], weight: 10 },
+      { keywords: ['sc.com', 'standardchartered.com'], weight: 8 },
+    ],
+    'Habib Bank': [
+      { keywords: ['Habib Bank', 'Habib Bank AG Zurich', 'HBZ'], weight: 10 },
+      { keywords: ['habibbank.com', 'hbl.com'], weight: 8 },
+    ],
+    'NBK': [
+      { keywords: ['National Bank of Kuwait', 'NBK'], weight: 10 },
+      { keywords: ['nbk.com', 'www.nbk.com'], weight: 8 },
+    ],
+  };
+
+  /**
+   * Detect bank from PDF text content using pattern matching
+   */
+  static detectBank(pdfText: string): BankDetectionResult {
+    const upperText = pdfText.toUpperCase();
+    const lowerText = pdfText.toLowerCase();
+    const scores: Record<string, { score: number; matches: string[] }> = {};
+
+    // Check each bank's patterns
+    for (const [bankName, patterns] of Object.entries(this.BANK_DETECTION_PATTERNS)) {
+      scores[bankName] = { score: 0, matches: [] };
+
+      for (const pattern of patterns) {
+        for (const keyword of pattern.keywords) {
+          // Case-insensitive search
+          const keywordUpper = keyword.toUpperCase();
+          const keywordLower = keyword.toLowerCase();
+          
+          if (upperText.includes(keywordUpper) || lowerText.includes(keywordLower)) {
+            scores[bankName].score += pattern.weight;
+            if (!scores[bankName].matches.includes(keyword)) {
+              scores[bankName].matches.push(keyword);
+            }
+          }
+        }
+      }
+    }
+
+    // Find the bank with highest score
+    let detectedBank: string | null = null;
+    let highestScore = 0;
+    let matchedPatterns: string[] = [];
+
+    for (const [bankName, data] of Object.entries(scores)) {
+      if (data.score > highestScore) {
+        highestScore = data.score;
+        detectedBank = bankName;
+        matchedPatterns = data.matches;
+      }
+    }
+
+    // Determine confidence level
+    let confidence: 'high' | 'medium' | 'low' | 'none';
+    if (highestScore >= 15) {
+      confidence = 'high';
+    } else if (highestScore >= 10) {
+      confidence = 'medium';
+    } else if (highestScore >= 5) {
+      confidence = 'low';
+    } else {
+      confidence = 'none';
+      detectedBank = null;
+    }
+
+    console.log('=== Bank Detection Results ===');
+    console.log('Detected bank:', detectedBank);
+    console.log('Confidence:', confidence);
+    console.log('Score:', highestScore);
+    console.log('Matched patterns:', matchedPatterns);
+    console.log('All scores:', scores);
+    console.log('==============================');
+
+    return {
+      detectedBank,
+      confidence,
+      matchedPatterns
     };
   }
 
