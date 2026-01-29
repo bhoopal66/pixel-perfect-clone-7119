@@ -78,24 +78,57 @@ export class PDFParser {
     };
   }
 
-  static extractTransactions(pdfText: string): ExtractedTransaction[] {
+  // Bank pattern mapping for manual selection
+  static readonly BANK_PATTERNS: Record<string, string> = {
+    'ADCB': 'ADCB',
+    'Emirates NBD': 'Emirates NBD',
+    'FAB': 'FAB',
+    'Mashreq': 'Mashreq',
+    'CBD': 'CBD',
+    'DIB': 'DIB',
+    'RAKBANK': 'RAK Bank',
+    'WIO': 'Generic Multi-Column', // WIO uses standard multi-column format
+    'Other': 'auto'
+  };
+
+  static extractTransactions(pdfText: string, bankHint?: string): ExtractedTransaction[] {
     let transactions: ExtractedTransaction[] = [];
 
-    // Try each pattern in order of specificity
-    const patternResults = [
-      { name: 'ADCB', transactions: this.tryADCBPattern(pdfText) },
-      { name: 'Emirates NBD', transactions: this.tryEmiratesNBDPattern(pdfText) },
-      { name: 'FAB', transactions: this.tryFABPattern(pdfText) },
-      { name: 'Mashreq', transactions: this.tryMashreqPattern(pdfText) },
-      { name: 'CBD', transactions: this.tryCBDPattern(pdfText) },
-      { name: 'DIB', transactions: this.tryDIBPattern(pdfText) },
-      { name: 'RAK Bank', transactions: this.tryRAKBankPattern(pdfText) },
-      { name: 'Generic Multi-Column', transactions: this.tryGenericMultiColumnPattern(pdfText) },
-      { name: 'Generic Single Amount', transactions: this.tryGenericSingleAmountPattern(pdfText) },
-      { name: 'Line-by-Line', transactions: this.tryLineByLinePattern(pdfText) },
+    // Define all patterns
+    const allPatterns = [
+      { name: 'ADCB', fn: () => this.tryADCBPattern(pdfText) },
+      { name: 'Emirates NBD', fn: () => this.tryEmiratesNBDPattern(pdfText) },
+      { name: 'FAB', fn: () => this.tryFABPattern(pdfText) },
+      { name: 'Mashreq', fn: () => this.tryMashreqPattern(pdfText) },
+      { name: 'CBD', fn: () => this.tryCBDPattern(pdfText) },
+      { name: 'DIB', fn: () => this.tryDIBPattern(pdfText) },
+      { name: 'RAK Bank', fn: () => this.tryRAKBankPattern(pdfText) },
+      { name: 'Generic Multi-Column', fn: () => this.tryGenericMultiColumnPattern(pdfText) },
+      { name: 'Generic Single Amount', fn: () => this.tryGenericSingleAmountPattern(pdfText) },
+      { name: 'Line-by-Line', fn: () => this.tryLineByLinePattern(pdfText) },
     ];
 
-    // Use the pattern that extracted the most transactions
+    // If bank hint is provided and valid, try that pattern first
+    if (bankHint && bankHint !== 'auto' && bankHint !== 'Other') {
+      const mappedPattern = this.BANK_PATTERNS[bankHint] || bankHint;
+      const priorityPattern = allPatterns.find(p => p.name === mappedPattern);
+      if (priorityPattern) {
+        console.log(`Trying priority pattern "${priorityPattern.name}" for bank hint "${bankHint}"`);
+        transactions = priorityPattern.fn();
+        if (transactions.length > 0) {
+          console.log(`Priority pattern "${priorityPattern.name}" extracted ${transactions.length} transactions`);
+          return transactions;
+        }
+        console.log(`Priority pattern "${priorityPattern.name}" found no transactions, trying all patterns...`);
+      }
+    }
+
+    // Try each pattern and use the one with most results
+    const patternResults = allPatterns.map(p => ({
+      name: p.name,
+      transactions: p.fn()
+    }));
+
     for (const result of patternResults) {
       console.log(`Pattern "${result.name}" extracted ${result.transactions.length} transactions`);
       if (result.transactions.length > transactions.length) {
