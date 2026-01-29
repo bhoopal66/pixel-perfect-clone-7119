@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, startOfDay, startOfWeek, startOfMonth, endOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -324,6 +324,45 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
+              {/* Quick Date Presets */}
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-9"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(startOfDay(today));
+                    setDateTo(endOfDay(today));
+                  }}
+                >
+                  Today
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-9"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(startOfWeek(today, { weekStartsOn: 1 }));
+                    setDateTo(endOfDay(today));
+                  }}
+                >
+                  This Week
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-9"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(startOfMonth(today));
+                    setDateTo(endOfDay(today));
+                  }}
+                >
+                  This Month
+                </Button>
+              </div>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
