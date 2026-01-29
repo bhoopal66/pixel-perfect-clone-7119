@@ -124,7 +124,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     });
   };
 
-  const isValid = formData.applicantName && formData.loanAmount > 0 && formData.tenure > 0;
+  const isValid = formData.applicantName && formData.loanAmount > 0 && formData.tenure > 0 && formData.agentReference.trim() !== '' && formData.analystName.trim() !== '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,7 +181,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Agent Reference</Label>
+                <Label>Agent Reference *</Label>
                 <Input
                   value={formData.agentReference}
                   onChange={(e) => setFormData({ ...formData, agentReference: e.target.value })}
@@ -189,7 +189,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
                 />
               </div>
               <div className="col-span-2 space-y-2">
-                <Label>Analyst Name</Label>
+                <Label>Analyst Name *</Label>
                 <Popover open={analystOpen} onOpenChange={setAnalystOpen}>
                   <PopoverTrigger asChild>
                     <Button
