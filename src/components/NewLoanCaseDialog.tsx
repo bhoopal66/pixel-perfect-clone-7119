@@ -97,37 +97,53 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
         abcdFeeRate: 0.01,
         abcdFeeAmount: 0,
         totalWithAbcd: 0,
+        isReverseMethod: false,
       };
     }
 
-    // Calculate POS fields
+    // Step 1: Calculate POS Eligible Turnover
     const posAnnualTurnover = formData.posMonthlyTurnover * 12;
     const posCapAdjusted = formData.adjustedTurnover * 0.40;
     const posCapVat = formData.vatTurnover * 0.40;
     const posEligibleTurnover = Math.min(posAnnualTurnover, posCapAdjusted, posCapVat);
-    const turnoverBasis = posEligibleTurnover;
 
     // Calculate variance percent
     const maxTurnover = Math.max(formData.vatTurnover, formData.adjustedTurnover);
     const variancePercent = maxTurnover === 0 ? 0 : 
       Math.round(Math.abs(formData.vatTurnover - formData.adjustedTurnover) / maxTurnover * 100 * 100) / 100;
 
-    // Determine multiplier based on variance
-    let eligibleMultiplier = 0;
+    // Determine multiplier based on variance (for normal method)
+    let normalMultiplier = 0;
     if (variancePercent <= 10) {
-      eligibleMultiplier = 8;
+      normalMultiplier = 8;
     } else if (variancePercent <= 25) {
-      eligibleMultiplier = 8 / 6;
-    } else {
-      eligibleMultiplier = 0;
+      normalMultiplier = 8 / 6;
     }
 
-    // Calculate eligible loan amount
-    const eligibleLoanAmount = eligibleMultiplier > 0 ? turnoverBasis * eligibleMultiplier : 0;
+    // Determine which method to use
+    const useNormalMethod = variancePercent <= 25 && normalMultiplier > 0;
+    const isReverseMethod = !useNormalMethod;
 
-    // ABCD Fee calculation
+    let eligibleLoanAmount: number;
+    let abcdFeeAmount: number;
+    let turnoverBasis: number;
+    let eligibleMultiplier: number;
     const abcdFeeRate = 0.01;
-    const abcdFeeAmount = eligibleLoanAmount * abcdFeeRate;
+
+    if (useNormalMethod) {
+      // NORMAL Method: Eligible Loan = POS Eligible Turnover × Multiplier
+      turnoverBasis = posEligibleTurnover;
+      eligibleMultiplier = normalMultiplier;
+      eligibleLoanAmount = turnoverBasis * eligibleMultiplier;
+      abcdFeeAmount = eligibleLoanAmount * abcdFeeRate;
+    } else {
+      // REVERSE Method: Loan capped at Adjusted Turnover, ABCD = 1% of Adjusted
+      turnoverBasis = formData.adjustedTurnover;
+      eligibleMultiplier = 1; // No multiplier, direct cap
+      eligibleLoanAmount = formData.adjustedTurnover;
+      abcdFeeAmount = formData.adjustedTurnover * abcdFeeRate;
+    }
+
     const totalWithAbcd = eligibleLoanAmount + abcdFeeAmount;
 
     return {
@@ -142,6 +158,7 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       abcdFeeRate,
       abcdFeeAmount,
       totalWithAbcd,
+      isReverseMethod,
     };
   }, [isRakPosLoan, formData.posMonthlyTurnover, formData.adjustedTurnover, formData.vatTurnover]);
 
@@ -599,11 +616,34 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
 
           {/* RAK POS Eligibility Summary */}
           {isRakPosLoan && (formData.posMonthlyTurnover > 0 || formData.vatTurnover > 0 || formData.adjustedTurnover > 0) && (
-            <div className="p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
+            <div className={cn(
+              "p-4 rounded-lg border-2",
+              posEligibilityCalcs.isReverseMethod 
+                ? "border-warning/40 bg-warning/5" 
+                : "border-primary/30 bg-primary/5"
+            )}>
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">RAK POS</Badge>
+                <Badge 
+                  variant={posEligibilityCalcs.isReverseMethod ? "outline" : "default"} 
+                  className={cn(
+                    "text-xs",
+                    posEligibilityCalcs.isReverseMethod 
+                      ? "border-warning text-warning" 
+                      : ""
+                  )}
+                >
+                  {posEligibilityCalcs.isReverseMethod ? "REVERSE Method" : "NORMAL Method"}
+                </Badge>
                 POS Eligibility Calculation
               </h3>
+              
+              {/* Method explanation */}
+              {posEligibilityCalcs.isReverseMethod && (
+                <div className="mb-4 p-2 bg-warning/10 rounded border border-warning/30 text-xs text-warning">
+                  ⚠️ Variance &gt; 25% — Using REVERSE method: Loan capped at Adjusted Turnover, ABCD = 1% of Adjusted Turnover
+                </div>
+              )}
               
               {/* Turnover Breakdown */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
@@ -622,10 +662,20 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
                   <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posCapVat)}</p>
                   <p className="text-[10px] text-muted-foreground">VAT × 0.40</p>
                 </div>
-                <div className="p-2 bg-primary/10 rounded border border-primary/30">
+                <div className={cn(
+                  "p-2 rounded border",
+                  posEligibilityCalcs.isReverseMethod 
+                    ? "bg-muted/50 border-muted-foreground/30" 
+                    : "bg-primary/10 border-primary/30"
+                )}>
                   <p className="text-xs text-muted-foreground">POS Eligible Turnover</p>
-                  <p className="font-bold text-primary">{formatCurrency(posEligibilityCalcs.posEligibleTurnover)}</p>
-                  <p className="text-[10px] text-muted-foreground">MIN of above</p>
+                  <p className={cn(
+                    "font-bold",
+                    posEligibilityCalcs.isReverseMethod ? "text-muted-foreground" : "text-primary"
+                  )}>{formatCurrency(posEligibilityCalcs.posEligibleTurnover)}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {posEligibilityCalcs.isReverseMethod ? "Not used (reverse)" : "MIN of above"}
+                  </p>
                 </div>
               </div>
 
@@ -642,8 +692,15 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
                   </p>
                 </div>
                 <div className="p-2 bg-background rounded border">
-                  <p className="text-xs text-muted-foreground">Multiplier</p>
-                  <p className="font-semibold">{posEligibilityCalcs.eligibleMultiplier.toFixed(2)}x</p>
+                  <p className="text-xs text-muted-foreground">
+                    {posEligibilityCalcs.isReverseMethod ? "Basis" : "Multiplier"}
+                  </p>
+                  <p className="font-semibold">
+                    {posEligibilityCalcs.isReverseMethod 
+                      ? "Adjusted T/O" 
+                      : `${posEligibilityCalcs.eligibleMultiplier.toFixed(2)}x`
+                    }
+                  </p>
                 </div>
                 <div className="p-2 bg-success/10 rounded border border-success/30">
                   <p className="text-xs text-muted-foreground">Eligible Loan Amount</p>
