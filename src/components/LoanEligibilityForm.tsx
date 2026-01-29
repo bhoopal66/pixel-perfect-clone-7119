@@ -622,6 +622,39 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   </div>
                 </div>
 
+                {/* Visual Variance Meter */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                    <span>0%</span>
+                    <span className="font-medium">Variance Scale</span>
+                    <span>30%+</span>
+                  </div>
+                  <div className="relative h-10 flex rounded-lg overflow-hidden border border-border">
+                    <div className="flex-1 bg-gradient-to-r from-success/80 to-success flex items-center justify-center text-white text-xs font-bold">
+                      ≤10%
+                      <br />
+                      <span className="text-[10px] font-normal">8×</span>
+                    </div>
+                    <div className="flex-1 bg-gradient-to-r from-warning/80 to-warning flex items-center justify-center text-white text-xs font-bold">
+                      11-25%
+                      <br />
+                      <span className="text-[10px] font-normal">1.33×</span>
+                    </div>
+                    <div className="flex-1 bg-gradient-to-r from-destructive/80 to-destructive flex items-center justify-center text-white text-xs font-bold">
+                      &gt;25%
+                      <br />
+                      <span className="text-[10px] font-normal">0×</span>
+                    </div>
+                    {/* Pointer */}
+                    <div 
+                      className="absolute -top-1 transform -translate-x-1/2 text-2xl text-primary drop-shadow-md transition-all duration-300"
+                      style={{ left: `${Math.min((calculated.variance_percent / 30) * 100, 100)}%` }}
+                    >
+                      ▼
+                    </div>
+                  </div>
+                </div>
+
                 {/* Eligibility Status */}
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Eligibility Status</span>
