@@ -25,7 +25,15 @@ export type Database = {
           eligible_multiplier: number
           id: string
           notes: string | null
+          pos_annual_turnover: number
+          pos_cap_adjusted: number
+          pos_cap_rate: number
+          pos_cap_vat: number
+          pos_eligible_turnover: number
+          pos_monthly_turnover: number
+          product_type: string
           sister_concern_adjustment: number
+          turnover_basis: number
           updated_at: string
           variance_bucket: string
           variance_percent: number
@@ -41,7 +49,15 @@ export type Database = {
           eligible_multiplier?: number
           id?: string
           notes?: string | null
+          pos_annual_turnover?: number
+          pos_cap_adjusted?: number
+          pos_cap_rate?: number
+          pos_cap_vat?: number
+          pos_eligible_turnover?: number
+          pos_monthly_turnover?: number
+          product_type?: string
           sister_concern_adjustment?: number
+          turnover_basis?: number
           updated_at?: string
           variance_bucket?: string
           variance_percent?: number
@@ -57,7 +73,15 @@ export type Database = {
           eligible_multiplier?: number
           id?: string
           notes?: string | null
+          pos_annual_turnover?: number
+          pos_cap_adjusted?: number
+          pos_cap_rate?: number
+          pos_cap_vat?: number
+          pos_eligible_turnover?: number
+          pos_monthly_turnover?: number
+          product_type?: string
           sister_concern_adjustment?: number
+          turnover_basis?: number
           updated_at?: string
           variance_bucket?: string
           variance_percent?: number

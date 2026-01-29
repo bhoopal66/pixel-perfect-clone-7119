@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Alert, AlertDescription } from './ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   Calculator, 
   AlertTriangle, 
@@ -13,12 +14,25 @@ import {
   XCircle, 
   AlertCircle,
   Save,
-  RefreshCw
+  RefreshCw,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CurrencyService } from '@/services/currencyService';
-import type { LoanEligibility, LoanEligibilityInput, EligibilityStatus, VarianceBucket } from '@/types/loanEligibility.types';
-import { getStatusColor, getBucketColor } from '@/types/loanEligibility.types';
+import type { 
+  LoanEligibility, 
+  LoanEligibilityInput, 
+  EligibilityStatus, 
+  VarianceBucket,
+  ProductType 
+} from '@/types/loanEligibility.types';
+import { 
+  getStatusColor, 
+  getBucketColor, 
+  PRODUCT_TYPE_LABELS, 
+  POS_CAP_RATES,
+  isPOSProduct 
+} from '@/types/loanEligibility.types';
 
 interface LoanEligibilityFormProps {
   onSubmit: (input: LoanEligibilityInput) => Promise<LoanEligibility>;
@@ -34,6 +48,13 @@ interface CalculatedValues {
   eligibility_status: EligibilityStatus;
   eligible_multiplier: number;
   eligible_loan_amount: number;
+  // POS fields
+  pos_cap_rate: number;
+  pos_annual_turnover: number;
+  pos_cap_adjusted: number;
+  pos_cap_vat: number;
+  pos_eligible_turnover: number;
+  turnover_basis: number;
 }
 
 export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
@@ -42,15 +63,18 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
   isLoading = false,
   currency = 'AED'
 }) => {
+  const [productType, setProductType] = useState<ProductType>(initialData?.product_type || 'standard');
   const [vatTurnover, setVatTurnover] = useState<string>(initialData?.vat_turnover?.toString() || '');
   const [declaredTurnover, setDeclaredTurnover] = useState<string>(initialData?.declared_turnover?.toString() || '');
   const [cashAdjustment, setCashAdjustment] = useState<string>(initialData?.cash_adjustment?.toString() || '');
   const [sisterConcernAdjustment, setSisterConcernAdjustment] = useState<string>(initialData?.sister_concern_adjustment?.toString() || '');
+  const [posMonthlyTurnover, setPosMonthlyTurnover] = useState<string>(initialData?.pos_monthly_turnover?.toString() || '');
   const [notes, setNotes] = useState<string>(initialData?.notes || '');
   const [calculated, setCalculated] = useState<CalculatedValues | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
+  const isPOS = isPOSProduct(productType);
 
   // Calculate values on input change
   useEffect(() => {
@@ -58,6 +82,7 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     const declared = parseFloat(declaredTurnover) || 0;
     const cash = parseFloat(cashAdjustment) || 0;
     const sister = parseFloat(sisterConcernAdjustment) || 0;
+    const posMonthly = parseFloat(posMonthlyTurnover) || 0;
     
     const newWarnings: string[] = [];
 
@@ -68,6 +93,20 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       newWarnings.push('Adjusted turnover was negative and has been set to 0');
     }
 
+    // POS calculations
+    const posCapRate = POS_CAP_RATES[productType];
+    const posAnnualTurnover = posMonthly * 12;
+    const posCapAdjusted = adjustedTurnover * posCapRate;
+    const posCapVat = vat * posCapRate;
+    
+    let posEligibleTurnover = 0;
+    if (isPOS) {
+      posEligibleTurnover = Math.min(posAnnualTurnover, posCapAdjusted, posCapVat);
+    }
+
+    // Determine turnover basis
+    const turnoverBasis = isPOS ? posEligibleTurnover : adjustedTurnover;
+
     // Check for insufficient data
     if (declared === 0) {
       setCalculated({
@@ -76,7 +115,13 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
         variance_bucket: 'N/A',
         eligibility_status: 'Insufficient Data',
         eligible_multiplier: 0,
-        eligible_loan_amount: 0
+        eligible_loan_amount: 0,
+        pos_cap_rate: posCapRate,
+        pos_annual_turnover: posAnnualTurnover,
+        pos_cap_adjusted: posCapAdjusted,
+        pos_cap_vat: posCapVat,
+        pos_eligible_turnover: posEligibleTurnover,
+        turnover_basis: turnoverBasis
       });
       setWarnings(newWarnings);
       return;
@@ -85,6 +130,11 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
     // Check for missing VAT
     if (vat === 0) {
       newWarnings.push('VAT Missing – variance may be unreliable');
+    }
+
+    // Check for missing POS monthly turnover when POS product is selected
+    if (isPOS && posMonthly === 0) {
+      newWarnings.push('POS Monthly Turnover is required for POS products');
     }
 
     // Calculate variance %
@@ -113,8 +163,8 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       varianceBucket = '>25%';
     }
 
-    // Calculate eligible loan amount
-    const eligibleLoanAmount = eligibleMultiplier > 0 ? adjustedTurnover * eligibleMultiplier : 0;
+    // Calculate eligible loan amount using turnover basis
+    const eligibleLoanAmount = eligibleMultiplier > 0 ? turnoverBasis * eligibleMultiplier : 0;
 
     setCalculated({
       adjusted_turnover: adjustedTurnover,
@@ -122,19 +172,27 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
       variance_bucket: varianceBucket,
       eligibility_status: eligibilityStatus,
       eligible_multiplier: eligibleMultiplier,
-      eligible_loan_amount: eligibleLoanAmount
+      eligible_loan_amount: eligibleLoanAmount,
+      pos_cap_rate: posCapRate,
+      pos_annual_turnover: posAnnualTurnover,
+      pos_cap_adjusted: posCapAdjusted,
+      pos_cap_vat: posCapVat,
+      pos_eligible_turnover: posEligibleTurnover,
+      turnover_basis: turnoverBasis
     });
     setWarnings(newWarnings);
-  }, [vatTurnover, declaredTurnover, cashAdjustment, sisterConcernAdjustment]);
+  }, [vatTurnover, declaredTurnover, cashAdjustment, sisterConcernAdjustment, posMonthlyTurnover, productType, isPOS]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const input: LoanEligibilityInput = {
+      product_type: productType,
       vat_turnover: parseFloat(vatTurnover) || 0,
       declared_turnover: parseFloat(declaredTurnover) || 0,
       cash_adjustment: parseFloat(cashAdjustment) || 0,
       sister_concern_adjustment: parseFloat(sisterConcernAdjustment) || 0,
+      pos_monthly_turnover: parseFloat(posMonthlyTurnover) || 0,
       notes: notes || undefined
     };
     
@@ -142,10 +200,12 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
   };
 
   const handleReset = () => {
+    setProductType('standard');
     setVatTurnover('');
     setDeclaredTurnover('');
     setCashAdjustment('');
     setSisterConcernAdjustment('');
+    setPosMonthlyTurnover('');
     setNotes('');
   };
 
@@ -191,6 +251,31 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Product Type Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="product_type">Product Type *</Label>
+              <Select value={productType} onValueChange={(v) => setProductType(v as ProductType)}>
+                <SelectTrigger id="product_type">
+                  <SelectValue placeholder="Select product type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((type) => (
+                    <SelectItem key={type} value={type}>
+                      <div className="flex items-center gap-2">
+                        {isPOSProduct(type) && <CreditCard className="h-3.5 w-3.5" />}
+                        {PRODUCT_TYPE_LABELS[type]}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isPOS && (
+                <p className="text-xs text-muted-foreground">
+                  Cap Rate: {(POS_CAP_RATES[productType] * 100).toFixed(0)}%
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="vat_turnover">VAT Turnover</Label>
               <Input
@@ -244,6 +329,29 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
               />
             </div>
 
+            {/* POS Monthly Turnover - Only visible for POS products */}
+            {isPOS && (
+              <div className="space-y-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <Label htmlFor="pos_monthly_turnover" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  POS Monthly Turnover *
+                </Label>
+                <Input
+                  id="pos_monthly_turnover"
+                  type="number"
+                  placeholder="0.00"
+                  value={posMonthlyTurnover}
+                  onChange={(e) => setPosMonthlyTurnover(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  required={isPOS}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Monthly POS transaction volume
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (Optional)</Label>
               <Textarea
@@ -291,6 +399,12 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
               <span>Eligibility Summary</span>
               {calculated && getStatusIcon(calculated.eligibility_status)}
             </CardTitle>
+            {isPOS && (
+              <Badge variant="secondary" className="w-fit">
+                <CreditCard className="h-3 w-3 mr-1" />
+                {PRODUCT_TYPE_LABELS[productType]}
+              </Badge>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {calculated && (
@@ -300,6 +414,55 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   <span className="text-sm text-muted-foreground">Adjusted Turnover</span>
                   <span className="font-mono font-semibold">
                     {formatCurrency(calculated.adjusted_turnover)}
+                  </span>
+                </div>
+
+                {/* POS Calculations - Only show for POS products */}
+                {isPOS && (
+                  <div className="space-y-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
+                      POS Calculations
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cap Rate:</span>
+                        <span className="font-mono">{(calculated.pos_cap_rate * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Annual POS:</span>
+                        <span className="font-mono">{formatCurrency(calculated.pos_annual_turnover)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cap (Adjusted):</span>
+                        <span className="font-mono">{formatCurrency(calculated.pos_cap_adjusted)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cap (VAT):</span>
+                        <span className="font-mono">{formatCurrency(calculated.pos_cap_vat)}</span>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-primary/20 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">POS Eligible Turnover</span>
+                        <span className="font-mono font-semibold text-primary">
+                          {formatCurrency(calculated.pos_eligible_turnover)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        MIN(Annual POS, Cap Adjusted, Cap VAT)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Turnover Basis */}
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">
+                    Turnover Basis
+                    {isPOS && <span className="text-xs ml-1">(POS)</span>}
+                  </span>
+                  <span className="font-mono font-semibold">
+                    {formatCurrency(calculated.turnover_basis)}
                   </span>
                 </div>
 
@@ -354,8 +517,16 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                 <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg space-y-1">
                   <p><strong>Formula:</strong></p>
                   <p>Adjusted = Declared − Cash − Sister Concern</p>
+                  {isPOS && (
+                    <>
+                      <p>POS Annual = POS Monthly × 12</p>
+                      <p>POS Cap (Adj) = Adjusted × {(POS_CAP_RATES[productType] * 100).toFixed(0)}%</p>
+                      <p>POS Cap (VAT) = VAT × {(POS_CAP_RATES[productType] * 100).toFixed(0)}%</p>
+                      <p>Turnover Basis = MIN(POS Annual, Cap Adj, Cap VAT)</p>
+                    </>
+                  )}
                   <p>Variance% = |VAT − Adjusted| / MAX(VAT, Adjusted) × 100</p>
-                  <p>Eligible Amount = Adjusted × Multiplier</p>
+                  <p>Eligible Amount = Turnover Basis × Multiplier</p>
                 </div>
               </>
             )}
