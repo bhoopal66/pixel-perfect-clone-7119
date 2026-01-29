@@ -7,7 +7,9 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Badge } from './ui/badge';
-import { Building2, Wallet } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { Building2, Wallet, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LoanCase, LenderType, ProductType } from '../types/loanCase.types';
 import { LENDERS, calculateEMI, calculateTotalInterest, calculateProcessingFee } from '../types/loanCase.types';
@@ -18,14 +20,17 @@ interface NewLoanCaseDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (loanCase: LoanCase) => void;
   currency?: 'AED' | 'USD';
+  existingAnalysts?: string[];
 }
 
 export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
   open,
   onOpenChange,
   onSubmit,
-  currency = 'AED'
+  currency = 'AED',
+  existingAnalysts = []
 }) => {
+  const [analystOpen, setAnalystOpen] = useState(false);
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantPhone: '',
@@ -185,11 +190,55 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Analyst Name</Label>
-                <Input
-                  value={formData.analystName}
-                  onChange={(e) => setFormData({ ...formData, analystName: e.target.value })}
-                  placeholder="Analyst handling the case"
-                />
+                <Popover open={analystOpen} onOpenChange={setAnalystOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={analystOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.analystName || "Select or type analyst name..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search or type new analyst..." 
+                        value={formData.analystName}
+                        onValueChange={(value) => setFormData({ ...formData, analystName: value })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-muted-foreground text-sm">
+                            Press enter to use "{formData.analystName}"
+                          </span>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing Analysts">
+                          {existingAnalysts.map((analyst) => (
+                            <CommandItem
+                              key={analyst}
+                              value={analyst}
+                              onSelect={(currentValue) => {
+                                setFormData({ ...formData, analystName: currentValue });
+                                setAnalystOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.analystName === analyst ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {analyst}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
