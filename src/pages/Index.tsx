@@ -6,6 +6,7 @@ import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { LoanEligibilityDashboard } from '../components/LoanEligibilityDashboard';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
 import { CurrencyService } from '../services/currencyService';
@@ -232,6 +233,9 @@ const Index = () => {
                   )}
                 </>
               )}
+              
+              {/* Theme Toggle */}
+              <ThemeToggle />
             </div>
           </div>
         </div>
