@@ -99,8 +99,9 @@ export interface MonthlyBalance {
 
 export interface DailyBalance {
   date: string;
-  balance: number;
+  closingBalance: number;
   month: string;
+  hasTransactions: boolean;
 }
 
 export interface CategorySummary {
