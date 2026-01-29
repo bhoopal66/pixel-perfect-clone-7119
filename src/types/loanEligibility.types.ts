@@ -2,15 +2,20 @@
 
 export type EligibilityStatus = 'Eligible' | 'Eligible (Reduced)' | 'Not Eligible' | 'Insufficient Data';
 export type VarianceBucket = '<=10%' | '11%-25%' | '>25%' | 'N/A';
+export type ProductType = 'standard' | 'rak_pos' | 'wio_pos';
 
 export interface LoanEligibility {
   id: string;
+  
+  // Product type
+  product_type: ProductType;
   
   // Input fields
   vat_turnover: number;
   declared_turnover: number;
   cash_adjustment: number;
   sister_concern_adjustment: number;
+  pos_monthly_turnover: number;
   
   // Computed fields
   adjusted_turnover: number;
@@ -20,6 +25,14 @@ export interface LoanEligibility {
   eligibility_status: EligibilityStatus;
   eligible_loan_amount: number;
   
+  // POS computed fields
+  pos_cap_rate: number;
+  pos_annual_turnover: number;
+  pos_cap_adjusted: number;
+  pos_cap_vat: number;
+  pos_eligible_turnover: number;
+  turnover_basis: number;
+  
   // Metadata
   notes?: string;
   created_at: string;
@@ -27,19 +40,36 @@ export interface LoanEligibility {
 }
 
 export interface LoanEligibilityInput {
+  product_type: ProductType;
   vat_turnover: number;
   declared_turnover: number;
   cash_adjustment: number;
   sister_concern_adjustment: number;
+  pos_monthly_turnover: number;
   notes?: string;
 }
 
 export interface EligibilityFilters {
   eligibility_status?: EligibilityStatus | 'all';
   variance_bucket?: VarianceBucket | 'all';
+  product_type?: ProductType | 'all';
   date_from?: string;
   date_to?: string;
 }
+
+// Product type labels
+export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
+  standard: 'Standard Loan',
+  rak_pos: 'RAK POS Loan',
+  wio_pos: 'WIO POS Loan'
+};
+
+// POS cap rates
+export const POS_CAP_RATES: Record<ProductType, number> = {
+  standard: 0,
+  rak_pos: 0.40,
+  wio_pos: 0.30
+};
 
 // Helper to get RAG color for status
 export function getStatusColor(status: EligibilityStatus): 'success' | 'warning' | 'destructive' | 'muted' {
@@ -69,4 +99,9 @@ export function getBucketColor(bucket: VarianceBucket): string {
     default:
       return 'bg-muted text-muted-foreground';
   }
+}
+
+// Check if product type is POS
+export function isPOSProduct(productType: ProductType): boolean {
+  return productType === 'rak_pos' || productType === 'wio_pos';
 }

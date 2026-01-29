@@ -7,10 +7,12 @@ export const LoanEligibilityService = {
     const { data, error } = await supabase
       .from('loan_eligibility')
       .insert({
+        product_type: input.product_type || 'standard',
         vat_turnover: input.vat_turnover || 0,
         declared_turnover: input.declared_turnover || 0,
         cash_adjustment: input.cash_adjustment || 0,
         sister_concern_adjustment: input.sister_concern_adjustment || 0,
+        pos_monthly_turnover: input.pos_monthly_turnover || 0,
         notes: input.notes || null,
       })
       .select()
@@ -25,10 +27,12 @@ export const LoanEligibilityService = {
     const { data, error } = await supabase
       .from('loan_eligibility')
       .update({
+        ...(input.product_type !== undefined && { product_type: input.product_type }),
         ...(input.vat_turnover !== undefined && { vat_turnover: input.vat_turnover }),
         ...(input.declared_turnover !== undefined && { declared_turnover: input.declared_turnover }),
         ...(input.cash_adjustment !== undefined && { cash_adjustment: input.cash_adjustment }),
         ...(input.sister_concern_adjustment !== undefined && { sister_concern_adjustment: input.sister_concern_adjustment }),
+        ...(input.pos_monthly_turnover !== undefined && { pos_monthly_turnover: input.pos_monthly_turnover }),
         ...(input.notes !== undefined && { notes: input.notes }),
       })
       .eq('id', id)
@@ -52,6 +56,9 @@ export const LoanEligibilityService = {
       }
       if (filters.variance_bucket && filters.variance_bucket !== 'all') {
         query = query.eq('variance_bucket', filters.variance_bucket);
+      }
+      if (filters.product_type && filters.product_type !== 'all') {
+        query = query.eq('product_type', filters.product_type);
       }
       if (filters.date_from) {
         query = query.gte('created_at', filters.date_from);
@@ -93,14 +100,23 @@ export const LoanEligibilityService = {
   exportToCSV(records: LoanEligibility[]): string[][] {
     const headers = [
       'ID',
+      'Product Type',
       'VAT Turnover',
       'Declared Turnover',
       'Cash Adjustment',
       'Sister Concern Adjustment',
+      'POS Monthly Turnover',
       'Adjusted Turnover',
+      'POS Cap Rate',
+      'POS Annual Turnover',
+      'POS Cap Adjusted',
+      'POS Cap VAT',
+      'POS Eligible Turnover',
+      'Turnover Basis',
       'Variance %',
       'Variance Bucket',
       'Eligibility Status',
+      'Multiplier',
       'Eligible Loan Amount',
       'Created At',
       'Updated At',
@@ -109,14 +125,23 @@ export const LoanEligibilityService = {
     
     const rows = records.map(r => [
       r.id,
+      r.product_type,
       r.vat_turnover.toString(),
       r.declared_turnover.toString(),
       r.cash_adjustment.toString(),
       r.sister_concern_adjustment.toString(),
+      r.pos_monthly_turnover.toString(),
       r.adjusted_turnover.toString(),
+      r.pos_cap_rate.toString(),
+      r.pos_annual_turnover.toString(),
+      r.pos_cap_adjusted.toString(),
+      r.pos_cap_vat.toString(),
+      r.pos_eligible_turnover.toString(),
+      r.turnover_basis.toString(),
       r.variance_percent.toString(),
       r.variance_bucket,
       r.eligibility_status,
+      r.eligible_multiplier.toString(),
       r.eligible_loan_amount.toString(),
       r.created_at,
       r.updated_at,
