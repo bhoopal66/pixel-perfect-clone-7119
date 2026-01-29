@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { VATStatisticsSection } from './VATStatisticsSection';
+import { VATAnalysisSection } from './VATAnalysisSection';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
@@ -661,6 +662,9 @@ export const VATReturnsUpload: React.FC<VATReturnsUploadProps> = ({
 
       {/* VAT Statistics Section */}
       <VATStatisticsSection vatReturns={vatReturns} currency={currency} />
+
+      {/* VAT Analysis Section */}
+      <VATAnalysisSection vatReturns={vatReturns} currency={currency} />
 
       {/* VAT Returns Table */}
       <Card>
