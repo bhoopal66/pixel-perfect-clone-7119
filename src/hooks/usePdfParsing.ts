@@ -17,16 +17,30 @@ export interface UsePdfParsingResult {
   isParsing: boolean;
   parsedData: ParsedStatementData | null;
   parseError: string | null;
-  parseFile: (file: File) => Promise<ParsedStatementData | null>;
+  parseFile: (file: File, bankHint?: string) => Promise<ParsedStatementData | null>;
   clearParsedData: () => void;
 }
+
+// Available banks for manual selection
+export const SUPPORTED_BANKS = [
+  { value: 'auto', label: 'Auto-detect' },
+  { value: 'ADCB', label: 'ADCB' },
+  { value: 'Emirates NBD', label: 'Emirates NBD' },
+  { value: 'FAB', label: 'First Abu Dhabi Bank (FAB)' },
+  { value: 'Mashreq', label: 'Mashreq' },
+  { value: 'CBD', label: 'Commercial Bank of Dubai (CBD)' },
+  { value: 'DIB', label: 'Dubai Islamic Bank (DIB)' },
+  { value: 'RAKBANK', label: 'RAK Bank' },
+  { value: 'WIO', label: 'WIO Bank' },
+  { value: 'Other', label: 'Other' },
+] as const;
 
 export function usePdfParsing(): UsePdfParsingResult {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedStatementData | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
 
-  const parseFile = useCallback(async (file: File): Promise<ParsedStatementData | null> => {
+  const parseFile = useCallback(async (file: File, bankHint?: string): Promise<ParsedStatementData | null> => {
     setIsParsing(true);
     setParseError(null);
 
@@ -34,8 +48,8 @@ export function usePdfParsing(): UsePdfParsingResult {
       // Parse the PDF
       const pdfData = await PDFParser.parsePDF(file);
       
-      // Extract data from the parsed text
-      const transactions = PDFParser.extractTransactions(pdfData.text);
+      // Extract data from the parsed text (pass bank hint if provided)
+      const transactions = PDFParser.extractTransactions(pdfData.text, bankHint);
       const accountInfo = PDFParser.extractAccountInfo(pdfData.text);
       const balances = PDFParser.extractBalances(pdfData.text);
 

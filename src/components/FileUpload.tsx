@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X, FileCheck } from 'lucide-react';
+import { Upload, FileText, X, FileCheck, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { SUPPORTED_BANKS } from '@/hooks/usePdfParsing';
 
 interface UploadedFile {
   file: File;
@@ -12,17 +14,20 @@ interface UploadedFile {
 }
 
 interface FileUploadProps {
-  onFilesSelected: (files: File[]) => void;
+  onFilesSelected: (files: File[], bankHint?: string) => void;
   onDemoMode?: () => void;
   isProcessing?: boolean;
+  parsingFailed?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
   onFilesSelected, 
   onDemoMode,
-  isProcessing = false 
+  isProcessing = false,
+  parsingFailed = false
 }) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedBank, setSelectedBank] = useState<string>('auto');
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + ' B';
@@ -59,7 +64,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleAnalyze = () => {
     const files = uploadedFiles.map(f => f.file);
-    onFilesSelected(files);
+    onFilesSelected(files, selectedBank !== 'auto' ? selectedBank : undefined);
+  };
+
+  const handleRetryWithBank = () => {
+    const files = uploadedFiles.map(f => f.file);
+    onFilesSelected(files, selectedBank);
   };
 
   return (
@@ -141,7 +151,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       </motion.div>
 
       <AnimatePresence mode="popLayout">
-        {uploadedFiles.length > 0 && (
+      {uploadedFiles.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -157,6 +167,66 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               </span>
             </div>
             
+            {/* Bank Selection - shown when parsing fails or always as optional */}
+            {parsingFailed && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 rounded-xl bg-warning/10 border border-warning/20 mb-4"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground mb-2">
+                      No transactions could be extracted
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Try selecting your bank manually to use the correct parsing format:
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <Select value={selectedBank} onValueChange={setSelectedBank}>
+                        <SelectTrigger className="w-64 bg-background">
+                          <SelectValue placeholder="Select your bank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SUPPORTED_BANKS.map(bank => (
+                            <SelectItem key={bank.value} value={bank.value}>
+                              {bank.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={handleRetryWithBank}
+                        disabled={isProcessing || selectedBank === 'auto'}
+                        size="sm"
+                      >
+                        Retry Parsing
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Optional bank selection for first-time upload */}
+            {!parsingFailed && (
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-sm text-muted-foreground">Bank (optional):</span>
+                <Select value={selectedBank} onValueChange={setSelectedBank}>
+                  <SelectTrigger className="w-52 bg-background">
+                    <SelectValue placeholder="Auto-detect" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_BANKS.map(bank => (
+                      <SelectItem key={bank.value} value={bank.value}>
+                        {bank.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {uploadedFiles.map((file, index) => (
               <motion.div
                 key={file.id}
