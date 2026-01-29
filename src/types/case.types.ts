@@ -41,6 +41,13 @@ export interface Case {
   abcd_fee_amount: number;
   eligibility_status: EligibilityStatus;
   
+  // E) EMI Calculator Fields
+  interest_rate: number;
+  tenure_months: number;
+  monthly_emi: number;
+  total_interest: number;
+  total_payable: number;
+  
   // Metadata
   user_id: string | null;
   created_at: string;
@@ -65,6 +72,11 @@ export interface CaseAnalysisInput {
 
 export interface CaseEligibilityInput {
   pos_monthly_turnover: number;
+  interest_rate?: number;
+  tenure_months?: number;
+  monthly_emi?: number;
+  total_interest?: number;
+  total_payable?: number;
 }
 
 // Bank options

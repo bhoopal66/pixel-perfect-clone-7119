@@ -29,6 +29,8 @@ export type Database = {
           eligible_loan_amount: number
           eligible_multiplier: number
           id: string
+          interest_rate: number
+          monthly_emi: number
           pos_annual_turnover: number
           pos_cap_rate: number
           pos_eligible_turnover: number
@@ -39,6 +41,9 @@ export type Database = {
           statement_period_from: string | null
           statement_period_to: string | null
           status: string
+          tenure_months: number
+          total_interest: number
+          total_payable: number
           turnover_basis: number
           updated_at: string
           user_id: string | null
@@ -60,6 +65,8 @@ export type Database = {
           eligible_loan_amount?: number
           eligible_multiplier?: number
           id?: string
+          interest_rate?: number
+          monthly_emi?: number
           pos_annual_turnover?: number
           pos_cap_rate?: number
           pos_eligible_turnover?: number
@@ -70,6 +77,9 @@ export type Database = {
           statement_period_from?: string | null
           statement_period_to?: string | null
           status?: string
+          tenure_months?: number
+          total_interest?: number
+          total_payable?: number
           turnover_basis?: number
           updated_at?: string
           user_id?: string | null
@@ -91,6 +101,8 @@ export type Database = {
           eligible_loan_amount?: number
           eligible_multiplier?: number
           id?: string
+          interest_rate?: number
+          monthly_emi?: number
           pos_annual_turnover?: number
           pos_cap_rate?: number
           pos_eligible_turnover?: number
@@ -101,6 +113,9 @@ export type Database = {
           statement_period_from?: string | null
           statement_period_to?: string | null
           status?: string
+          tenure_months?: number
+          total_interest?: number
+          total_payable?: number
           turnover_basis?: number
           updated_at?: string
           user_id?: string | null

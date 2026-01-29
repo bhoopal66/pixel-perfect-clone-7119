@@ -53,12 +53,17 @@ export const CaseService = {
     return data as unknown as Case;
   },
 
-  // Update eligibility inputs (Step 3)
+  // Update eligibility inputs (Step 3) - includes EMI data
   async updateEligibility(id: string, input: CaseEligibilityInput): Promise<Case> {
     const { data, error } = await supabase
       .from('cases')
       .update({
-        pos_monthly_turnover: input.pos_monthly_turnover || 0
+        pos_monthly_turnover: input.pos_monthly_turnover || 0,
+        interest_rate: input.interest_rate ?? 12,
+        tenure_months: input.tenure_months ?? 12,
+        monthly_emi: input.monthly_emi ?? 0,
+        total_interest: input.total_interest ?? 0,
+        total_payable: input.total_payable ?? 0
       })
       .eq('id', id)
       .select()
