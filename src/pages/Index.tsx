@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
+import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
 import { CurrencyService } from '../services/currencyService';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import type { AnalysisReport, AnalysisStep, AppState } from '../types/transaction.types';
 
@@ -169,6 +171,8 @@ const Index = () => {
     { icon: <Shield className="h-6 w-6" />, title: 'Secure Processing', desc: 'Your data stays private' },
   ];
 
+  const [activeTab, setActiveTab] = useState<'analysis' | 'loans'>('analysis');
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -185,33 +189,51 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Exchange Rate Status */}
-            <div className="flex items-center gap-2">
-              {ratesStatus === 'loading' && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground text-xs">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span className="hidden sm:inline">Loading rates...</span>
-                </div>
-              )}
-              {ratesStatus === 'live' && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-xs">
-                  <CheckCircle className="h-3 w-3" />
-                  <span className="hidden sm:inline">Live rates ({CurrencyService.getRatesDate()})</span>
-                </div>
-              )}
-              {ratesStatus === 'default' && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs">
-                  <AlertCircle className="h-3 w-3" />
-                  <span className="hidden sm:inline">Default rates</span>
-                </div>
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-4">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'analysis' | 'loans')}>
+                <TabsList className="bg-muted/50">
+                  <TabsTrigger value="analysis" className="gap-2 text-xs sm:text-sm">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Statement Analysis</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="loans" className="gap-2 text-xs sm:text-sm">
+                    <Briefcase className="h-4 w-4" />
+                    <span className="hidden sm:inline">Cash Loans</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              {/* Exchange Rate Status */}
+              {activeTab === 'analysis' && (
+                <>
+                  {ratesStatus === 'loading' && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground text-xs">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      <span className="hidden sm:inline">Loading rates...</span>
+                    </div>
+                  )}
+                  {ratesStatus === 'live' && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-xs">
+                      <CheckCircle className="h-3 w-3" />
+                      <span className="hidden sm:inline">Live rates ({CurrencyService.getRatesDate()})</span>
+                    </div>
+                  )}
+                  {ratesStatus === 'default' && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs">
+                      <AlertCircle className="h-3 w-3" />
+                      <span className="hidden sm:inline">Default rates</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section - Only show on upload state */}
-      {appState === 'upload' && (
+      {/* Hero Section - Only show on upload state for analysis tab */}
+      {activeTab === 'analysis' && appState === 'upload' && (
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 gradient-hero opacity-95" />
           <div className="absolute inset-0">
@@ -266,20 +288,28 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {appState === 'upload' && (
-          <FileUpload onFilesSelected={handleFilesSelected} onDemoMode={handleDemoMode} />
+        {activeTab === 'analysis' && (
+          <>
+            {appState === 'upload' && (
+              <FileUpload onFilesSelected={handleFilesSelected} onDemoMode={handleDemoMode} />
+            )}
+            
+            {appState === 'analyzing' && (
+              <AnalysisProgress steps={analysisSteps} />
+            )}
+            
+            {appState === 'results' && report && (
+              <ResultsDashboard 
+                report={report} 
+                onDownload={handleDownload}
+                onReset={handleReset}
+              />
+            )}
+          </>
         )}
-        
-        {appState === 'analyzing' && (
-          <AnalysisProgress steps={analysisSteps} />
-        )}
-        
-        {appState === 'results' && report && (
-          <ResultsDashboard 
-            report={report} 
-            onDownload={handleDownload}
-            onReset={handleReset}
-          />
+
+        {activeTab === 'loans' && (
+          <LoanCaseManagement currency="AED" />
         )}
       </main>
 
