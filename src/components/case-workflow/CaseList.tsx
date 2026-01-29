@@ -117,7 +117,8 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
 
   const filteredCases = cases.filter(c => 
     c.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.bank_name.toLowerCase().includes(searchTerm.toLowerCase())
+    c.bank_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.case_number && c.case_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Stats
@@ -245,6 +246,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Case #</TableHead>
                     <TableHead>Client</TableHead>
                     <TableHead>Bank</TableHead>
                     <TableHead>Product</TableHead>
@@ -258,6 +260,9 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
                 <TableBody>
                   {filteredCases.map((caseItem) => (
                     <TableRow key={caseItem.id}>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {caseItem.case_number || '—'}
+                      </TableCell>
                       <TableCell className="font-medium">{caseItem.client_name}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">

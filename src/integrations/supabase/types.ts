@@ -19,6 +19,7 @@ export type Database = {
           abcd_fee_amount: number
           adjusted_turnover: number
           bank_name: string
+          case_number: string | null
           cash_adjustment: number
           client_name: string
           created_at: string
@@ -49,6 +50,7 @@ export type Database = {
           abcd_fee_amount?: number
           adjusted_turnover?: number
           bank_name: string
+          case_number?: string | null
           cash_adjustment?: number
           client_name: string
           created_at?: string
@@ -79,6 +81,7 @@ export type Database = {
           abcd_fee_amount?: number
           adjusted_turnover?: number
           bank_name?: string
+          case_number?: string | null
           cash_adjustment?: number
           client_name?: string
           created_at?: string
