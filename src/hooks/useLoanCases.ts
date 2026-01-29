@@ -178,15 +178,20 @@ export function useLoanCases() {
   const addCase = useCallback(async (newCase: LoanCase): Promise<boolean> => {
     try {
       const dbData = toDbFormat(newCase);
+      // Remove id to let database generate UUID
+      const { id, ...insertData } = dbData;
       
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('loan_cases')
-        .insert(dbData as any);
+        .insert(insertData as any)
+        .select()
+        .single();
 
       if (insertError) throw insertError;
 
-      // Add to local state
-      setCases(prev => [newCase, ...prev]);
+      // Add to local state with the database-generated ID
+      const insertedCase = fromDbFormat(data as unknown as DbLoanCase);
+      setCases(prev => [insertedCase, ...prev]);
       toast.success('Loan case created successfully');
       return true;
     } catch (err) {
