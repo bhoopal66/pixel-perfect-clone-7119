@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      cases: {
+        Row: {
+          abcd_fee_amount: number
+          adjusted_turnover: number
+          bank_name: string
+          cash_adjustment: number
+          client_name: string
+          created_at: string
+          declared_turnover: number
+          eligibility_method: string
+          eligibility_status: string
+          eligible_loan_amount: number
+          eligible_multiplier: number
+          id: string
+          pos_annual_turnover: number
+          pos_cap_rate: number
+          pos_eligible_turnover: number
+          pos_monthly_turnover: number
+          product_type: string
+          sister_concern_adjustment: number
+          statement_pdf_url: string | null
+          statement_period_from: string | null
+          statement_period_to: string | null
+          status: string
+          turnover_basis: number
+          updated_at: string
+          user_id: string | null
+          variance_bucket: string
+          variance_percent: number
+          vat_turnover: number
+        }
+        Insert: {
+          abcd_fee_amount?: number
+          adjusted_turnover?: number
+          bank_name: string
+          cash_adjustment?: number
+          client_name: string
+          created_at?: string
+          declared_turnover?: number
+          eligibility_method?: string
+          eligibility_status?: string
+          eligible_loan_amount?: number
+          eligible_multiplier?: number
+          id?: string
+          pos_annual_turnover?: number
+          pos_cap_rate?: number
+          pos_eligible_turnover?: number
+          pos_monthly_turnover?: number
+          product_type?: string
+          sister_concern_adjustment?: number
+          statement_pdf_url?: string | null
+          statement_period_from?: string | null
+          statement_period_to?: string | null
+          status?: string
+          turnover_basis?: number
+          updated_at?: string
+          user_id?: string | null
+          variance_bucket?: string
+          variance_percent?: number
+          vat_turnover?: number
+        }
+        Update: {
+          abcd_fee_amount?: number
+          adjusted_turnover?: number
+          bank_name?: string
+          cash_adjustment?: number
+          client_name?: string
+          created_at?: string
+          declared_turnover?: number
+          eligibility_method?: string
+          eligibility_status?: string
+          eligible_loan_amount?: number
+          eligible_multiplier?: number
+          id?: string
+          pos_annual_turnover?: number
+          pos_cap_rate?: number
+          pos_eligible_turnover?: number
+          pos_monthly_turnover?: number
+          product_type?: string
+          sister_concern_adjustment?: number
+          statement_pdf_url?: string | null
+          statement_period_from?: string | null
+          statement_period_to?: string | null
+          status?: string
+          turnover_basis?: number
+          updated_at?: string
+          user_id?: string | null
+          variance_bucket?: string
+          variance_percent?: number
+          vat_turnover?: number
+        }
+        Relationships: []
+      }
       loan_cases: {
         Row: {
           abcd_fee_amount: number

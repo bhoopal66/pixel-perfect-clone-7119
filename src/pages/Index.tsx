@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator, Users, LogOut, User } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator, Users, LogOut, User, FolderOpen } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { LoanEligibilityDashboard } from '../components/LoanEligibilityDashboard';
+import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { WelcomeModal } from '../components/WelcomeModal';
 import { ReportBuilder } from '../services/reportBuilder';
@@ -180,7 +181,25 @@ const Index = () => {
     { icon: <Shield className="h-6 w-6" />, title: 'Secure Processing', desc: 'Your data stays private' },
   ];
 
-  const [activeTab, setActiveTab] = useState<'analysis' | 'loans' | 'eligibility'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'loans' | 'eligibility' | 'cases'>('cases');
+  const [casesView, setCasesView] = useState<'list' | 'workflow'>('list');
+  const [editingCaseId, setEditingCaseId] = useState<string | undefined>();
+
+  // Cases tab inline component
+  const CasesTab = () => (
+    casesView === 'list' ? (
+      <CaseList 
+        onNewCase={() => { setEditingCaseId(undefined); setCasesView('workflow'); }}
+        onEditCase={(id) => { setEditingCaseId(id); setCasesView('workflow'); }}
+      />
+    ) : (
+      <CaseWorkflow
+        caseId={editingCaseId}
+        onComplete={() => { setCasesView('list'); setEditingCaseId(undefined); }}
+        onCancel={() => { setCasesView('list'); setEditingCaseId(undefined); }}
+      />
+    )
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -203,8 +222,12 @@ const Index = () => {
             
             {/* Navigation Tabs */}
             <div className="flex items-center gap-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'analysis' | 'loans' | 'eligibility')}>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'analysis' | 'loans' | 'eligibility' | 'cases')}>
                 <TabsList className="bg-muted/50">
+                  <TabsTrigger value="cases" className="gap-2 text-xs sm:text-sm">
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Cases</span>
+                  </TabsTrigger>
                   <TabsTrigger value="analysis" className="gap-2 text-xs sm:text-sm">
                     <BarChart3 className="h-4 w-4" />
                     <span className="hidden sm:inline">Statement Analysis</span>
@@ -314,8 +337,33 @@ const Index = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
           >
+            {/* NEW: Unified Cases Card */}
+            <motion.button
+              onClick={() => setActiveTab('cases')}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
+                activeTab === 'cases' 
+                  ? 'bg-accent/20 border-accent/50' 
+                  : 'bg-white/10 border-white/10 hover:bg-white/15'
+              }`}
+            >
+              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
+                <FolderOpen className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Unified Cases</h3>
+              <p className="text-white/70 text-sm mb-4">
+                3-step guided workflow: Create → Analyze → Eligibility.
+              </p>
+              <div className="flex items-center gap-2 text-accent text-sm font-medium">
+                <span>Open Module</span>
+                <BarChart3 className="h-4 w-4" />
+              </div>
+            </motion.button>
             {/* Cash Loans Card */}
             <motion.button
               onClick={() => setActiveTab('loans')}
@@ -443,6 +491,10 @@ const Index = () => {
 
         {activeTab === 'eligibility' && (
           <LoanEligibilityDashboard currency="AED" />
+        )}
+
+        {activeTab === 'cases' && (
+          <CasesTab />
         )}
       </main>
 
