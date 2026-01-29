@@ -17,6 +17,53 @@ export interface TurnoverConfiguration {
   endDate: string;
   sisterCompanies: SisterCompany[];
   keywords: TransactionKeywords;
+  
+  // User-controlled toggles (when allowed)
+  excludeCashDeposits: boolean;
+  excludeSisterConcern: boolean;
+  
+  // Threshold values (default: 20%, 20%, 25%)
+  cashDepositThreshold: number;
+  sisterConcernThreshold: number;
+  vatVarianceThreshold: number;
+}
+
+// Exclusion status with mandatory enforcement
+export interface ExclusionStatus {
+  cashDeposits: {
+    amount: number;
+    percentage: number;
+    excluded: boolean;
+    mandatory: boolean;
+    reason: string;
+  };
+  sisterConcern: {
+    amount: number;
+    percentage: number;
+    excluded: boolean;
+    mandatory: boolean;
+    reason: string;
+  };
+  vatVariance: {
+    bankTurnover: number;
+    vatSales: number;
+    variance: number;
+    percentageVariance: number;
+    mandatory: boolean;
+    reason: string;
+  };
+}
+
+// Turnover calculation result with exclusion details
+export interface TurnoverResult {
+  totalCredits: number;
+  totalDebits: number;
+  cashDeposits: number;
+  cashDepositsExcluded: boolean;
+  sisterConcern: number;
+  sisterConcernExcluded: boolean;
+  businessTurnover: number;
+  exclusionRate: number;
 }
 
 export interface TransactionClassification {
@@ -61,6 +108,13 @@ export const DEFAULT_KEYWORDS: TransactionKeywords = {
   sisterConcern: ['MUSAB BEH', 'AHMAD HUSS', 'MOHANNAD', 'RELATED PARTY', 'INTER COMPANY', 'SISTER CONCERN']
 };
 
+// Default thresholds for mandatory exclusion
+export const DEFAULT_THRESHOLDS = {
+  cashDeposit: 20, // >20% triggers mandatory exclusion
+  sisterConcern: 20, // >20% triggers mandatory exclusion
+  vatVariance: 25 // >25% triggers mandatory exclusion of both
+};
+
 export const getDefaultConfiguration = (): TurnoverConfiguration => ({
   startDate: '2024-01-01',
   endDate: '2024-06-30',
@@ -68,7 +122,12 @@ export const getDefaultConfiguration = (): TurnoverConfiguration => ({
   keywords: {
     cashDeposits: [...DEFAULT_KEYWORDS.cashDeposits],
     sisterConcern: [...DEFAULT_KEYWORDS.sisterConcern]
-  }
+  },
+  excludeCashDeposits: true,
+  excludeSisterConcern: true,
+  cashDepositThreshold: DEFAULT_THRESHOLDS.cashDeposit,
+  sisterConcernThreshold: DEFAULT_THRESHOLDS.sisterConcern,
+  vatVarianceThreshold: DEFAULT_THRESHOLDS.vatVariance
 });
 
 // ===== CORRECT TURNOVER DEFINITIONS =====

@@ -8,7 +8,10 @@ import type {
   SisterCompany,
   TransactionKeywords,
   ExtendedMonthlyTurnover,
-  TurnoverAnalysisReport
+  TurnoverAnalysisReport,
+  ExclusionStatus,
+  TurnoverResult,
+  VATReturn
 } from '../types/turnover.types';
 
 export class TurnoverCalculator {
@@ -211,13 +214,172 @@ export class TurnoverCalculator {
     };
   }
 
-  /**
+/**
    * Calculate the old (incorrect) turnover for comparison
    */
   static calculateOldTurnover(transactions: Transaction[]): number {
     const totalCredits = transactions.reduce((sum, t) => sum + t.credit, 0);
     const totalDebits = transactions.reduce((sum, t) => sum + t.debit, 0);
     return totalCredits + totalDebits;
+  }
+
+  /**
+   * CONDITIONAL EXCLUSION LOGIC
+   * Calculate exclusion status with mandatory enforcement based on thresholds:
+   * - Cash Deposits >20% → Mandatory exclusion
+   * - Sister Concern >20% → Mandatory exclusion
+   * - VAT Variance >25% → Both mandatory
+   */
+  static calculateExclusionStatus(
+    transactions: Transaction[],
+    config: TurnoverConfiguration,
+    vatReturns: VATReturn[] = []
+  ): ExclusionStatus {
+    // Calculate totals
+    const totalCredits = transactions
+      .filter(t => t.credit > 0)
+      .reduce((sum, t) => sum + t.credit, 0);
+
+    // Identify cash deposits
+    const cashDepositTransactions = transactions.filter(t =>
+      t.credit > 0 &&
+      config.keywords.cashDeposits.some(keyword =>
+        t.description.toLowerCase().includes(keyword.toLowerCase())
+      )
+    );
+    const cashDepositsAmount = cashDepositTransactions.reduce((sum, t) => sum + t.credit, 0);
+    const cashDepositsPercentage = totalCredits > 0 ? (cashDepositsAmount / totalCredits) * 100 : 0;
+
+    // Identify sister concern
+    const activeSisters = config.sisterCompanies.filter(c => c.active);
+    const sisterConcernTransactions = transactions.filter(t =>
+      t.credit > 0 && (
+        activeSisters.some(sister =>
+          t.description.toLowerCase().includes(sister.name.toLowerCase())
+        ) ||
+        config.keywords.sisterConcern.some(keyword =>
+          t.description.toLowerCase().includes(keyword.toLowerCase())
+        )
+      )
+    );
+    const sisterConcernAmount = sisterConcernTransactions.reduce((sum, t) => sum + t.credit, 0);
+    const sisterConcernPercentage = totalCredits > 0 ? (sisterConcernAmount / totalCredits) * 100 : 0;
+
+    // Check thresholds
+    const cashMandatory = cashDepositsPercentage > config.cashDepositThreshold;
+    const sisterMandatory = sisterConcernPercentage > config.sisterConcernThreshold;
+
+    // Calculate VAT variance
+    const latestVAT = vatReturns.length > 0 ? vatReturns[vatReturns.length - 1] : null;
+    let vatVarianceMandatory = false;
+    let vatVarianceData = {
+      bankTurnover: 0,
+      vatSales: 0,
+      variance: 0,
+      percentageVariance: 0,
+      mandatory: false,
+      reason: ''
+    };
+
+    if (latestVAT) {
+      // Calculate bank turnover based on current exclusion settings
+      const excludedCash = config.excludeCashDeposits ? cashDepositsAmount : 0;
+      const excludedSister = config.excludeSisterConcern ? sisterConcernAmount : 0;
+      const bankTurnover = totalCredits - excludedCash - excludedSister;
+
+      const vatSales = latestVAT.taxableSales + latestVAT.zeroRatedSales;
+      const variance = Math.abs(bankTurnover - vatSales);
+      const percentageVariance = Math.max(bankTurnover, vatSales) > 0
+        ? (variance / Math.max(bankTurnover, vatSales)) * 100
+        : 0;
+
+      vatVarianceMandatory = percentageVariance > config.vatVarianceThreshold;
+
+      vatVarianceData = {
+        bankTurnover,
+        vatSales,
+        variance,
+        percentageVariance,
+        mandatory: vatVarianceMandatory,
+        reason: vatVarianceMandatory
+          ? `VAT variance of ${percentageVariance.toFixed(2)}% exceeds ${config.vatVarianceThreshold}% threshold. ` +
+            `All cash deposits and sister concern transfers must be excluded for accurate reporting.`
+          : ''
+      };
+    }
+
+    // Determine final mandatory status (VAT variance forces both)
+    const finalCashMandatory = cashMandatory || vatVarianceMandatory;
+    const finalSisterMandatory = sisterMandatory || vatVarianceMandatory;
+
+    return {
+      cashDeposits: {
+        amount: cashDepositsAmount,
+        percentage: cashDepositsPercentage,
+        excluded: config.excludeCashDeposits || finalCashMandatory,
+        mandatory: finalCashMandatory,
+        reason: finalCashMandatory
+          ? cashMandatory
+            ? `Cash deposits represent ${cashDepositsPercentage.toFixed(2)}% of total credits, ` +
+              `exceeding the ${config.cashDepositThreshold}% threshold. These must be excluded.`
+            : `Excluded due to VAT variance exceeding ${config.vatVarianceThreshold}% threshold.`
+          : ''
+      },
+      sisterConcern: {
+        amount: sisterConcernAmount,
+        percentage: sisterConcernPercentage,
+        excluded: config.excludeSisterConcern || finalSisterMandatory,
+        mandatory: finalSisterMandatory,
+        reason: finalSisterMandatory
+          ? sisterMandatory
+            ? `Sister concern transfers represent ${sisterConcernPercentage.toFixed(2)}% of total credits, ` +
+              `exceeding the ${config.sisterConcernThreshold}% threshold. These must be excluded.`
+            : `Excluded due to VAT variance exceeding ${config.vatVarianceThreshold}% threshold.`
+          : ''
+      },
+      vatVariance: vatVarianceData
+    };
+  }
+
+  /**
+   * Calculate turnover with conditional exclusions
+   */
+  static calculateConditionalTurnover(
+    transactions: Transaction[],
+    exclusionStatus: ExclusionStatus
+  ): TurnoverResult {
+    const totalCredits = transactions
+      .filter(t => t.credit > 0)
+      .reduce((sum, t) => sum + t.credit, 0);
+
+    const totalDebits = transactions
+      .filter(t => t.debit > 0)
+      .reduce((sum, t) => sum + t.debit, 0);
+
+    // Calculate turnover based on exclusions
+    let turnover = totalCredits;
+
+    if (exclusionStatus.cashDeposits.excluded) {
+      turnover -= exclusionStatus.cashDeposits.amount;
+    }
+
+    if (exclusionStatus.sisterConcern.excluded) {
+      turnover -= exclusionStatus.sisterConcern.amount;
+    }
+
+    const totalExcluded = (exclusionStatus.cashDeposits.excluded ? exclusionStatus.cashDeposits.amount : 0) +
+                          (exclusionStatus.sisterConcern.excluded ? exclusionStatus.sisterConcern.amount : 0);
+
+    return {
+      totalCredits,
+      totalDebits,
+      cashDeposits: exclusionStatus.cashDeposits.amount,
+      cashDepositsExcluded: exclusionStatus.cashDeposits.excluded,
+      sisterConcern: exclusionStatus.sisterConcern.amount,
+      sisterConcernExcluded: exclusionStatus.sisterConcern.excluded,
+      businessTurnover: turnover,
+      exclusionRate: totalCredits > 0 ? (totalExcluded / totalCredits) * 100 : 0
+    };
   }
 
   /**
