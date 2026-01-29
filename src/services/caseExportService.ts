@@ -6,6 +6,7 @@ import { PRODUCT_TYPE_LABELS } from '@/types/case.types';
 
 export function exportCasesToCSV(cases: Case[], filename: string = 'cases.csv'): void {
   const headers = [
+    'Case Number',
     'Client Name',
     'Bank Name',
     'Product Type',
@@ -35,6 +36,7 @@ export function exportCasesToCSV(cases: Case[], filename: string = 'cases.csv'):
   ];
 
   const rows = cases.map(c => [
+    c.case_number || '',
     c.client_name,
     c.bank_name,
     PRODUCT_TYPE_LABELS[c.product_type] || c.product_type,
@@ -175,6 +177,7 @@ export async function exportSingleCaseToExcel(caseData: Case, filename?: string)
     { field: 'Generated', value: new Date().toLocaleString(), notes: '' },
     { field: '', value: '', notes: '' },
     { field: '--- CLIENT INFORMATION ---', value: '', notes: '' },
+    { field: 'Case Number', value: caseData.case_number || 'N/A', notes: '' },
     { field: 'Client Name', value: caseData.client_name, notes: '' },
     { field: 'Bank Name', value: caseData.bank_name, notes: '' },
     { field: 'Product Type', value: productLabel, notes: isPOS ? `${(caseData.pos_cap_rate * 100).toFixed(0)}% POS Cap Applied` : '' },
@@ -271,12 +274,13 @@ export function exportSingleCaseToPDF(caseData: Case, filename?: string): void {
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Case Analysis Report - ${caseData.client_name}</title>
+      <title>Case Analysis Report - ${caseData.case_number || caseData.client_name}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #1a1a1a; padding: 40px; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
         .header h1 { font-size: 24px; color: #1e40af; margin-bottom: 8px; }
+        .header .case-number { font-size: 14px; color: #475569; font-family: 'Courier New', monospace; margin-bottom: 8px; }
         .header p { color: #64748b; font-size: 11px; }
         .section { margin-bottom: 24px; }
         .section-title { font-size: 14px; font-weight: 600; color: #1e40af; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -311,12 +315,19 @@ export function exportSingleCaseToPDF(caseData: Case, filename?: string): void {
     <body>
       <div class="header">
         <h1>Case Analysis Report</h1>
+        ${caseData.case_number ? `<div class="case-number">${caseData.case_number}</div>` : ''}
         <p>Generated on ${new Date().toLocaleString()}</p>
       </div>
 
       <div class="section">
         <div class="section-title">Client Information</div>
         <div class="grid">
+          ${caseData.case_number ? `
+          <div class="field">
+            <div class="field-label">Case Number</div>
+            <div class="field-value" style="font-family: 'Courier New', monospace;">${caseData.case_number}</div>
+          </div>
+          ` : ''}
           <div class="field">
             <div class="field-label">Client Name</div>
             <div class="field-value">${caseData.client_name}</div>
@@ -497,6 +508,7 @@ function styleHeaderRow(sheet: ExcelJS.Worksheet): void {
 
 function getCaseColumns(): Partial<ExcelJS.Column>[] {
   return [
+    { header: 'Case Number', key: 'case_number', width: 15 },
     { header: 'Client Name', key: 'client_name', width: 25 },
     { header: 'Bank', key: 'bank_name', width: 15 },
     { header: 'Product Type', key: 'product_type', width: 20 },
@@ -527,6 +539,7 @@ function getCaseColumns(): Partial<ExcelJS.Column>[] {
 
 function getCaseRowData(c: Case): Record<string, unknown> {
   return {
+    case_number: c.case_number || '',
     client_name: c.client_name,
     bank_name: c.bank_name,
     product_type: PRODUCT_TYPE_LABELS[c.product_type] || c.product_type,
