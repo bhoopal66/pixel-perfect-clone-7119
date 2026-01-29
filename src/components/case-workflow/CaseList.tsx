@@ -6,6 +6,13 @@ import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 import { 
   Table, 
   TableBody, 
@@ -51,7 +58,17 @@ import {
   getEligibilityStatusColor 
 } from '@/types/case.types';
 import { useAuth } from '@/hooks/useAuth';
-import type { Case, EligibilityStatus } from '@/types/case.types';
+import type { Case, CaseStatus, EligibilityStatus } from '@/types/case.types';
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'Draft', label: 'Draft' },
+  { value: 'Statement Uploaded', label: 'Statement Uploaded' },
+  { value: 'Analysis Completed', label: 'Analysis Completed' },
+  { value: 'Eligibility Completed', label: 'Eligibility Completed' },
+  { value: 'Submitted', label: 'Submitted' },
+  { value: 'Closed', label: 'Closed' },
+];
 
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -70,6 +87,7 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
   const [caseNumberSort, setCaseNumberSort] = useState<SortDirection>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
 
@@ -151,7 +169,9 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
       const matchesDateFrom = !dateFrom || caseDate >= dateFrom;
       const matchesDateTo = !dateTo || caseDate <= new Date(dateTo.getTime() + 24 * 60 * 60 * 1000 - 1);
       
-      return matchesSearch && matchesCaseNumber && matchesDateFrom && matchesDateTo;
+      const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+      
+      return matchesSearch && matchesCaseNumber && matchesDateFrom && matchesDateTo && matchesStatus;
     })
     .sort((a, b) => {
       if (caseNumberSort === null) return 0;
@@ -338,6 +358,18 @@ export const CaseList: React.FC<CaseListProps> = ({ onNewCase, onEditCase }) => 
                   <X className="h-4 w-4" />
                 </Button>
               )}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
