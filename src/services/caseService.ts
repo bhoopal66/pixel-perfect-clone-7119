@@ -10,6 +10,7 @@ export const CaseService = {
         client_name: input.client_name,
         bank_name: input.bank_name,
         product_type: input.product_type,
+        agent_reference: input.agent_reference || '',
         status: 'Draft' as CaseStatus
       })
       .select()
@@ -17,6 +18,21 @@ export const CaseService = {
     
     if (error) throw error;
     return data as unknown as Case;
+  },
+
+  // Get unique agent references for autocomplete
+  async getAgentReferences(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('cases')
+      .select('agent_reference')
+      .neq('agent_reference', '')
+      .order('agent_reference');
+    
+    if (error) throw error;
+    
+    // Get unique values
+    const uniqueRefs = [...new Set((data || []).map(d => d.agent_reference))];
+    return uniqueRefs.filter(Boolean);
   },
 
   // Update case with analysis data (Step 2)

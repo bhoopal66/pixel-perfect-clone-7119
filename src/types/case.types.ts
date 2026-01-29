@@ -13,6 +13,7 @@ export interface Case {
   client_name: string;
   bank_name: string;
   product_type: ProductType;
+  agent_reference: string;
   status: CaseStatus;
   
   // B) Bank Statement Analysis
@@ -58,6 +59,7 @@ export interface CaseCreateInput {
   client_name: string;
   bank_name: string;
   product_type: ProductType;
+  agent_reference?: string;
 }
 
 export interface CaseAnalysisInput {
