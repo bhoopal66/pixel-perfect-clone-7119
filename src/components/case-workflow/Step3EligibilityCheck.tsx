@@ -55,10 +55,38 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
   );
   const [hasChanges, setHasChanges] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // EMI Calculator state
+  const [interestRate, setInterestRate] = useState('12');
+  const [tenure, setTenure] = useState('12');
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
   const isPOS = isPOSProduct(caseData.product_type);
   const isReverse = caseData.eligibility_method === 'Reverse (ABCT 1%)';
+
+  // EMI Calculation
+  const calculateEMI = () => {
+    const principal = caseData.eligible_loan_amount;
+    const rate = parseFloat(interestRate) || 0;
+    const months = parseInt(tenure) || 1;
+    
+    if (principal <= 0 || rate <= 0 || months <= 0) {
+      return { emi: 0, totalInterest: 0, totalPayable: 0 };
+    }
+    
+    const monthlyRate = rate / 12 / 100;
+    const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
+    const totalPayable = emi * months;
+    const totalInterest = totalPayable - principal;
+    
+    return {
+      emi: isNaN(emi) ? 0 : emi,
+      totalInterest: isNaN(totalInterest) ? 0 : totalInterest,
+      totalPayable: isNaN(totalPayable) ? 0 : totalPayable
+    };
+  };
+
+  const emiData = calculateEMI();
 
   useEffect(() => {
     setHasChanges(posMonthlyTurnover !== (caseData.pos_monthly_turnover?.toString() || ''));
@@ -325,6 +353,66 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
               </div>
             </div>
           </div>
+
+          {/* EMI Calculator */}
+          {caseData.eligible_loan_amount > 0 && (
+            <div className="p-4 bg-muted/30 rounded-lg border">
+              <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                EMI Calculator
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
+                  <Label htmlFor="interest_rate">Annual Interest Rate (%)</Label>
+                  <Input
+                    id="interest_rate"
+                    type="number"
+                    placeholder="12"
+                    value={interestRate}
+                    onChange={(e) => setInterestRate(e.target.value)}
+                    min="0"
+                    max="50"
+                    step="0.1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tenure">Tenure (Months)</Label>
+                  <Input
+                    id="tenure"
+                    type="number"
+                    placeholder="12"
+                    value={tenure}
+                    onChange={(e) => setTenure(e.target.value)}
+                    min="1"
+                    max="360"
+                    step="1"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-background rounded-lg">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Monthly EMI</p>
+                  <p className="text-xl font-bold font-mono text-primary">
+                    {formatCurrency(emiData.emi)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Interest</p>
+                  <p className="text-lg font-semibold font-mono text-muted-foreground">
+                    {formatCurrency(emiData.totalInterest)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Payable</p>
+                  <p className="text-lg font-semibold font-mono">
+                    {formatCurrency(emiData.totalPayable)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex flex-wrap gap-3 pt-4">
