@@ -445,6 +445,20 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
                       Reset
                     </Button>
                   </div>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {[8, 10, 12, 15, 18].map((rate) => (
+                      <Button
+                        key={rate}
+                        type="button"
+                        variant={parseFloat(interestRate) === rate ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setInterestRate(rate.toString())}
+                        className="h-7 px-2.5 text-xs"
+                      >
+                        {rate}%
+                      </Button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tenure">Tenure (Months)</Label>
