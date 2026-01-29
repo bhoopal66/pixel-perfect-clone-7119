@@ -7,6 +7,7 @@ export type EligibilityStatus = 'Pending' | 'Eligible' | 'Eligible (Reduced)' | 
 
 export interface Case {
   id: string;
+  case_number: string | null;
   
   // A) Case Core
   client_name: string;
