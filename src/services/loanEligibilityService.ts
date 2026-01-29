@@ -128,9 +128,9 @@ export const LoanEligibilityService = {
       'Eligibility Method',
       'Multiplier',
       'Eligible Loan Amount',
-      'ABCD Fee Rate',
-      'ABCD Fee Amount',
-      'Total with ABCD',
+      'ABCT Fee Rate',
+      'ABCT Fee Amount',
+      'Total with ABCT',
       'Created At',
       'Updated At',
       'Notes'

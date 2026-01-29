@@ -56,7 +56,7 @@ interface CalculatedValues {
   pos_cap_vat: number;
   pos_eligible_turnover: number;
   turnover_basis: number;
-  // ABCD fee fields
+  // ABCT fee fields
   abcd_fee_rate: number;
   abcd_fee_amount: number;
   total_with_abcd: number;
@@ -536,15 +536,15 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                         <p className="font-semibold">🔄 Alternative Eligibility Method</p>
                         <p className="text-sm">
                           Normal eligibility failed (variance {calculated.variance_percent.toFixed(2)}% &gt; 25%). 
-                          Using <strong>ABCD reversal calculation</strong>:
+                          Using <strong>ABCT reversal calculation</strong>:
                         </p>
                         <div className="text-xs space-y-1 p-2 bg-orange-100 dark:bg-orange-900/50 rounded font-mono">
                           <p>Loan Amount = Adjusted Turnover = {formatCurrency(calculated.adjusted_turnover)}</p>
-                          <p>ABCD Fee = Adjusted × 1% = {formatCurrency(calculated.abcd_fee_amount)}</p>
+                          <p>ABCT Fee = Adjusted × 1% = {formatCurrency(calculated.abcd_fee_amount)}</p>
                           <p className="font-bold">Total = {formatCurrency(calculated.total_with_abcd)}</p>
                         </div>
                         <p className="text-xs italic">
-                          Since ABCD = 1% of Adjusted Turnover AND ABCD = 1% of Loan, therefore Loan = Adjusted Turnover
+                          Since ABCT = 1% of Adjusted Turnover AND ABCT = 1% of Loan, therefore Loan = Adjusted Turnover
                         </p>
                       </div>
                     </AlertDescription>
@@ -660,28 +660,28 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   </p>
                 </div>
 
-                {/* ABCD Fee Section - Only for RAK POS */}
+                {/* ABCT Fee Section - Only for RAK POS */}
                 {isRAKPOS && calculated.eligible_loan_amount > 0 && (
                   <div className="space-y-2 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-300 dark:border-amber-700 mt-4">
                     <p className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider mb-2">
-                      ABCD Fee (RAK POS Only)
+                      ABCT Fee (RAK POS Only)
                     </p>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-amber-700 dark:text-amber-300">ABCD Fee Rate:</span>
+                        <span className="text-amber-700 dark:text-amber-300">ABCT Fee Rate:</span>
                         <span className="font-mono font-semibold text-amber-800 dark:text-amber-200">
                           {(calculated.abcd_fee_rate * 100).toFixed(0)}%
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-amber-700 dark:text-amber-300">ABCD Fee Amount:</span>
+                        <span className="text-amber-700 dark:text-amber-300">ABCT Fee Amount:</span>
                         <span className="font-mono font-semibold text-amber-800 dark:text-amber-200">
                           {formatCurrency(calculated.abcd_fee_amount)}
                         </span>
                       </div>
                       <div className="pt-2 border-t border-amber-300 dark:border-amber-700">
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-amber-800 dark:text-amber-200">Total with ABCD Fee:</span>
+                          <span className="font-semibold text-amber-800 dark:text-amber-200">Total with ABCT Fee:</span>
                           <span className="font-mono font-bold text-lg text-amber-900 dark:text-amber-100">
                             {formatCurrency(calculated.total_with_abcd)}
                           </span>
@@ -706,10 +706,10 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                   <p>Variance% = |VAT − Adjusted| / MAX(VAT, Adjusted) × 100</p>
                   <p>Eligible Amount = Turnover Basis × Multiplier</p>
                   {isRAKPOS && calculated.eligibility_method === 'Standard' && (
-                    <p>Total = Eligible Amount + (Eligible Amount × 1% ABCD Fee)</p>
+                    <p>Total = Eligible Amount + (Eligible Amount × 1% ABCT Fee)</p>
                   )}
                   {isRAKPOS && calculated.eligibility_method === 'Alternative' && (
-                    <p className="text-orange-600 font-semibold">Alternative: Loan = Adjusted Turnover, ABCD = Adjusted × 1%</p>
+                    <p className="text-orange-600 font-semibold">Alternative: Loan = Adjusted Turnover, ABCT = Adjusted × 1%</p>
                   )}
                 </div>
               </>

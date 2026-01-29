@@ -45,7 +45,7 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
 
   const formatCurrency = (value: number) => CurrencyService.format(value, 'AED');
   const isPOS = isPOSProduct(caseData.product_type);
-  const isReverse = caseData.eligibility_method === 'Reverse (ABCD 1%)';
+  const isReverse = caseData.eligibility_method === 'Reverse (ABCT 1%)';
 
   useEffect(() => {
     setHasChanges(posMonthlyTurnover !== (caseData.pos_monthly_turnover?.toString() || ''));
@@ -143,10 +143,10 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
               <RefreshCw className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800 dark:text-orange-200">
                 <div className="space-y-2">
-                  <p className="font-semibold">🔄 Reverse (ABCD 1%) Method Applied</p>
+                  <p className="font-semibold">🔄 Reverse (ABCT 1%) Method Applied</p>
                   <p className="text-sm">
                     Normal eligibility failed (variance {caseData.variance_percent.toFixed(2)}% &gt; 25%). 
-                    Using ABCD reversal: <strong>Loan = Adjusted Turnover</strong>
+                    Using ABCT reversal: <strong>Loan = Adjusted Turnover</strong>
                   </p>
                 </div>
               </AlertDescription>
@@ -276,7 +276,7 @@ export const Step3EligibilityCheck: React.FC<Step3EligibilityCheckProps> = ({
               
               <div className="flex justify-center gap-8 text-sm">
                 <div>
-                  <p className="text-muted-foreground">ABCD Fee (1%):</p>
+                  <p className="text-muted-foreground">ABCT Fee (1%):</p>
                   <p className="font-mono font-semibold">{formatCurrency(caseData.abcd_fee_amount)}</p>
                 </div>
                 <div>

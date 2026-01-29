@@ -2,7 +2,7 @@
 
 export type CaseStatus = 'Draft' | 'Statement Uploaded' | 'Analysis Completed' | 'Eligibility Completed' | 'Submitted' | 'Closed';
 export type ProductType = 'standard' | 'rak_pos' | 'wio_pos';
-export type EligibilityMethod = 'Normal' | 'Reverse (ABCD 1%)';
+export type EligibilityMethod = 'Normal' | 'Reverse (ABCT 1%)';
 export type EligibilityStatus = 'Pending' | 'Eligible' | 'Eligible (Reduced)' | 'Eligible (Reverse)';
 
 export interface Case {
