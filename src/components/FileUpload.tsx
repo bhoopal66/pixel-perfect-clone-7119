@@ -29,23 +29,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    const newFiles = acceptedFiles.map(file => ({
+      file,
+      id: Math.random().toString(36).substring(7),
+      name: file.name,
+      size: formatFileSize(file.size)
+    }));
+    
     setUploadedFiles(prev => {
-      // Filter out duplicates by checking file name and size
-      const existingFileKeys = new Set(
-        prev.map(f => `${f.name}-${f.file.size}`)
-      );
-      
-      const uniqueNewFiles = acceptedFiles
-        .filter(file => !existingFileKeys.has(`${file.name}-${file.size}`))
-        .map(file => ({
-          file,
-          id: Math.random().toString(36).substring(7),
-          name: file.name,
-          size: formatFileSize(file.size)
-        }));
-      
-      const combined = [...prev, ...uniqueNewFiles];
-      return combined.slice(0, 12); // Max 12 files
+      const combined = [...prev, ...newFiles];
+      return combined.slice(0, 6); // Max 6 files
     });
   }, []);
 
@@ -54,7 +47,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     accept: {
       'application/pdf': ['.pdf']
     },
-    maxFiles: 12,
+    maxFiles: 6,
     disabled: isProcessing
   });
 
@@ -79,7 +72,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           Upload Your Bank Statements
         </h2>
         <p className="text-muted-foreground text-lg">
-          Drop up to 12 monthly PDF statements for comprehensive analysis
+          Drop up to 6 monthly PDF statements for comprehensive analysis
         </p>
       </motion.div>
 
@@ -121,7 +114,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground">
             <FileCheck className="h-4 w-4" />
-            <span>Accepts PDF files • Max 12 files • Duplicates ignored</span>
+            <span>Accepts PDF files • Max 6 files</span>
           </div>
         </div>
       </motion.div>
@@ -139,7 +132,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 Uploaded Files
               </h3>
               <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
-                {uploadedFiles.length}/12 files
+                {uploadedFiles.length}/6 files
               </span>
             </div>
             
