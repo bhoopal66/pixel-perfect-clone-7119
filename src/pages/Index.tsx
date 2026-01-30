@@ -15,7 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 const Index = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, canManageUsers, canManageAgents, userRole, signOut } = useAuth();
 
   const features = [
     { icon: <FileSpreadsheet className="h-6 w-6" />, title: 'PDF Parsing', desc: 'Extract data from statements' },
@@ -107,26 +107,29 @@ const Index = () => {
                 <DropdownMenuContent align="end">
                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
                     {user?.email}
+                    <div className="text-xs capitalize text-primary/70">
+                      {userRole.replace('_', ' ')}
+                    </div>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="h-4 w-4 mr-2" />
                     My Profile
                   </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                        <Shield className="h-4 w-4 mr-2" />
-                        User Management
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/admin/agents')}>
-                        <UserCog className="h-4 w-4 mr-2" />
-                        Agent Management
-                      </DropdownMenuItem>
-                    </>
+                  {canManageUsers && (
+                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      User Management
+                    </DropdownMenuItem>
+                  )}
+                  {canManageAgents && (
+                    <DropdownMenuItem onClick={() => navigate('/admin/agents')}>
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Agent Management
+                    </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>
+                  <DropdownMenuItem onClick={() => signOut()}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
                   </DropdownMenuItem>

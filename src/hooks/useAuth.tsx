@@ -10,8 +10,13 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isSupervisor: boolean;
+  isCoordinator: boolean;
   userRole: AppRole;
   hasAdminPrivileges: boolean;
+  canManageAgents: boolean;
+  canManageUsers: boolean;
+  canAccessCases: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -27,7 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isSuperAdmin = userRole === 'super_admin';
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isSupervisor = userRole === 'supervisor';
+  const isCoordinator = userRole === 'coordinator';
   const hasAdminPrivileges = isAdmin;
+  
+  // Access control based on role hierarchy
+  // super_admin, admin: full access
+  // supervisor: cases + agents (no user management)
+  // coordinator: cases only
+  // user: cases only (basic access)
+  const canManageUsers = isAdmin; // Only admin and super_admin
+  const canManageAgents = isAdmin || isSupervisor; // Admin, super_admin, supervisor
+  const canAccessCases = true; // Everyone can access cases
 
   const checkUserRole = async (userId: string) => {
     try {
@@ -139,9 +155,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session, 
       isLoading, 
       isAdmin, 
-      isSuperAdmin, 
+      isSuperAdmin,
+      isSupervisor,
+      isCoordinator,
       userRole, 
       hasAdminPrivileges,
+      canManageAgents,
+      canManageUsers,
+      canAccessCases,
       signUp, 
       signIn, 
       signOut 
