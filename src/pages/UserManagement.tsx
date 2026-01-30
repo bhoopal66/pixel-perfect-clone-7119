@@ -22,8 +22,9 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Shield, User, Users, Crown, Eye, UserCheck } from 'lucide-react';
+import { ArrowLeft, Loader2, Shield, User, Users, Crown, Eye, UserCheck, Info } from 'lucide-react';
 import { format } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface UserWithRole {
   user_id: string;
@@ -152,6 +153,25 @@ export default function UserManagement() {
             <p className="text-muted-foreground">Manage user roles and permissions</p>
           </div>
         </div>
+
+        {/* Admin Role Indicator */}
+        {isSuperAdmin ? (
+          <Alert className="bg-amber-500/10 border-amber-500/50">
+            <Crown className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              <span className="font-medium">Super Admin Access:</span> Full control over all users and roles. 
+              You can assign any role including Super Admin.
+            </AlertDescription>
+          </Alert>
+        ) : isAdmin && (
+          <Alert className="bg-primary/10 border-primary/50">
+            <Shield className="h-4 w-4 text-primary" />
+            <AlertDescription>
+              <span className="font-medium">Admin Access:</span> You can manage users and assign roles, 
+              except for the Super Admin role which is restricted.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Role Legend */}
         <Card>
