@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { DOCUMENT_TYPES, DocumentUpload } from '@/types/onboarding.types';
-import { Upload, File, X, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Upload, File, X, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DocumentUploadCardProps {
@@ -13,9 +13,10 @@ interface DocumentUploadCardProps {
   onUpload: (file: File, type: string) => void;
   onRemove: (id: string) => void;
   isRequired: boolean;
+  isUploading?: boolean;
 }
 
-function DocumentUploadCard({ docType, existingDoc, onUpload, onRemove, isRequired }: DocumentUploadCardProps) {
+function DocumentUploadCard({ docType, existingDoc, onUpload, onRemove, isRequired, isUploading }: DocumentUploadCardProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -95,9 +96,14 @@ function DocumentUploadCard({ docType, existingDoc, onUpload, onRemove, isRequir
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={handleFileSelect}
                 accept=".pdf,.jpg,.jpeg,.png"
+                disabled={isUploading}
               />
-              <Button variant="outline" size="sm" className="pointer-events-none">
-                <Upload className="h-4 w-4 mr-1" />
+              <Button variant="outline" size="sm" className="pointer-events-none" disabled={isUploading}>
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-1" />
+                )}
                 Upload
               </Button>
             </div>
@@ -109,34 +115,18 @@ function DocumentUploadCard({ docType, existingDoc, onUpload, onRemove, isRequir
 }
 
 export function Step5DocumentUpload() {
-  const { formData, addDocument, removeDocument, updateDocument } = useOnboarding();
+  const { formData, uploadDocument, removeDocument, isSaving } = useOnboarding();
+  const [uploadingType, setUploadingType] = useState<string | null>(null);
 
-  const handleUpload = useCallback((file: File, type: string) => {
-    const docId = crypto.randomUUID();
-    
-    // Add document with uploading status
-    addDocument({
-      id: docId,
-      type,
-      fileName: file.name,
-      fileSize: file.size,
-      uploadProgress: 0,
-      status: 'uploading'
-    });
+  const handleUpload = useCallback(async (file: File, type: string) => {
+    setUploadingType(type);
+    await uploadDocument(file, type);
+    setUploadingType(null);
+  }, [uploadDocument]);
 
-    // Simulate upload progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 30;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        updateDocument(docId, { uploadProgress: 100, status: 'completed' });
-      } else {
-        updateDocument(docId, { uploadProgress: Math.round(progress) });
-      }
-    }, 200);
-  }, [addDocument, updateDocument]);
+  const handleRemove = useCallback(async (id: string) => {
+    await removeDocument(id);
+  }, [removeDocument]);
 
   const getDocForType = (type: string) => {
     return formData.documents.find(doc => doc.type === type);
@@ -178,8 +168,9 @@ export function Step5DocumentUpload() {
                   docType={doc}
                   existingDoc={getDocForType(doc.id)}
                   onUpload={handleUpload}
-                  onRemove={removeDocument}
+                  onRemove={handleRemove}
                   isRequired={true}
+                  isUploading={uploadingType === doc.id}
                 />
               ))}
             </div>
@@ -195,8 +186,9 @@ export function Step5DocumentUpload() {
                   docType={doc}
                   existingDoc={getDocForType(doc.id)}
                   onUpload={handleUpload}
-                  onRemove={removeDocument}
+                  onRemove={handleRemove}
                   isRequired={false}
+                  isUploading={uploadingType === doc.id}
                 />
               ))}
             </div>
