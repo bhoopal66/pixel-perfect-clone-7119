@@ -63,7 +63,11 @@ export class ReportBuilder {
     transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Calculate summary
-    const openingBalance = transactions[0]?.balance || 0;
+    // Opening balance = first transaction's balance BEFORE the transaction occurred
+    const firstTxn = transactions[0];
+    const openingBalance = firstTxn 
+      ? firstTxn.balance - firstTxn.credit + firstTxn.debit 
+      : 0;
     const closingBalance = transactions[transactions.length - 1]?.balance || 0;
     const totalCredits = transactions.reduce((sum, t) => sum + t.credit, 0);
     const totalDebits = transactions.reduce((sum, t) => sum + t.debit, 0);
