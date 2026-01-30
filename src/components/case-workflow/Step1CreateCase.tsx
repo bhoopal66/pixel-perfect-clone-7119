@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Building2, User, CreditCard, ArrowRight, UserCheck } from 'lucide-react';
-import { BANK_OPTIONS, PRODUCT_TYPE_LABELS, isPOSProduct } from '@/types/case.types';
+import { Building2, User, CreditCard, ArrowRight, UserCheck, Loader2 } from 'lucide-react';
+import { PRODUCT_TYPE_LABELS, isPOSProduct } from '@/types/case.types';
 import { AgentSelect } from '../AgentSelect';
+import { supabase } from '@/integrations/supabase/client';
 import type { ProductType, CaseCreateInput } from '@/types/case.types';
+
+interface Lender {
+  id: string;
+  name: string;
+  short_code: string;
+  is_active: boolean;
+}
 
 interface Step1CreateCaseProps {
   onSubmit: (data: CaseCreateInput) => Promise<void>;
@@ -16,15 +24,44 @@ interface Step1CreateCaseProps {
 
 export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLoading }) => {
   const [clientName, setClientName] = useState('');
-  const [bankName, setBankName] = useState('');
+  const [lenderId, setLenderId] = useState('');
   const [productType, setProductType] = useState<ProductType>('standard');
   const [agentReference, setAgentReference] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Lenders state
+  const [lenders, setLenders] = useState<Lender[]>([]);
+  const [loadingLenders, setLoadingLenders] = useState(true);
+
+  // Fetch active lenders on mount
+  useEffect(() => {
+    const fetchLenders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('onboarding_lenders')
+          .select('id, name, short_code, is_active')
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) throw error;
+        setLenders(data || []);
+      } catch (err) {
+        console.error('Error fetching lenders:', err);
+      } finally {
+        setLoadingLenders(false);
+      }
+    };
+    
+    fetchLenders();
+  }, []);
+
+  // Get selected lender name for display
+  const selectedLender = lenders.find(l => l.id === lenderId);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!clientName.trim()) newErrors.client_name = 'Client name is required';
-    if (!bankName) newErrors.bank_name = 'Bank name is required';
+    if (!lenderId) newErrors.lender = 'Lender/Bank is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -33,9 +70,12 @@ export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLo
     e.preventDefault();
     if (!validate()) return;
     
+    // Use lender name as bank_name for backward compatibility
+    const lenderName = selectedLender?.name || '';
+    
     await onSubmit({
       client_name: clientName.trim(),
-      bank_name: bankName,
+      bank_name: lenderName,
       product_type: productType,
       agent_reference: agentReference
     });
@@ -88,26 +128,34 @@ export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLo
             </p>
           </div>
 
-          {/* Bank Name */}
+          {/* Lender/Bank Selection */}
           <div className="space-y-2">
-            <Label htmlFor="bank_name">Bank Name *</Label>
-            <Select value={bankName} onValueChange={setBankName}>
-              <SelectTrigger className={errors.bank_name ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Select bank" />
+            <Label htmlFor="lender">Lender / Bank *</Label>
+            <Select value={lenderId} onValueChange={setLenderId} disabled={loadingLenders}>
+              <SelectTrigger className={errors.lender ? 'border-destructive' : ''}>
+                {loadingLenders ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading lenders...
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Select lender or bank" />
+                )}
               </SelectTrigger>
               <SelectContent className="bg-background border shadow-lg z-50">
-                {BANK_OPTIONS.map((bank) => (
-                  <SelectItem key={bank} value={bank}>
+                {lenders.map((lender) => (
+                  <SelectItem key={lender.id} value={lender.id}>
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
-                      {bank}
+                      <span>{lender.name}</span>
+                      <span className="text-muted-foreground text-xs">({lender.short_code})</span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.bank_name && (
-              <p className="text-xs text-destructive">{errors.bank_name}</p>
+            {errors.lender && (
+              <p className="text-xs text-destructive">{errors.lender}</p>
             )}
           </div>
 
@@ -136,7 +184,7 @@ export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLo
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || loadingLenders}>
             {isLoading ? 'Creating...' : 'Save & Continue'}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
