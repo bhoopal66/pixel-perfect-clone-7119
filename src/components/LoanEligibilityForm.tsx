@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Alert, AlertDescription } from './ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { VATBankComparisonChart } from './VATBankComparisonChart';
 import { 
   Calculator, 
   AlertTriangle, 
@@ -745,6 +746,15 @@ export const LoanEligibilityForm: React.FC<LoanEligibilityFormProps> = ({
                     <p className="text-orange-600 font-semibold">Reverse Method: Loan = Adjusted Turnover (ABCT @1%)</p>
                   )}
                 </div>
+
+                {/* VAT vs Bank Comparison Chart */}
+                <VATBankComparisonChart
+                  vatTurnover={parseFloat(vatTurnover) || 0}
+                  bankCredits={parseFloat(declaredTurnover) || 0}
+                  adjustedTurnover={calculated.adjusted_turnover}
+                  variancePercent={calculated.variance_percent}
+                  currency={currency}
+                />
               </>
             )}
           </CardContent>
