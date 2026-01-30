@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -114,10 +114,16 @@ const Index = () => {
                     My Profile
                   </DropdownMenuItem>
                   {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                      <Shield className="h-4 w-4 mr-2" />
-                      User Management
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                        <Shield className="h-4 w-4 mr-2" />
+                        User Management
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/admin/agents')}>
+                        <UserCog className="h-4 w-4 mr-2" />
+                        Agent Management
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
