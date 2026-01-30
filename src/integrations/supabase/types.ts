@@ -458,6 +458,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_admin_privileges: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -466,6 +467,9 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_coordinator: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      is_supervisor: { Args: never; Returns: boolean }
       update_user_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
