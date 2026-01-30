@@ -455,11 +455,27 @@ export default function AgentManagement() {
           </Button>
         </div>
 
-        {/* Supervisor Role Indicator */}
-        {isSupervisor && (
-          <Alert className="bg-accent/50 border-accent">
-            <Eye className="h-4 w-4 text-accent-foreground" />
-            <AlertDescription className="text-accent-foreground">
+        {/* Role-based Access Indicator */}
+        {isSuperAdmin ? (
+          <Alert className="bg-amber-500/10 border-amber-500/50">
+            <Info className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              <span className="font-medium">Super Admin Access:</span> Full control over all agents including 
+              create, edit, activate/deactivate, and delete operations.
+            </AlertDescription>
+          </Alert>
+        ) : isAdmin ? (
+          <Alert className="bg-primary/10 border-primary/50">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription>
+              <span className="font-medium">Admin Access:</span> You can create, edit, and activate/deactivate agents. 
+              Agent deletion is restricted to Super Admins only.
+            </AlertDescription>
+          </Alert>
+        ) : isSupervisor && (
+          <Alert className="bg-blue-500/10 border-blue-500/50">
+            <Eye className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-700 dark:text-blue-400">
               <span className="font-medium">Supervisor Access:</span> You can view, edit, and activate/deactivate agents. 
               Agent deletion is restricted to Super Admins only.
             </AlertDescription>
