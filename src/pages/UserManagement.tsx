@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, AppRole } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import AccessDenied from './AccessDenied';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -47,12 +48,7 @@ export default function UserManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      toast.error('Access denied', { description: 'Admin privileges required' });
-      navigate('/');
-    }
-  }, [authLoading, isAdmin, navigate]);
+  // No redirect - we show AccessDenied component instead
 
   useEffect(() => {
     if (isAdmin) {
@@ -124,11 +120,20 @@ export default function UserManagement() {
     ? ['super_admin', 'admin', 'supervisor', 'coordinator', 'user']
     : ['admin', 'supervisor', 'coordinator', 'user'];
 
-  if (authLoading || !isAdmin) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <AccessDenied 
+        requiredRole="Admin or Super Admin" 
+        message="You need administrator privileges to manage users and roles."
+      />
     );
   }
 
