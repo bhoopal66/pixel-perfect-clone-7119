@@ -29,10 +29,11 @@ import {
   TrendAnalytics,
   ExportDialog
 } from '@/components/admin';
-import type { DateRange } from '@/components/admin';
+import type { DateRange, ExportFormat } from '@/components/admin';
 import { useRealtimeAdmin } from '@/hooks/useRealtimeAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardExportService } from '@/services/dashboardExportService';
+import { DashboardPdfExportService } from '@/services/dashboardPdfExportService';
 import { toast } from '@/hooks/use-toast';
 import type { LenderPerformance, SupervisorPipeline } from '@/types/dashboard.types';
 
@@ -157,9 +158,9 @@ export default function AdminDashboard() {
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
-  const handleExport = async (dateRange: DateRange) => {
+  const handleExport = async (dateRange: DateRange, format: ExportFormat) => {
     try {
-      await DashboardExportService.exportAdminDashboard({
+      const exportData = {
         globalMetrics: globalMetrics || {
           totalApplications: 0,
           approved: 0,
@@ -176,10 +177,17 @@ export default function AdminDashboard() {
         trendData: trendData || [],
         period: trendPeriod,
         dateRange
-      });
+      };
+
+      if (format === 'pdf') {
+        await DashboardPdfExportService.exportAdminDashboard(exportData);
+      } else {
+        await DashboardExportService.exportAdminDashboard(exportData);
+      }
+      
       toast({
         title: 'Export Complete',
-        description: 'Dashboard data exported to Excel successfully.'
+        description: `Dashboard data exported to ${format.toUpperCase()} successfully.`
       });
     } catch (error) {
       console.error('Export failed:', error);
