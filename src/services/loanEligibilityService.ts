@@ -13,6 +13,9 @@ export const LoanEligibilityService = {
         cash_adjustment: input.cash_adjustment || 0,
         sister_concern_adjustment: input.sister_concern_adjustment || 0,
         pos_monthly_turnover: input.pos_monthly_turnover || 0,
+        company_name: input.company_name || null,
+        period_start: input.period_start || null,
+        period_end: input.period_end || null,
         notes: input.notes || null,
       })
       .select()
@@ -33,6 +36,9 @@ export const LoanEligibilityService = {
         ...(input.cash_adjustment !== undefined && { cash_adjustment: input.cash_adjustment }),
         ...(input.sister_concern_adjustment !== undefined && { sister_concern_adjustment: input.sister_concern_adjustment }),
         ...(input.pos_monthly_turnover !== undefined && { pos_monthly_turnover: input.pos_monthly_turnover }),
+        ...(input.company_name !== undefined && { company_name: input.company_name }),
+        ...(input.period_start !== undefined && { period_start: input.period_start }),
+        ...(input.period_end !== undefined && { period_end: input.period_end }),
         ...(input.notes !== undefined && { notes: input.notes }),
       })
       .eq('id', id)
@@ -100,6 +106,9 @@ export const LoanEligibilityService = {
   exportToCSV(records: LoanEligibility[]): string[][] {
     const headers = [
       'ID',
+      'Company Name',
+      'Period Start',
+      'Period End',
       'Product Type',
       'VAT Turnover',
       'Declared Turnover',
@@ -116,8 +125,12 @@ export const LoanEligibilityService = {
       'Variance %',
       'Variance Bucket',
       'Eligibility Status',
+      'Eligibility Method',
       'Multiplier',
       'Eligible Loan Amount',
+      'ABCT Fee Rate',
+      'ABCT Fee Amount',
+      'Total with ABCT',
       'Created At',
       'Updated At',
       'Notes'
@@ -125,6 +138,9 @@ export const LoanEligibilityService = {
     
     const rows = records.map(r => [
       r.id,
+      r.company_name || '',
+      r.period_start || '',
+      r.period_end || '',
       r.product_type,
       r.vat_turnover.toString(),
       r.declared_turnover.toString(),
@@ -141,8 +157,12 @@ export const LoanEligibilityService = {
       r.variance_percent.toString(),
       r.variance_bucket,
       r.eligibility_status,
+      r.eligibility_method || 'Standard',
       r.eligible_multiplier.toString(),
       r.eligible_loan_amount.toString(),
+      r.abcd_fee_rate.toString(),
+      r.abcd_fee_amount.toString(),
+      r.total_with_abcd.toString(),
       r.created_at,
       r.updated_at,
       r.notes || ''

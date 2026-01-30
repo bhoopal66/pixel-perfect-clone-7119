@@ -1,185 +1,109 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle, Briefcase, Calculator } from 'lucide-react';
-import { FileUpload } from '../components/FileUpload';
-import { AnalysisProgress } from '../components/AnalysisProgress';
-import { ResultsDashboard } from '../components/ResultsDashboard';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
-import { LoanEligibilityDashboard } from '../components/LoanEligibilityDashboard';
+import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { WelcomeModal } from '../components/WelcomeModal';
-import { ReportBuilder } from '../services/reportBuilder';
-import { ExcelGenerator } from '../services/excelGenerator';
-import { CurrencyService } from '../services/currencyService';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { toast } from 'sonner';
-import type { AnalysisReport, AnalysisStep, AppState } from '../types/transaction.types';
-
+import { FileUploadWithPreview } from '../components/FileUploadWithPreview';
+import { QuickAnalysisResults } from '../components/QuickAnalysisResults';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { useAuth } from '../hooks/useAuth';
+import { Badge } from '../components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 const Index = () => {
-  const [appState, setAppState] = useState<AppState>('upload');
-  const [report, setReport] = useState<AnalysisReport | null>(null);
-  const [ratesStatus, setRatesStatus] = useState<'loading' | 'live' | 'default'>('loading');
-  const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
-    { id: '1', label: 'Parsing PDF files', status: 'pending' },
-    { id: '2', label: 'Extracting transactions', status: 'pending' },
-    { id: '3', label: 'Categorizing transactions', status: 'pending' },
-    { id: '4', label: 'Calculating balances', status: 'pending' },
-    { id: '5', label: 'Generating analysis', status: 'pending' },
-    { id: '6', label: 'Creating report', status: 'pending' }
-  ]);
+  const navigate = useNavigate();
+  const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, signOut } = useAuth();
 
-  // Fetch live exchange rates on mount
-  useEffect(() => {
-    const fetchRates = async () => {
-      setRatesStatus('loading');
-      const success = await CurrencyService.fetchLiveRates('AED');
-      if (success) {
-        setRatesStatus('live');
-        toast.success('Live exchange rates loaded', {
-          description: `Rates updated as of ${CurrencyService.getRatesDate()}`,
-        });
-      } else {
-        setRatesStatus('default');
-        toast.info('Using default exchange rates', {
-          description: 'Could not fetch live rates, using cached values',
-        });
-      }
-    };
-    fetchRates();
-  }, []);
-
-  const updateStepStatus = useCallback((index: number, status: AnalysisStep['status']) => {
-    setAnalysisSteps(prev => 
-      prev.map((step, i) => i === index ? { ...step, status } : step)
-    );
-  }, []);
-
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  const handleDemoMode = async () => {
-    setAppState('analyzing');
-    
-    // Reset steps
-    setAnalysisSteps(prev => prev.map(s => ({ ...s, status: 'pending' as const })));
-    
-    try {
-      // Quick demo flow
-      for (let i = 0; i < 6; i++) {
-        updateStepStatus(i, 'processing');
-        await delay(300);
-        updateStepStatus(i, 'completed');
-      }
-      
-      const demoReport = ReportBuilder.generateDemoReport();
-      setReport(demoReport);
-      await delay(200);
-      setAppState('results');
-    } catch (error) {
-      console.error('Demo failed:', error);
+  // Role display configuration with access descriptions
+  const roleConfig = {
+    super_admin: { 
+      label: 'Super Admin', 
+      icon: Crown, 
+      variant: 'default' as const, 
+      className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0',
+      description: 'Full system access: Manage all users, agents, and settings. Can delete agents and assign any role.'
+    },
+    admin: { 
+      label: 'Admin', 
+      icon: Shield, 
+      variant: 'default' as const, 
+      className: 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0',
+      description: 'Administrative access: Manage users and agents. Cannot assign Super Admin role or delete agents.'
+    },
+    supervisor: { 
+      label: 'Supervisor', 
+      icon: Eye, 
+      variant: 'secondary' as const, 
+      className: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+      description: 'Agent oversight: View, edit, and activate/deactivate agents. Cannot access user management.'
+    },
+    coordinator: { 
+      label: 'Coordinator', 
+      icon: ClipboardList, 
+      variant: 'outline' as const, 
+      className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+      description: 'Case coordination: Access to cases and analysis tools. No administrative privileges.'
+    },
+    user: { 
+      label: 'User', 
+      icon: User, 
+      variant: 'outline' as const, 
+      className: '',
+      description: 'Standard access: View and manage your own cases and loan applications.'
     }
   };
 
-  const handleFilesSelected = async (files: File[]) => {
-    setAppState('analyzing');
-    
-    // Reset steps
-    setAnalysisSteps(prev => prev.map(s => ({ ...s, status: 'pending' as const })));
-    
-    try {
-      // Step 1: Parsing PDFs
-      updateStepStatus(0, 'processing');
-      await delay(800);
-      updateStepStatus(0, 'completed');
-
-      // Step 2: Extracting transactions
-      updateStepStatus(1, 'processing');
-      await delay(600);
-      updateStepStatus(1, 'completed');
-
-      // Step 3: Categorizing
-      updateStepStatus(2, 'processing');
-      await delay(500);
-      updateStepStatus(2, 'completed');
-
-      // Step 4: Calculating balances
-      updateStepStatus(3, 'processing');
-      await delay(700);
-      updateStepStatus(3, 'completed');
-
-      // Step 5: Generating analysis
-      updateStepStatus(4, 'processing');
-      await delay(600);
-      updateStepStatus(4, 'completed');
-
-      // Step 6: Creating report
-      updateStepStatus(5, 'processing');
-      
-      // Try to build real report, fall back to demo if needed
-      let analysisReport: AnalysisReport;
-      try {
-        analysisReport = await ReportBuilder.buildReport(files);
-        // If no transactions were extracted, use demo data
-        if (analysisReport.transactions.length === 0) {
-          console.log('No transactions found in PDFs, using demo data');
-          analysisReport = ReportBuilder.generateDemoReport();
-        }
-      } catch (error) {
-        console.log('PDF parsing failed, using demo data:', error);
-        analysisReport = ReportBuilder.generateDemoReport();
-      }
-      
-      await delay(500);
-      setReport(analysisReport);
-      updateStepStatus(5, 'completed');
-
-      await delay(300);
-      setAppState('results');
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      // Use demo data on error
-      const demoReport = ReportBuilder.generateDemoReport();
-      setReport(demoReport);
-      setAppState('results');
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!report) return;
-
-    try {
-      const blob = await ExcelGenerator.generateReport(report);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Bank_Statement_Analysis_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-    }
-  };
-
-  const handleReset = () => {
-    setAppState('upload');
-    setReport(null);
-    setAnalysisSteps(prev => prev.map(s => ({ ...s, status: 'pending' as const })));
-  };
+  const currentRoleConfig = roleConfig[userRole];
+  const RoleIcon = currentRoleConfig.icon;
 
   const features = [
-    { icon: <FileSpreadsheet className="h-6 w-6" />, title: '7 Report Worksheets', desc: 'Comprehensive Excel analysis' },
+    { icon: <FileSpreadsheet className="h-6 w-6" />, title: 'PDF Parsing', desc: 'Extract data from statements' },
     { icon: <Zap className="h-6 w-6" />, title: 'Instant Analysis', desc: 'Process statements in seconds' },
-    { icon: <BarChart3 className="h-6 w-6" />, title: 'Smart Categorization', desc: 'Auto-categorize transactions' },
+    { icon: <BarChart3 className="h-6 w-6" />, title: 'Smart Eligibility', desc: 'Auto-calculate loan eligibility' },
     { icon: <Shield className="h-6 w-6" />, title: 'Secure Processing', desc: 'Your data stays private' },
   ];
 
-  const [activeTab, setActiveTab] = useState<'analysis' | 'loans' | 'eligibility'>('analysis');
+  const [activeTab, setActiveTab] = useState<'cases' | 'loans' | 'analyze'>('cases');
+  const [casesView, setCasesView] = useState<'list' | 'workflow'>('list');
+  const [editingCaseId, setEditingCaseId] = useState<string | undefined>();
+  const [quickAnalysisData, setQuickAnalysisData] = useState<ParsedStatementData | null>(null);
+  const [quickAnalysisView, setQuickAnalysisView] = useState<'upload' | 'results'>('upload');
+
+  const handleQuickAnalysisConfirmed = (data: ParsedStatementData) => {
+    setQuickAnalysisData(data);
+    setQuickAnalysisView('results');
+  };
+
+  const handleResetQuickAnalysis = () => {
+    setQuickAnalysisData(null);
+    setQuickAnalysisView('upload');
+  };
+
+  // Cases tab inline component
+  const CasesTab = () => (
+    casesView === 'list' ? (
+      <CaseList 
+        onNewCase={() => { setEditingCaseId(undefined); setCasesView('workflow'); }}
+        onEditCase={(id) => { setEditingCaseId(id); setCasesView('workflow'); }}
+      />
+    ) : (
+      <CaseWorkflow
+        caseId={editingCaseId}
+        onComplete={() => { setCasesView('list'); setEditingCaseId(undefined); }}
+        onCancel={() => { setCasesView('list'); setEditingCaseId(undefined); }}
+      />
+    )
+  );
 
   return (
     <div className="min-h-screen bg-background">
       {/* Welcome Modal for First-Time Users */}
-      <WelcomeModal onSelectModule={(module) => setActiveTab(module)} />
+      <WelcomeModal onSelectModule={(module) => setActiveTab(module as 'cases' | 'loans')} />
 
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
@@ -197,49 +121,111 @@ const Index = () => {
             
             {/* Navigation Tabs */}
             <div className="flex items-center gap-4">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'analysis' | 'loans' | 'eligibility')}>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'cases' | 'loans' | 'analyze')}>
                 <TabsList className="bg-muted/50">
-                  <TabsTrigger value="analysis" className="gap-2 text-xs sm:text-sm">
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Statement Analysis</span>
+                  <TabsTrigger value="cases" className="gap-2 text-xs sm:text-sm">
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Cases</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="analyze" className="gap-2 text-xs sm:text-sm">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Quick Analyze</span>
                   </TabsTrigger>
                   <TabsTrigger value="loans" className="gap-2 text-xs sm:text-sm">
                     <Briefcase className="h-4 w-4" />
                     <span className="hidden sm:inline">Cash Loans</span>
                   </TabsTrigger>
-                  <TabsTrigger value="eligibility" className="gap-2 text-xs sm:text-sm">
-                    <Calculator className="h-4 w-4" />
-                    <span className="hidden sm:inline">Loan Eligibility</span>
-                  </TabsTrigger>
                 </TabsList>
               </Tabs>
               
-              {/* Exchange Rate Status */}
-              {activeTab === 'analysis' && (
-                <>
-                  {ratesStatus === 'loading' && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground text-xs">
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                      <span className="hidden sm:inline">Loading rates...</span>
-                    </div>
-                  )}
-                  {ratesStatus === 'live' && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-xs">
-                      <CheckCircle className="h-3 w-3" />
-                      <span className="hidden sm:inline">Live rates ({CurrencyService.getRatesDate()})</span>
-                    </div>
-                  )}
-                  {ratesStatus === 'default' && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs">
-                      <AlertCircle className="h-3 w-3" />
-                      <span className="hidden sm:inline">Default rates</span>
-                    </div>
-                  )}
-                </>
-              )}
-              
               {/* Theme Toggle */}
               <ThemeToggle />
+
+              {/* Role Badge with Tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant={currentRoleConfig.variant} className={`hidden sm:flex items-center gap-1.5 cursor-help ${currentRoleConfig.className}`}>
+                      <RoleIcon className="h-3 w-3" />
+                      {currentRoleConfig.label}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-sm">{currentRoleConfig.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full relative">
+                    <Users className="h-4 w-4" />
+                    {/* Mobile role indicator dot */}
+                    <span className={`sm:hidden absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-background ${
+                      userRole === 'super_admin' ? 'bg-amber-500' :
+                      userRole === 'admin' ? 'bg-primary' :
+                      userRole === 'supervisor' ? 'bg-blue-500' :
+                      userRole === 'coordinator' ? 'bg-emerald-500' : 'bg-muted-foreground'
+                    }`} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <div className="px-2 py-1.5">
+                    <div className="text-sm font-medium">{user?.email}</div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant={currentRoleConfig.variant} className={`mt-1 text-xs cursor-help ${currentRoleConfig.className}`}>
+                            <RoleIcon className="h-3 w-3 mr-1" />
+                            {currentRoleConfig.label}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="text-sm">{currentRoleConfig.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="h-4 w-4 mr-2" />
+                    My Profile
+                  </DropdownMenuItem>
+                  {(isSupervisor || hasAdminPrivileges) && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/supervisor')}>
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Supervisor Dashboard
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {hasAdminPrivileges && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  )}
+                  {canManageUsers && (
+                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      User Management
+                    </DropdownMenuItem>
+                  )}
+                  {canManageAgents && (
+                    <DropdownMenuItem onClick={() => navigate('/admin/agents')}>
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Agent Management
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -278,8 +264,40 @@ const Index = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto"
           >
+            {/* Unified Cases Card */}
+            <motion.button
+              onClick={() => setActiveTab('cases')}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
+                activeTab === 'cases' 
+                  ? 'bg-accent/20 border-accent/50' 
+                  : 'bg-white/10 border-white/10 hover:bg-white/15'
+              }`}
+            >
+              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
+                <FolderOpen className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Case Management</h3>
+              <p className="text-white/70 text-sm mb-4">
+                Complete 3-step workflow: Create Case → Statement Analysis → Eligibility Check. 
+                All data flows automatically between steps.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">PDF Parsing</span>
+                <span className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">VAT Analysis</span>
+                <span className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">Eligibility</span>
+              </div>
+              <div className="flex items-center gap-2 text-accent text-sm font-medium">
+                <span>Open Cases</span>
+                <BarChart3 className="h-4 w-4" />
+              </div>
+            </motion.button>
+
             {/* Cash Loans Card */}
             <motion.button
               onClick={() => setActiveTab('loans')}
@@ -298,62 +316,16 @@ const Index = () => {
               </div>
               <h3 className="text-white font-bold text-lg mb-2">Cash Loans</h3>
               <p className="text-white/70 text-sm mb-4">
-                Compare RAK Bank & Wio Bank rates. Track applications from draft to disbursement.
+                Compare RAK Bank & Wio Bank rates. Track applications with EMI calculations 
+                from draft to disbursement.
               </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">EMI Calculator</span>
+                <span className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">Lender Compare</span>
+                <span className="px-2 py-1 bg-white/10 rounded text-xs text-white/80">Documents</span>
+              </div>
               <div className="flex items-center gap-2 text-accent text-sm font-medium">
-                <span>Open Module</span>
-                <BarChart3 className="h-4 w-4" />
-              </div>
-            </motion.button>
-
-            {/* Loan Eligibility Card */}
-            <motion.button
-              onClick={() => setActiveTab('eligibility')}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              whileHover={{ scale: 1.02, y: -4 }}
-              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
-                activeTab === 'eligibility' 
-                  ? 'bg-accent/20 border-accent/50' 
-                  : 'bg-white/10 border-white/10 hover:bg-white/15'
-              }`}
-            >
-              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
-                <Calculator className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2">Loan Eligibility</h3>
-              <p className="text-white/70 text-sm mb-4">
-                VAT vs Turnover analysis with RAG status. 8x/6x multiplier calculations.
-              </p>
-              <div className="flex items-center gap-2 text-accent text-sm font-medium">
-                <span>Open Module</span>
-                <BarChart3 className="h-4 w-4" />
-              </div>
-            </motion.button>
-
-            {/* Statement Analysis Card */}
-            <motion.button
-              onClick={() => setActiveTab('analysis')}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 }}
-              whileHover={{ scale: 1.02, y: -4 }}
-              className={`p-6 rounded-2xl backdrop-blur-sm border text-left transition-all cursor-pointer ${
-                activeTab === 'analysis' 
-                  ? 'bg-accent/20 border-accent/50' 
-                  : 'bg-white/10 border-white/10 hover:bg-white/15'
-              }`}
-            >
-              <div className="p-3 rounded-xl bg-accent/20 w-fit mb-4">
-                <FileSpreadsheet className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2">Statement Analysis</h3>
-              <p className="text-white/70 text-sm mb-4">
-                Upload PDFs for instant categorization, balance tracking, and Excel reports.
-              </p>
-              <div className="flex items-center gap-2 text-accent text-sm font-medium">
-                <span>Open Module</span>
+                <span>Open Loans</span>
                 <BarChart3 className="h-4 w-4" />
               </div>
             </motion.button>
@@ -381,32 +353,59 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {activeTab === 'analysis' && (
-          <>
-            {appState === 'upload' && (
-              <FileUpload onFilesSelected={handleFilesSelected} onDemoMode={handleDemoMode} />
-            )}
-            
-            {appState === 'analyzing' && (
-              <AnalysisProgress steps={analysisSteps} />
-            )}
-            
-            {appState === 'results' && report && (
-              <ResultsDashboard 
-                report={report} 
-                onDownload={handleDownload}
-                onReset={handleReset}
-              />
-            )}
-          </>
-        )}
-
         {activeTab === 'loans' && (
           <LoanCaseManagement currency="AED" />
         )}
 
-        {activeTab === 'eligibility' && (
-          <LoanEligibilityDashboard currency="AED" />
+        {activeTab === 'cases' && (
+          <CasesTab />
+        )}
+
+        {activeTab === 'analyze' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {quickAnalysisView === 'upload' ? (
+              <FileUploadWithPreview
+                onAnalysisConfirmed={handleQuickAnalysisConfirmed}
+                onDemoMode={() => {
+                  // Create demo data for testing
+                  const demoData: ParsedStatementData = {
+                    transactions: Array.from({ length: 150 }, (_, i) => ({
+                      id: `txn-${i}`,
+                      date: new Date(2024, Math.floor(i / 25), (i % 28) + 1).toISOString().split('T')[0],
+                      description: ['SALARY TRANSFER', 'CASH DEPOSIT ATM', 'RENT PAYMENT', 'UTILITY BILL', 'ONLINE TRANSFER', 'CDM CASH DEPOSIT'][i % 6],
+                      debit: i % 3 === 0 ? Math.random() * 5000 + 500 : 0,
+                      credit: i % 3 !== 0 ? Math.random() * 15000 + 1000 : 0,
+                      balance: 50000 + Math.random() * 20000,
+                      category: ['income', 'transfer', 'expense', 'income', 'transfer', 'cash-deposit'][i % 6],
+                      currency: 'AED'
+                    })),
+                    accountInfo: { accountName: 'Demo Company LLC', accountNumber: '1234567890', iban: 'AE123456789012345678901' },
+                    balances: { opening: 45000, closing: 62000, average: 55000 },
+                    totalCredits: 850000,
+                    totalDebits: 620000,
+                    netTurnover: 230000,
+                    periodFrom: '2024-01-01',
+                    periodTo: '2024-06-30'
+                  };
+                  handleQuickAnalysisConfirmed(demoData);
+                }}
+              />
+            ) : quickAnalysisData ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Quick Analysis Results</h2>
+                  <Button variant="outline" onClick={handleResetQuickAnalysis}>
+                    Analyze Another Statement
+                  </Button>
+                </div>
+                <QuickAnalysisResults data={quickAnalysisData} />
+              </div>
+            ) : null}
+          </motion.div>
         )}
       </main>
 

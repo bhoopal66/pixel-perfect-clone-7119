@@ -33,7 +33,9 @@ export interface LoanCase {
   applicantPhone: string;
   applicantEmail: string;
   monthlySalary: number;
-  employer: string;
+  companyName: string;              // Renamed from employer
+  agentReference: string;           // New field
+  analystName: string;              // New field
   
   // Loan Details
   lender: LenderType;
@@ -48,6 +50,24 @@ export interface LoanCase {
   totalInterest: number;
   totalPayable: number;
   processingFee: number;
+  
+  // POS Eligibility Fields (for RAK POS Loan)
+  vatTurnover: number;
+  adjustedTurnover: number;
+  posMonthlyTurnover: number;
+  posAnnualTurnover: number;
+  posCapAdjusted: number;           // adjusted_turnover * 0.40
+  posCapVat: number;                // vat_turnover * 0.40
+  posEligibleTurnover: number;      // MIN of the three
+  turnoverBasis: number;
+  variancePercent: number;
+  eligibleMultiplier: number;
+  eligibleLoanAmount: number;
+  
+  // ABCD Fee
+  abcdFeeRate: number;              // Default 0.01 (1%)
+  abcdFeeAmount: number;
+  totalWithAbcd: number;
   
   // Status & Tracking
   status: LoanStatus;

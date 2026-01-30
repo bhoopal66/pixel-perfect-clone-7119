@@ -19,7 +19,8 @@ import {
   ArrowDown,
   Download,
   FileSpreadsheet,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -37,6 +38,7 @@ import { NewLoanCaseDialog } from './NewLoanCaseDialog';
 import { LoanCaseDetail } from './LoanCaseDetail';
 import { CurrencyService } from '../services/currencyService';
 import { useAuth } from '@/hooks/useAuth';
+import { useLoanCases } from '@/hooks/useLoanCases';
 import { exportToCSV, exportToExcel } from '@/services/exportService';
 import { toast } from 'sonner';
 
@@ -46,11 +48,12 @@ interface LoanCaseManagementProps {
 
 export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency = 'AED' }) => {
   const { isAdmin, signOut, user } = useAuth();
-  const [cases, setCases] = useState<LoanCase[]>([]);
+  const { cases, isLoading, addCase, updateCase, deleteCase } = useLoanCases();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LoanStatus | 'all'>('all');
   const [lenderFilter, setLenderFilter] = useState<LenderType | 'all'>('all');
   const [productFilter, setProductFilter] = useState<ProductType | 'all'>('all');
+  const [analystFilter, setAnalystFilter] = useState<string>('all');
   const [showNewCaseDialog, setShowNewCaseDialog] = useState(false);
   const [selectedCase, setSelectedCase] = useState<LoanCase | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -135,7 +138,8 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
       const matchesLender = lenderFilter === 'all' || c.lender === lenderFilter;
       const matchesProduct = productFilter === 'all' || c.productType === productFilter;
-      return matchesSearch && matchesStatus && matchesLender && matchesProduct;
+      const matchesAnalyst = analystFilter === 'all' || c.analystName === analystFilter;
+      return matchesSearch && matchesStatus && matchesLender && matchesProduct && matchesAnalyst;
     });
 
     // Apply sorting
@@ -160,7 +164,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     }
 
     return result;
-  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter, sortField, sortDirection]);
+  }, [cases, searchQuery, statusFilter, lenderFilter, productFilter, analystFilter, sortField, sortDirection]);
 
   // Statistics
   const stats = useMemo(() => ({
@@ -174,19 +178,49 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
     posLoans: cases.filter(c => c.productType === 'pos').length
   }), [cases]);
 
-  const handleAddCase = (newCase: LoanCase) => {
-    setCases(prev => [...prev, newCase]);
-    setShowNewCaseDialog(false);
+  // Extract unique analyst names from existing cases
+  const existingAnalysts = useMemo(() => {
+    const analysts = cases
+      .map(c => c.analystName)
+      .filter((name): name is string => !!name && name.trim() !== '');
+    return [...new Set(analysts)].sort();
+  }, [cases]);
+
+  // Extract unique agent references from existing cases
+  const existingAgentRefs = useMemo(() => {
+    const refs = cases
+      .map(c => c.agentReference)
+      .filter((ref): ref is string => !!ref && ref.trim() !== '');
+    return [...new Set(refs)].sort();
+  }, [cases]);
+
+  // Extract unique company names from existing cases
+  const existingCompanyNames = useMemo(() => {
+    const companies = cases
+      .map(c => c.companyName)
+      .filter((name): name is string => !!name && name.trim() !== '');
+    return [...new Set(companies)].sort();
+  }, [cases]);
+
+  const handleAddCase = async (newCase: LoanCase) => {
+    const success = await addCase(newCase);
+    if (success) {
+      setShowNewCaseDialog(false);
+    }
   };
 
-  const handleUpdateCase = (updatedCase: LoanCase) => {
-    setCases(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
-    setSelectedCase(updatedCase);
+  const handleUpdateCase = async (updatedCase: LoanCase) => {
+    const success = await updateCase(updatedCase);
+    if (success) {
+      setSelectedCase(updatedCase);
+    }
   };
 
-  const handleDeleteCase = (id: string) => {
-    setCases(prev => prev.filter(c => c.id !== id));
-    setSelectedCase(null);
+  const handleDeleteCase = async (id: string) => {
+    const success = await deleteCase(id);
+    if (success) {
+      setSelectedCase(null);
+    }
   };
 
   const getStatusBadge = (status: LoanStatus) => {
@@ -382,11 +416,29 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                       <SelectItem value="pos">POS</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select value={analystFilter} onValueChange={setAnalystFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Analyst" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Analysts</SelectItem>
+                      {existingAnalysts.map(analyst => (
+                        <SelectItem key={analyst} value={analyst}>
+                          {analyst}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {filteredCases.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
+                  <p>Loading loan cases...</p>
+                </div>
+              ) : filteredCases.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No loan cases yet</p>
@@ -439,7 +491,7 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                           <TableCell>
                             <div>
                               <p className="font-medium">{loanCase.applicantName}</p>
-                              <p className="text-xs text-muted-foreground">{loanCase.employer}</p>
+                              <p className="text-xs text-muted-foreground">{loanCase.companyName}</p>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -469,14 +521,16 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteCase(loanCase.id)}
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteCase(loanCase.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -495,11 +549,14 @@ export const LoanCaseManagement: React.FC<LoanCaseManagementProps> = ({ currency
       </Tabs>
 
       {/* New Case Dialog */}
-      <NewLoanCaseDialog
-        open={showNewCaseDialog}
+      <NewLoanCaseDialog 
+        open={showNewCaseDialog} 
         onOpenChange={setShowNewCaseDialog}
         onSubmit={handleAddCase}
         currency={currency}
+        existingAnalysts={existingAnalysts}
+        existingAgentRefs={existingAgentRefs}
+        existingCompanyNames={existingCompanyNames}
       />
 
       {/* Case Detail Sheet */}

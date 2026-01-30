@@ -7,7 +7,9 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Badge } from './ui/badge';
-import { Building2, Wallet } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { Building2, Wallet, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LoanCase, LenderType, ProductType } from '../types/loanCase.types';
 import { LENDERS, calculateEMI, calculateTotalInterest, calculateProcessingFee } from '../types/loanCase.types';
@@ -18,26 +20,41 @@ interface NewLoanCaseDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (loanCase: LoanCase) => void;
   currency?: 'AED' | 'USD';
+  existingAnalysts?: string[];
+  existingAgentRefs?: string[];
+  existingCompanyNames?: string[];
 }
 
 export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
   open,
   onOpenChange,
   onSubmit,
-  currency = 'AED'
+  currency = 'AED',
+  existingAnalysts = [],
+  existingAgentRefs = [],
+  existingCompanyNames = []
 }) => {
+  const [analystOpen, setAnalystOpen] = useState(false);
+  const [agentRefOpen, setAgentRefOpen] = useState(false);
+  const [companyNameOpen, setCompanyNameOpen] = useState(false);
   const [formData, setFormData] = useState({
     applicantName: '',
     applicantPhone: '',
     applicantEmail: '',
     monthlySalary: 0,
-    employer: '',
+    companyName: '',
+    agentReference: '',
+    analystName: '',
     lender: 'RAK' as LenderType,
     productType: 'cash' as ProductType,
     loanAmount: 50000,
     tenure: 24,
     purpose: '',
-    notes: ''
+    notes: '',
+    // POS eligibility inputs
+    vatTurnover: 0,
+    adjustedTurnover: 0,
+    posMonthlyTurnover: 0,
   });
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
@@ -54,6 +71,9 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     }
   }, [availableProductTypes, formData.productType]);
 
+  // Check if RAK POS Loan is selected
+  const isRakPosLoan = formData.lender === 'RAK' && formData.productType === 'pos';
+
   // Calculate EMI and costs
   const calculations = useMemo(() => {
     const lender = LENDERS[formData.lender];
@@ -65,6 +85,86 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
     return { emi, totalInterest, processingFee, totalPayable, interestRate: lender.interestRate };
   }, [formData.lender, formData.loanAmount, formData.tenure]);
 
+  // POS Eligibility calculations (for RAK POS Loan)
+  const posEligibilityCalcs = useMemo(() => {
+    if (!isRakPosLoan) {
+      return {
+        posAnnualTurnover: 0,
+        posCapAdjusted: 0,
+        posCapVat: 0,
+        posEligibleTurnover: 0,
+        turnoverBasis: 0,
+        variancePercent: 0,
+        eligibleMultiplier: 0,
+        eligibleLoanAmount: 0,
+        abcdFeeRate: 0.01,
+        abcdFeeAmount: 0,
+        totalWithAbcd: 0,
+        isReverseMethod: false,
+      };
+    }
+
+    // Step 1: Calculate POS Eligible Turnover
+    const posAnnualTurnover = formData.posMonthlyTurnover * 12;
+    const posCapAdjusted = formData.adjustedTurnover * 0.40;
+    const posCapVat = formData.vatTurnover * 0.40;
+    const posEligibleTurnover = Math.min(posAnnualTurnover, posCapAdjusted, posCapVat);
+
+    // Calculate variance percent
+    const maxTurnover = Math.max(formData.vatTurnover, formData.adjustedTurnover);
+    const variancePercent = maxTurnover === 0 ? 0 : 
+      Math.round(Math.abs(formData.vatTurnover - formData.adjustedTurnover) / maxTurnover * 100 * 100) / 100;
+
+    // Determine multiplier based on variance (for normal method)
+    let normalMultiplier = 0;
+    if (variancePercent <= 10) {
+      normalMultiplier = 8;
+    } else if (variancePercent <= 25) {
+      normalMultiplier = 8 / 6;
+    }
+
+    // Determine which method to use
+    const useNormalMethod = variancePercent <= 25 && normalMultiplier > 0;
+    const isReverseMethod = !useNormalMethod;
+
+    let eligibleLoanAmount: number;
+    let abcdFeeAmount: number;
+    let turnoverBasis: number;
+    let eligibleMultiplier: number;
+    const abcdFeeRate = 0.01;
+
+    if (useNormalMethod) {
+      // NORMAL Method: Eligible Loan = POS Eligible Turnover × Multiplier
+      turnoverBasis = posEligibleTurnover;
+      eligibleMultiplier = normalMultiplier;
+      eligibleLoanAmount = turnoverBasis * eligibleMultiplier;
+      abcdFeeAmount = eligibleLoanAmount * abcdFeeRate;
+    } else {
+      // REVERSE Method: Loan capped at Adjusted Turnover, ABCD = 1% of Adjusted
+      turnoverBasis = formData.adjustedTurnover;
+      eligibleMultiplier = 1; // No multiplier, direct cap
+      eligibleLoanAmount = formData.adjustedTurnover;
+      abcdFeeAmount = formData.adjustedTurnover * abcdFeeRate;
+    }
+
+    const totalWithAbcd = eligibleLoanAmount + abcdFeeAmount;
+
+    return {
+      posAnnualTurnover,
+      posCapAdjusted,
+      posCapVat,
+      posEligibleTurnover,
+      turnoverBasis,
+      variancePercent,
+      eligibleMultiplier,
+      eligibleLoanAmount,
+      abcdFeeRate,
+      abcdFeeAmount,
+      totalWithAbcd,
+      isReverseMethod,
+    };
+  }, [isRakPosLoan, formData.posMonthlyTurnover, formData.adjustedTurnover, formData.vatTurnover]);
+
   const handleSubmit = () => {
     const caseNumber = `CL-${Date.now().toString().slice(-6)}`;
     const newCase: LoanCase = {
@@ -74,7 +174,9 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       applicantPhone: formData.applicantPhone,
       applicantEmail: formData.applicantEmail,
       monthlySalary: formData.monthlySalary,
-      employer: formData.employer,
+      companyName: formData.companyName,
+      agentReference: formData.agentReference,
+      analystName: formData.analystName,
       lender: formData.lender,
       productType: formData.productType,
       loanAmount: formData.loanAmount,
@@ -85,6 +187,23 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       totalInterest: calculations.totalInterest,
       totalPayable: calculations.totalPayable,
       processingFee: calculations.processingFee,
+      // POS eligibility fields
+      vatTurnover: formData.vatTurnover,
+      adjustedTurnover: formData.adjustedTurnover,
+      posMonthlyTurnover: formData.posMonthlyTurnover,
+      posAnnualTurnover: posEligibilityCalcs.posAnnualTurnover,
+      posCapAdjusted: posEligibilityCalcs.posCapAdjusted,
+      posCapVat: posEligibilityCalcs.posCapVat,
+      posEligibleTurnover: posEligibilityCalcs.posEligibleTurnover,
+      turnoverBasis: posEligibilityCalcs.turnoverBasis,
+      variancePercent: posEligibilityCalcs.variancePercent,
+      eligibleMultiplier: posEligibilityCalcs.eligibleMultiplier,
+      eligibleLoanAmount: posEligibilityCalcs.eligibleLoanAmount,
+      // ABCD fee fields
+      abcdFeeRate: posEligibilityCalcs.abcdFeeRate,
+      abcdFeeAmount: posEligibilityCalcs.abcdFeeAmount,
+      totalWithAbcd: posEligibilityCalcs.totalWithAbcd,
+      // Status
       status: 'draft',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -103,17 +222,28 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
       applicantPhone: '',
       applicantEmail: '',
       monthlySalary: 0,
-      employer: '',
+      companyName: '',
+      agentReference: '',
+      analystName: '',
       lender: 'RAK',
       productType: 'cash',
       loanAmount: 50000,
       tenure: 24,
       purpose: '',
-      notes: ''
+      notes: '',
+      vatTurnover: 0,
+      adjustedTurnover: 0,
+      posMonthlyTurnover: 0,
     });
   };
 
-  const isValid = formData.applicantName && formData.loanAmount > 0 && formData.tenure > 0;
+  // Validation - also require POS fields if RAK POS is selected
+  const isValid = formData.applicantName && 
+    formData.loanAmount > 0 && 
+    formData.tenure > 0 && 
+    formData.agentReference.trim() !== '' && 
+    formData.analystName.trim() !== '' &&
+    (!isRakPosLoan || (formData.posMonthlyTurnover > 0 && formData.vatTurnover > 0 && formData.adjustedTurnover > 0));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,13 +291,161 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
                   placeholder="15000"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Company Name</Label>
+                <Popover open={companyNameOpen} onOpenChange={setCompanyNameOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={companyNameOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.companyName || "Select or type company name..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search or type new company..." 
+                        value={formData.companyName}
+                        onValueChange={(value) => setFormData({ ...formData, companyName: value })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-muted-foreground text-sm">
+                            Press enter to use "{formData.companyName}"
+                          </span>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing Companies">
+                          {existingCompanyNames.map((company) => (
+                            <CommandItem
+                              key={company}
+                              value={company}
+                              onSelect={(currentValue) => {
+                                setFormData({ ...formData, companyName: currentValue });
+                                setCompanyNameOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.companyName === company ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {company}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>Agent Reference *</Label>
+                <Popover open={agentRefOpen} onOpenChange={setAgentRefOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={agentRefOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.agentReference || "Select or type agent reference..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search or type new reference..." 
+                        value={formData.agentReference}
+                        onValueChange={(value) => setFormData({ ...formData, agentReference: value })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-muted-foreground text-sm">
+                            Press enter to use "{formData.agentReference}"
+                          </span>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing References">
+                          {existingAgentRefs.map((ref) => (
+                            <CommandItem
+                              key={ref}
+                              value={ref}
+                              onSelect={(currentValue) => {
+                                setFormData({ ...formData, agentReference: currentValue });
+                                setAgentRefOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.agentReference === ref ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {ref}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <div className="col-span-2 space-y-2">
-                <Label>Employer</Label>
-                <Input
-                  value={formData.employer}
-                  onChange={(e) => setFormData({ ...formData, employer: e.target.value })}
-                  placeholder="Company name"
-                />
+                <Label>Analyst Name *</Label>
+                <Popover open={analystOpen} onOpenChange={setAnalystOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={analystOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {formData.analystName || "Select or type analyst name..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search or type new analyst..." 
+                        value={formData.analystName}
+                        onValueChange={(value) => setFormData({ ...formData, analystName: value })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <span className="text-muted-foreground text-sm">
+                            Press enter to use "{formData.analystName}"
+                          </span>
+                        </CommandEmpty>
+                        <CommandGroup heading="Existing Analysts">
+                          {existingAnalysts.map((analyst) => (
+                            <CommandItem
+                              key={analyst}
+                              value={analyst}
+                              onSelect={(currentValue) => {
+                                setFormData({ ...formData, analystName: currentValue });
+                                setAnalystOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.analystName === analyst ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {analyst}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
@@ -275,6 +553,45 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
             </div>
           )}
 
+          {/* RAK POS Loan Eligibility Inputs */}
+          {isRakPosLoan && (
+            <div className="space-y-4 p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
+              <h3 className="text-sm font-medium text-primary flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">RAK POS</Badge>
+                POS Eligibility Inputs
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>POS Monthly Turnover *</Label>
+                  <Input
+                    type="number"
+                    value={formData.posMonthlyTurnover || ''}
+                    onChange={(e) => setFormData({ ...formData, posMonthlyTurnover: Number(e.target.value) })}
+                    placeholder="e.g., 100000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>VAT Turnover *</Label>
+                  <Input
+                    type="number"
+                    value={formData.vatTurnover || ''}
+                    onChange={(e) => setFormData({ ...formData, vatTurnover: Number(e.target.value) })}
+                    placeholder="e.g., 1200000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Adjusted Turnover *</Label>
+                  <Input
+                    type="number"
+                    value={formData.adjustedTurnover || ''}
+                    onChange={(e) => setFormData({ ...formData, adjustedTurnover: Number(e.target.value) })}
+                    placeholder="e.g., 1100000"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Loan Details */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Loan Details</h3>
@@ -343,6 +660,114 @@ export const NewLoanCaseDialog: React.FC<NewLoanCaseDialogProps> = ({
               </div>
             </div>
           </div>
+
+          {/* RAK POS Eligibility Summary */}
+          {isRakPosLoan && (formData.posMonthlyTurnover > 0 || formData.vatTurnover > 0 || formData.adjustedTurnover > 0) && (
+            <div className={cn(
+              "p-4 rounded-lg border-2",
+              posEligibilityCalcs.isReverseMethod 
+                ? "border-warning/40 bg-warning/5" 
+                : "border-primary/30 bg-primary/5"
+            )}>
+              <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">RAK POS</Badge>
+                <Badge 
+                  variant={posEligibilityCalcs.isReverseMethod ? "outline" : "default"} 
+                  className={cn(
+                    "text-xs",
+                    posEligibilityCalcs.isReverseMethod 
+                      ? "border-warning text-warning" 
+                      : ""
+                  )}
+                >
+                  {posEligibilityCalcs.isReverseMethod ? "REVERSE Method" : "NORMAL Method"}
+                </Badge>
+                POS Eligibility Calculation
+              </h3>
+              
+              {/* Method explanation */}
+              {posEligibilityCalcs.isReverseMethod && (
+                <div className="mb-4 p-2 bg-warning/10 rounded border border-warning/30 text-xs text-warning">
+                  ⚠️ Variance &gt; 25% — Using REVERSE method: Loan capped at Adjusted Turnover, ABCD = 1% of Adjusted Turnover
+                </div>
+              )}
+              
+              {/* Turnover Breakdown */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">POS Annual Turnover</p>
+                  <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posAnnualTurnover)}</p>
+                  <p className="text-[10px] text-muted-foreground">Monthly × 12</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">40% Adjusted Cap</p>
+                  <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posCapAdjusted)}</p>
+                  <p className="text-[10px] text-muted-foreground">Adjusted × 0.40</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">40% VAT Cap</p>
+                  <p className="font-semibold">{formatCurrency(posEligibilityCalcs.posCapVat)}</p>
+                  <p className="text-[10px] text-muted-foreground">VAT × 0.40</p>
+                </div>
+                <div className={cn(
+                  "p-2 rounded border",
+                  posEligibilityCalcs.isReverseMethod 
+                    ? "bg-muted/50 border-muted-foreground/30" 
+                    : "bg-primary/10 border-primary/30"
+                )}>
+                  <p className="text-xs text-muted-foreground">POS Eligible Turnover</p>
+                  <p className={cn(
+                    "font-bold",
+                    posEligibilityCalcs.isReverseMethod ? "text-muted-foreground" : "text-primary"
+                  )}>{formatCurrency(posEligibilityCalcs.posEligibleTurnover)}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {posEligibilityCalcs.isReverseMethod ? "Not used (reverse)" : "MIN of above"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Eligibility Results */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">Variance</p>
+                  <p className={cn(
+                    "font-semibold",
+                    posEligibilityCalcs.variancePercent <= 10 ? "text-success" :
+                    posEligibilityCalcs.variancePercent <= 25 ? "text-warning" : "text-destructive"
+                  )}>
+                    {posEligibilityCalcs.variancePercent.toFixed(2)}%
+                  </p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="text-xs text-muted-foreground">
+                    {posEligibilityCalcs.isReverseMethod ? "Basis" : "Multiplier"}
+                  </p>
+                  <p className="font-semibold">
+                    {posEligibilityCalcs.isReverseMethod 
+                      ? "Adjusted T/O" 
+                      : `${posEligibilityCalcs.eligibleMultiplier.toFixed(2)}x`
+                    }
+                  </p>
+                </div>
+                <div className="p-2 bg-success/10 rounded border border-success/30">
+                  <p className="text-xs text-muted-foreground">Eligible Loan Amount</p>
+                  <p className="font-bold text-success">{formatCurrency(posEligibilityCalcs.eligibleLoanAmount)}</p>
+                </div>
+                <div className="p-2 bg-warning/10 rounded border border-warning/30">
+                  <p className="text-xs text-muted-foreground">ABCD Fee (1%)</p>
+                  <p className="font-semibold text-warning">{formatCurrency(posEligibilityCalcs.abcdFeeAmount)}</p>
+                </div>
+              </div>
+
+              {/* Total with ABCD */}
+              <div className="mt-3 p-3 bg-primary/20 rounded-lg border border-primary/40">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total Including ABCD Fee</span>
+                  <span className="text-xl font-bold text-primary">{formatCurrency(posEligibilityCalcs.totalWithAbcd)}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">
