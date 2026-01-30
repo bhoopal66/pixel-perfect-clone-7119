@@ -30,7 +30,18 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -70,7 +81,7 @@ const agentSchema = z.object({
 type AgentFormData = z.infer<typeof agentSchema>;
 
 export default function AgentManagement() {
-  const { isAdmin, isLoading: authLoading } = useAuth();
+  const { isAdmin, isSuperAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [filteredAgents, setFilteredAgents] = useState<Agent[]>([]);
@@ -80,6 +91,7 @@ export default function AgentManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [togglingAgentId, setTogglingAgentId] = useState<string | null>(null);
+  const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
   const [performanceData, setPerformanceData] = useState<AgentPerformance[]>([]);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(true);
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
@@ -281,6 +293,29 @@ export default function AgentManagement() {
       ));
     }
     setTogglingAgentId(null);
+  };
+
+  const handleDeleteAgent = async (agent: Agent) => {
+    if (!isSuperAdmin) {
+      toast.error('Only super admins can delete agents');
+      return;
+    }
+
+    setDeletingAgentId(agent.id);
+
+    const { error } = await supabase
+      .from('agents')
+      .delete()
+      .eq('id', agent.id);
+
+    if (error) {
+      console.error('Error deleting agent:', error);
+      toast.error('Failed to delete agent', { description: error.message });
+    } else {
+      toast.success('Agent deleted successfully');
+      setAgents(agents.filter(a => a.id !== agent.id));
+    }
+    setDeletingAgentId(null);
   };
 
   const handleRefresh = () => {
@@ -782,7 +817,7 @@ export default function AgentManagement() {
                                 ) : agent.is_active ? (
                                   <>
                                     <UserX className="h-4 w-4 mr-1" />
-                                    Deactivate
+                                    Suspend
                                   </>
                                 ) : (
                                   <>
@@ -791,6 +826,43 @@ export default function AgentManagement() {
                                   </>
                                 )}
                               </Button>
+                              {isSuperAdmin && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      disabled={deletingAgentId === agent.id}
+                                    >
+                                      {deletingAgentId === agent.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <Trash2 className="h-4 w-4 mr-1" />
+                                          Delete
+                                        </>
+                                      )}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to permanently delete {agent.full_name} ({agent.agent_code})? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteAgent(agent)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
