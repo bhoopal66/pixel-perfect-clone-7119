@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -12,10 +12,23 @@ import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useAuth } from '../hooks/useAuth';
+import { Badge } from '../components/ui/badge';
 import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 const Index = () => {
   const navigate = useNavigate();
   const { user, canManageUsers, canManageAgents, userRole, signOut } = useAuth();
+
+  // Role display configuration
+  const roleConfig = {
+    super_admin: { label: 'Super Admin', icon: Crown, variant: 'default' as const, className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0' },
+    admin: { label: 'Admin', icon: Shield, variant: 'default' as const, className: 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0' },
+    supervisor: { label: 'Supervisor', icon: Eye, variant: 'secondary' as const, className: 'bg-blue-500/10 text-blue-600 border-blue-500/30' },
+    coordinator: { label: 'Coordinator', icon: ClipboardList, variant: 'outline' as const, className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+    user: { label: 'User', icon: User, variant: 'outline' as const, className: '' }
+  };
+
+  const currentRoleConfig = roleConfig[userRole];
+  const RoleIcon = currentRoleConfig.icon;
 
   const features = [
     { icon: <FileSpreadsheet className="h-6 w-6" />, title: 'PDF Parsing', desc: 'Extract data from statements' },
@@ -97,19 +110,33 @@ const Index = () => {
               {/* Theme Toggle */}
               <ThemeToggle />
 
+              {/* Role Badge */}
+              <Badge variant={currentRoleConfig.variant} className={`hidden sm:flex items-center gap-1.5 ${currentRoleConfig.className}`}>
+                <RoleIcon className="h-3 w-3" />
+                {currentRoleConfig.label}
+              </Badge>
+
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="rounded-full">
+                  <Button variant="outline" size="icon" className="rounded-full relative">
                     <Users className="h-4 w-4" />
+                    {/* Mobile role indicator dot */}
+                    <span className={`sm:hidden absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-background ${
+                      userRole === 'super_admin' ? 'bg-amber-500' :
+                      userRole === 'admin' ? 'bg-primary' :
+                      userRole === 'supervisor' ? 'bg-blue-500' :
+                      userRole === 'coordinator' ? 'bg-emerald-500' : 'bg-muted-foreground'
+                    }`} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                    {user?.email}
-                    <div className="text-xs capitalize text-primary/70">
-                      {userRole.replace('_', ' ')}
-                    </div>
+                  <div className="px-2 py-1.5">
+                    <div className="text-sm font-medium">{user?.email}</div>
+                    <Badge variant={currentRoleConfig.variant} className={`mt-1 text-xs ${currentRoleConfig.className}`}>
+                      <RoleIcon className="h-3 w-3 mr-1" />
+                      {currentRoleConfig.label}
+                    </Badge>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
