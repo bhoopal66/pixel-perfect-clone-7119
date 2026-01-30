@@ -1,14 +1,16 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X, FileCheck } from 'lucide-react';
+import { Upload, FileText, X, FileCheck, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
+import { toast } from 'sonner';
 
 interface UploadedFile {
   file: File;
   id: string;
   name: string;
   size: string;
+  sizeBytes: number;
 }
 
 interface FileUploadProps {
@@ -28,15 +30,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const isDuplicate = (file: File, existingFiles: UploadedFile[]): boolean => {
+    return existingFiles.some(
+      existing => existing.name === file.name && existing.sizeBytes === file.size
+    );
+  };
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map(file => ({
-      file,
-      id: Math.random().toString(36).substring(7),
-      name: file.name,
-      size: formatFileSize(file.size)
-    }));
-    
+    const duplicates: string[] = [];
+    const uniqueFiles: File[] = [];
+
     setUploadedFiles(prev => {
+      acceptedFiles.forEach(file => {
+        if (isDuplicate(file, prev)) {
+          duplicates.push(file.name);
+        } else if (!uniqueFiles.some(f => f.name === file.name && f.size === file.size)) {
+          uniqueFiles.push(file);
+        }
+      });
+
+      if (duplicates.length > 0) {
+        toast.error(`Duplicate files ignored: ${duplicates.join(', ')}`, {
+          icon: <AlertCircle className="h-4 w-4" />,
+        });
+      }
+
+      const newFiles = uniqueFiles.map(file => ({
+        file,
+        id: Math.random().toString(36).substring(7),
+        name: file.name,
+        size: formatFileSize(file.size),
+        sizeBytes: file.size
+      }));
+
       const combined = [...prev, ...newFiles];
       return combined.slice(0, 12); // Max 12 files
     });
