@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Shield, User, Users, Crown, Eye, UserCheck, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserWithRole {
   user_id: string;
@@ -34,12 +35,37 @@ interface UserWithRole {
   created_at: string;
 }
 
-const ROLE_CONFIG: Record<string, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  super_admin: { label: 'Super Admin', icon: <Crown className="h-4 w-4" />, variant: 'destructive' },
-  admin: { label: 'Admin', icon: <Shield className="h-4 w-4" />, variant: 'default' },
-  supervisor: { label: 'Supervisor', icon: <Eye className="h-4 w-4" />, variant: 'secondary' },
-  coordinator: { label: 'Coordinator', icon: <UserCheck className="h-4 w-4" />, variant: 'outline' },
-  user: { label: 'User', icon: <User className="h-4 w-4" />, variant: 'outline' },
+const ROLE_CONFIG: Record<string, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'outline' | 'destructive'; description: string }> = {
+  super_admin: { 
+    label: 'Super Admin', 
+    icon: <Crown className="h-4 w-4" />, 
+    variant: 'destructive',
+    description: 'Full system access: Manage all users, roles, agents, cases, and system settings'
+  },
+  admin: { 
+    label: 'Admin', 
+    icon: <Shield className="h-4 w-4" />, 
+    variant: 'default',
+    description: 'Administrative access: Manage users, agents, and cases. Cannot assign Super Admin role'
+  },
+  supervisor: { 
+    label: 'Supervisor', 
+    icon: <Eye className="h-4 w-4" />, 
+    variant: 'secondary',
+    description: 'Supervisor access: Manage agents and cases. No user management access'
+  },
+  coordinator: { 
+    label: 'Coordinator', 
+    icon: <UserCheck className="h-4 w-4" />, 
+    variant: 'outline',
+    description: 'Case coordination: Access to cases only. No agent or user management'
+  },
+  user: { 
+    label: 'User', 
+    icon: <User className="h-4 w-4" />, 
+    variant: 'outline',
+    description: 'Basic access: View and manage own cases only'
+  },
 };
 
 export default function UserManagement() {
@@ -109,10 +135,17 @@ export default function UserManagement() {
   const getRoleBadge = (role: string) => {
     const config = ROLE_CONFIG[role] || ROLE_CONFIG.user;
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
-        {config.icon}
-        {config.label}
-      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant={config.variant} className="flex items-center gap-1 w-fit cursor-help">
+            {config.icon}
+            {config.label}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <p className="text-sm">{config.description}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
