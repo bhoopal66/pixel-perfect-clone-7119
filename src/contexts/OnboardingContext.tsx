@@ -9,10 +9,22 @@ import {
   createEmptyFormData,
   createEmptyOwner
 } from '@/types/onboarding.types';
+import { useOnboardingPersistence } from '@/hooks/useOnboardingPersistence';
+import { useDebouncedCallback } from '@/hooks/useDebounce';
 
 interface OnboardingContextType {
+  // Case info
+  caseId: string | null;
+  caseNumber: string | null;
+  isLoading: boolean;
+  isSaving: boolean;
+  lastSaved: Date | null;
+  
+  // Step management
   currentStep: number;
   setCurrentStep: (step: number) => void;
+  
+  // Form data
   formData: OnboardingFormData;
   updateBusinessDetails: (data: Partial<BusinessDetails>) => void;
   updateOwner: (id: string, data: Partial<OwnerDetails>) => void;
@@ -20,137 +32,185 @@ interface OnboardingContextType {
   removeOwner: (id: string) => void;
   updateBankingTurnover: (data: Partial<BankingTurnover>) => void;
   updateLoanRequirement: (data: Partial<LoanRequirement>) => void;
-  addDocument: (doc: DocumentUpload) => void;
-  removeDocument: (id: string) => void;
-  updateDocument: (id: string, data: Partial<DocumentUpload>) => void;
+  
+  // Document management
+  uploadDocument: (file: File, documentType: string) => Promise<DocumentUpload | null>;
+  removeDocument: (id: string) => Promise<boolean>;
+  refreshDocuments: () => Promise<void>;
+  
+  // Confirmations
   setDeclarationConfirmed: (confirmed: boolean) => void;
   setAuthorizationConfirmed: (confirmed: boolean) => void;
+  
+  // Validation
   getTotalShareholding: () => number;
   isStepValid: (step: number) => boolean;
+  
+  // Actions
+  saveCurrentStep: () => Promise<boolean>;
+  submitApplication: () => Promise<boolean>;
   resetForm: () => void;
-  saveProgress: () => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'onboarding_form_data';
 const STEP_KEY = 'onboarding_current_step';
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
-  const [currentStep, setCurrentStep] = useState(() => {
+  const {
+    caseId,
+    caseNumber,
+    isLoading,
+    isSaving,
+    lastSaved,
+    formData: persistedFormData,
+    initializeCase,
+    saveStep,
+    submitCase,
+    uploadDoc,
+    removeDoc,
+    updateFormData,
+    refreshDocuments
+  } = useOnboardingPersistence();
+
+  const [currentStep, setCurrentStepState] = useState(() => {
     const saved = localStorage.getItem(STEP_KEY);
     return saved ? parseInt(saved, 10) : 1;
   });
   
-  const [formData, setFormData] = useState<OnboardingFormData>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return createEmptyFormData();
-      }
-    }
-    return createEmptyFormData();
-  });
+  const [localFormData, setLocalFormData] = useState<OnboardingFormData>(createEmptyFormData());
+  const [declarationConfirmed, setDeclarationConfirmedState] = useState(false);
+  const [authorizationConfirmed, setAuthorizationConfirmedState] = useState(false);
 
-  // Autosave on form data change
+  // Sync persisted form data to local state
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
+    if (persistedFormData) {
+      setLocalFormData(persistedFormData);
+    }
+  }, [persistedFormData]);
 
+  // Save step to localStorage
   useEffect(() => {
     localStorage.setItem(STEP_KEY, currentStep.toString());
   }, [currentStep]);
 
-  const saveProgress = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-    localStorage.setItem(STEP_KEY, currentStep.toString());
-  }, [formData, currentStep]);
+  const setCurrentStep = useCallback((step: number) => {
+    setCurrentStepState(step);
+  }, []);
+
+  // Debounced auto-save to database
+  const debouncedSyncToDatabase = useDebouncedCallback((data: OnboardingFormData) => {
+    updateFormData(data);
+  }, 1000);
 
   const updateBusinessDetails = useCallback((data: Partial<BusinessDetails>) => {
-    setFormData(prev => ({
-      ...prev,
-      businessDetails: { ...prev.businessDetails, ...data }
-    }));
-  }, []);
+    setLocalFormData(prev => {
+      const updated = {
+        ...prev,
+        businessDetails: { ...prev.businessDetails, ...data }
+      };
+      debouncedSyncToDatabase(updated);
+      return updated;
+    });
+  }, [debouncedSyncToDatabase]);
 
   const updateOwner = useCallback((id: string, data: Partial<OwnerDetails>) => {
-    setFormData(prev => ({
-      ...prev,
-      owners: prev.owners.map(owner =>
-        owner.id === id ? { ...owner, ...data } : owner
-      )
-    }));
-  }, []);
+    setLocalFormData(prev => {
+      const updated = {
+        ...prev,
+        owners: prev.owners.map(owner =>
+          owner.id === id ? { ...owner, ...data } : owner
+        )
+      };
+      debouncedSyncToDatabase(updated);
+      return updated;
+    });
+  }, [debouncedSyncToDatabase]);
 
   const addOwner = useCallback(() => {
-    setFormData(prev => ({
-      ...prev,
-      owners: [...prev.owners, createEmptyOwner()]
-    }));
-  }, []);
+    setLocalFormData(prev => {
+      const updated = {
+        ...prev,
+        owners: [...prev.owners, createEmptyOwner()]
+      };
+      debouncedSyncToDatabase(updated);
+      return updated;
+    });
+  }, [debouncedSyncToDatabase]);
 
   const removeOwner = useCallback((id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      owners: prev.owners.filter(owner => owner.id !== id)
-    }));
-  }, []);
+    setLocalFormData(prev => {
+      const updated = {
+        ...prev,
+        owners: prev.owners.filter(owner => owner.id !== id)
+      };
+      debouncedSyncToDatabase(updated);
+      return updated;
+    });
+  }, [debouncedSyncToDatabase]);
 
   const updateBankingTurnover = useCallback((data: Partial<BankingTurnover>) => {
-    setFormData(prev => ({
-      ...prev,
-      bankingTurnover: { ...prev.bankingTurnover, ...data }
-    }));
-  }, []);
+    setLocalFormData(prev => {
+      const updated = {
+        ...prev,
+        bankingTurnover: { ...prev.bankingTurnover, ...data }
+      };
+      debouncedSyncToDatabase(updated);
+      return updated;
+    });
+  }, [debouncedSyncToDatabase]);
 
   const updateLoanRequirement = useCallback((data: Partial<LoanRequirement>) => {
-    setFormData(prev => ({
-      ...prev,
-      loanRequirement: { ...prev.loanRequirement, ...data }
-    }));
-  }, []);
+    setLocalFormData(prev => {
+      const updated = {
+        ...prev,
+        loanRequirement: { ...prev.loanRequirement, ...data }
+      };
+      debouncedSyncToDatabase(updated);
+      return updated;
+    });
+  }, [debouncedSyncToDatabase]);
 
-  const addDocument = useCallback((doc: DocumentUpload) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: [...prev.documents, doc]
-    }));
-  }, []);
+  const uploadDocument = useCallback(async (file: File, documentType: string): Promise<DocumentUpload | null> => {
+    const doc = await uploadDoc(file, documentType);
+    if (doc) {
+      setLocalFormData(prev => ({
+        ...prev,
+        documents: [...prev.documents, doc]
+      }));
+    }
+    return doc;
+  }, [uploadDoc]);
 
-  const removeDocument = useCallback((id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.filter(doc => doc.id !== id)
-    }));
-  }, []);
-
-  const updateDocument = useCallback((id: string, data: Partial<DocumentUpload>) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.map(doc =>
-        doc.id === id ? { ...doc, ...data } : doc
-      )
-    }));
-  }, []);
+  const removeDocument = useCallback(async (id: string): Promise<boolean> => {
+    const success = await removeDoc(id);
+    if (success) {
+      setLocalFormData(prev => ({
+        ...prev,
+        documents: prev.documents.filter(doc => doc.id !== id)
+      }));
+    }
+    return success;
+  }, [removeDoc]);
 
   const setDeclarationConfirmed = useCallback((confirmed: boolean) => {
-    setFormData(prev => ({ ...prev, declarationConfirmed: confirmed }));
+    setDeclarationConfirmedState(confirmed);
+    setLocalFormData(prev => ({ ...prev, declarationConfirmed: confirmed }));
   }, []);
 
   const setAuthorizationConfirmed = useCallback((confirmed: boolean) => {
-    setFormData(prev => ({ ...prev, authorizationConfirmed: confirmed }));
+    setAuthorizationConfirmedState(confirmed);
+    setLocalFormData(prev => ({ ...prev, authorizationConfirmed: confirmed }));
   }, []);
 
   const getTotalShareholding = useCallback(() => {
-    return formData.owners.reduce((sum, owner) => sum + (owner.shareholdingPercent || 0), 0);
-  }, [formData.owners]);
+    return localFormData.owners.reduce((sum, owner) => sum + (owner.shareholdingPercent || 0), 0);
+  }, [localFormData.owners]);
 
   const isStepValid = useCallback((step: number): boolean => {
     switch (step) {
       case 1: {
-        const bd = formData.businessDetails;
+        const bd = localFormData.businessDetails;
         return !!(
           bd.companyLegalName &&
           bd.tradeLicenseNo &&
@@ -167,8 +227,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       case 2: {
         const totalShareholding = getTotalShareholding();
         return (
-          formData.owners.length > 0 &&
-          formData.owners.every(owner =>
+          localFormData.owners.length > 0 &&
+          localFormData.owners.every(owner =>
             owner.ownerName &&
             owner.nationality &&
             owner.emiratesId &&
@@ -182,7 +242,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         );
       }
       case 3: {
-        const bt = formData.bankingTurnover;
+        const bt = localFormData.bankingTurnover;
         const vatValid = bt.vatRegistered === false || (bt.vatRegistered === true && bt.annualVatTurnover && bt.annualVatTurnover > 0);
         const posValid = bt.posMachine === false || (bt.posMachine === true && bt.posMonthlyTurnover && bt.posMonthlyTurnover > 0);
         return !!(
@@ -195,7 +255,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         );
       }
       case 4: {
-        const lr = formData.loanRequirement;
+        const lr = localFormData.loanRequirement;
         return !!(
           lr.loanType &&
           lr.requiredLoanAmount > 0 &&
@@ -207,48 +267,70 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       case 5: {
         // Check mandatory documents
         const mandatoryTypes = ['trade_license', 'owner_passport', 'bank_statements'];
-        if (formData.bankingTurnover.vatRegistered) {
+        if (localFormData.bankingTurnover.vatRegistered) {
           mandatoryTypes.push('vat_certificate');
         }
         return mandatoryTypes.every(type =>
-          formData.documents.some(doc => doc.type === type && doc.status === 'completed')
+          localFormData.documents.some(doc => doc.type === type && doc.status === 'completed')
         );
       }
       case 6:
-        return formData.declarationConfirmed && formData.authorizationConfirmed;
+        return declarationConfirmed && authorizationConfirmed;
       default:
         return false;
     }
-  }, [formData, getTotalShareholding]);
+  }, [localFormData, getTotalShareholding, declarationConfirmed, authorizationConfirmed]);
+
+  const saveCurrentStep = useCallback(async (): Promise<boolean> => {
+    return saveStep(currentStep);
+  }, [saveStep, currentStep]);
+
+  const submitApplication = useCallback(async (): Promise<boolean> => {
+    return submitCase();
+  }, [submitCase]);
 
   const resetForm = useCallback(() => {
-    setFormData(createEmptyFormData());
-    setCurrentStep(1);
-    localStorage.removeItem(STORAGE_KEY);
+    setLocalFormData(createEmptyFormData());
+    setCurrentStepState(1);
+    setDeclarationConfirmedState(false);
+    setAuthorizationConfirmedState(false);
     localStorage.removeItem(STEP_KEY);
   }, []);
+
+  // Merge local confirmations into formData for consumers
+  const formDataWithConfirmations = {
+    ...localFormData,
+    declarationConfirmed,
+    authorizationConfirmed
+  };
 
   return (
     <OnboardingContext.Provider
       value={{
+        caseId,
+        caseNumber,
+        isLoading,
+        isSaving,
+        lastSaved,
         currentStep,
         setCurrentStep,
-        formData,
+        formData: formDataWithConfirmations,
         updateBusinessDetails,
         updateOwner,
         addOwner,
         removeOwner,
         updateBankingTurnover,
         updateLoanRequirement,
-        addDocument,
+        uploadDocument,
         removeDocument,
-        updateDocument,
+        refreshDocuments,
         setDeclarationConfirmed,
         setAuthorizationConfirmed,
         getTotalShareholding,
         isStepValid,
-        resetForm,
-        saveProgress
+        saveCurrentStep,
+        submitApplication,
+        resetForm
       }}
     >
       {children}
