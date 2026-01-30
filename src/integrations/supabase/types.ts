@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          agent_code: string
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          telephone: string
+          updated_at: string
+        }
+        Insert: {
+          agent_code: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          telephone: string
+          updated_at?: string
+        }
+        Update: {
+          agent_code?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          telephone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cases: {
         Row: {
           abcd_fee_amount: number
