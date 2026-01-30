@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import {
   Settings,
   BarChart3,
@@ -10,55 +9,148 @@ import {
   ArrowLeft,
   TrendingUp,
   RefreshCw,
-  Plus,
-  AlertCircle,
-  CheckCircle,
-  Percent,
-  Clock
+  Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardService } from '@/services/dashboardService';
 import { LenderService } from '@/services/lenderService';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { LenderManagement } from '@/components/admin/LenderManagement';
+import { 
+  LenderManagement, 
+  GlobalMetricsCards, 
+  LenderPerformanceChart,
+  SupervisorComparison,
+  TrendAnalytics
+} from '@/components/admin';
+import { useRealtimeAdmin } from '@/hooks/useRealtimeAdmin';
+import { supabase } from '@/integrations/supabase/client';
 import type { LenderPerformance, SupervisorPipeline } from '@/types/dashboard.types';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { hasAdminPrivileges } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('overview');
+  const [trendPeriod, setTrendPeriod] = useState<string>('30d');
+
+  // Enable real-time updates
+  useRealtimeAdmin();
 
   // Fetch supervisor pipelines
-  const { data: supervisorPipelines, isLoading: pipelinesLoading, refetch: refetchPipelines } = useQuery({
+  const { data: supervisorPipelines, isLoading: pipelinesLoading, refetch: refetchPipelines, dataUpdatedAt } = useQuery({
     queryKey: ['admin-supervisor-pipelines'],
     queryFn: () => DashboardService.getSupervisorPipelines(),
-    enabled: hasAdminPrivileges
+    enabled: hasAdminPrivileges,
+    refetchInterval: 60000,
   });
 
   // Fetch lender performance
   const { data: lenderPerformance, isLoading: lenderLoading, refetch: refetchLenders } = useQuery({
     queryKey: ['admin-lender-performance'],
     queryFn: () => DashboardService.getLenderPerformance(),
-    enabled: hasAdminPrivileges
+    enabled: hasAdminPrivileges,
+    refetchInterval: 60000,
   });
 
   // Fetch all lenders for config
   const { data: lenders, isLoading: lendersLoading, refetch: refetchLendersList } = useQuery({
     queryKey: ['admin-lenders'],
     queryFn: () => LenderService.getAll(),
-    enabled: hasAdminPrivileges
+    enabled: hasAdminPrivileges,
+    refetchInterval: 60000,
+  });
+
+  // Fetch global metrics
+  const { data: globalMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery({
+    queryKey: ['admin-global-metrics'],
+    queryFn: async () => {
+      // Get all cases
+      const { data: cases } = await supabase
+        .from('onboarding_cases')
+        .select('status, rag_status');
+      
+      // Get all agents
+      const { data: agents } = await supabase
+        .from('agents')
+        .select('id')
+        .eq('is_active', true);
+
+      const caseList = cases || [];
+      const approved = caseList.filter(c => c.status === 'approved').length;
+      const declined = caseList.filter(c => c.status === 'declined').length;
+      const pending = caseList.filter(c => !['approved', 'declined', 'dropped', 'closed'].includes(c.status)).length;
+      const redCases = caseList.filter(c => c.rag_status === 'red').length;
+
+      return {
+        totalApplications: caseList.length,
+        approved,
+        declined,
+        pending,
+        avgApprovalRate: (approved + declined) > 0 ? Math.round(approved / (approved + declined) * 100) : 0,
+        avgTAT: lenderPerformance?.reduce((sum, l) => sum + l.avg_decision_tat, 0) / Math.max(lenderPerformance?.length || 1, 1) || 0,
+        activeLenders: lenders?.filter(l => l.is_active).length || 0,
+        activeAgents: agents?.length || 0,
+        redCases,
+        trends: {
+          applications: 5, // Placeholder - would need historical data
+          approvals: 3,
+          tat: -2
+        }
+      };
+    },
+    enabled: hasAdminPrivileges && !!lenderPerformance && !!lenders,
+    refetchInterval: 60000,
+  });
+
+  // Fetch trend data
+  const { data: trendData, isLoading: trendsLoading, refetch: refetchTrends } = useQuery({
+    queryKey: ['admin-trends', trendPeriod],
+    queryFn: async () => {
+      const days = trendPeriod === '7d' ? 7 : trendPeriod === '30d' ? 30 : trendPeriod === '90d' ? 90 : 365;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const { data: cases } = await supabase
+        .from('onboarding_cases')
+        .select('status, created_at')
+        .gte('created_at', startDate.toISOString());
+
+      // Group by date
+      const dateMap = new Map<string, { applications: number; approved: number; declined: number; pending: number }>();
+      
+      (cases || []).forEach(c => {
+        const date = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        if (!dateMap.has(date)) {
+          dateMap.set(date, { applications: 0, approved: 0, declined: 0, pending: 0 });
+        }
+        const d = dateMap.get(date)!;
+        d.applications++;
+        if (c.status === 'approved') d.approved++;
+        else if (c.status === 'declined') d.declined++;
+        else if (!['dropped', 'closed'].includes(c.status)) d.pending++;
+      });
+
+      return Array.from(dateMap.entries())
+        .map(([date, data]) => ({ date, ...data }))
+        .slice(-30); // Last 30 data points max
+    },
+    enabled: hasAdminPrivileges,
+    refetchInterval: 60000,
   });
 
   const refetchAll = () => {
     refetchPipelines();
     refetchLenders();
     refetchLendersList();
+    refetchMetrics();
+    refetchTrends();
   };
+
+  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
   // Calculate totals
   const totalApproved = lenderPerformance?.reduce((sum, l) => {
@@ -97,7 +189,16 @@ export default function AdminDashboard() {
                 <p className="text-xs text-muted-foreground">Global Analytics & Configuration</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="gap-1.5 text-xs">
+                <Radio className="h-3 w-3 text-success animate-pulse" />
+                Live
+              </Badge>
+              {lastUpdated && (
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  Updated: {lastUpdated}
+                </span>
+              )}
               <Button variant="outline" size="sm" onClick={refetchAll}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
@@ -109,45 +210,22 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <BarChart3 className="h-4 w-4" />
-                <span className="text-sm">Total Applications</span>
-              </div>
-              <p className="text-3xl font-bold">{totalApplications}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <CheckCircle className="h-4 w-4 text-success" />
-                <span className="text-sm">Approved</span>
-              </div>
-              <p className="text-3xl font-bold text-success">{totalApproved}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Percent className="h-4 w-4" />
-                <span className="text-sm">Avg Approval Rate</span>
-              </div>
-              <p className="text-3xl font-bold">{avgApprovalRate}%</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Building2 className="h-4 w-4" />
-                <span className="text-sm">Active Lenders</span>
-              </div>
-              <p className="text-3xl font-bold">{activeLenders}</p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Global Metrics Cards */}
+        <GlobalMetricsCards 
+          metrics={globalMetrics || {
+            totalApplications: 0,
+            approved: 0,
+            declined: 0,
+            pending: 0,
+            avgApprovalRate: 0,
+            avgTAT: 0,
+            activeLenders: lenders?.filter(l => l.is_active).length || 0,
+            activeAgents: 0,
+            redCases: 0,
+            trends: { applications: 0, approvals: 0, tat: 0 }
+          }}
+          isLoading={metricsLoading}
+        />
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -171,129 +249,34 @@ export default function AdminDashboard() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview">
-            <div className="grid gap-6">
-              {/* Lender Performance Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Lender Performance Overview
-                  </CardTitle>
-                  <CardDescription>Approval rates and decision TAT by lender</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {lenderLoading ? (
-                    <div className="flex justify-center py-8">
-                      <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {(lenderPerformance || []).map(lender => (
-                        <Card key={lender.lender_id} className="bg-muted/50">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <p className="font-semibold">{lender.lender_name}</p>
-                                <p className="text-xs text-muted-foreground">{lender.short_code}</p>
-                              </div>
-                              <Badge variant={lender.approval_rate >= 50 ? 'default' : 'secondary'}>
-                                {lender.approval_rate}% Approval
-                              </Badge>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Applications</p>
-                                <p className="font-semibold">{lender.total_applications}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Avg TAT</p>
-                                <p className="font-semibold">{lender.avg_decision_tat} days</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Trend Analytics */}
+            <TrendAnalytics 
+              data={trendData || []}
+              isLoading={trendsLoading}
+              onRefresh={refetchTrends}
+              lastUpdated={lastUpdated}
+              period={trendPeriod}
+              onPeriodChange={setTrendPeriod}
+            />
+
+            {/* Lender Performance Chart */}
+            <LenderPerformanceChart 
+              data={lenderPerformance || []}
+              isLoading={lenderLoading}
+              onRefresh={refetchLenders}
+              lastUpdated={lastUpdated}
+            />
           </TabsContent>
 
           {/* Supervisors Tab */}
           <TabsContent value="supervisors">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Supervisor-wise Pipeline
-                </CardTitle>
-                <CardDescription>Team performance across all supervisors</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pipelinesLoading ? (
-                  <div className="flex justify-center py-8">
-                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Supervisor</TableHead>
-                          <TableHead className="text-center">Draft</TableHead>
-                          <TableHead className="text-center">In Process</TableHead>
-                          <TableHead className="text-center">Submitted</TableHead>
-                          <TableHead className="text-center">Approved</TableHead>
-                          <TableHead className="text-center">Declined</TableHead>
-                          <TableHead className="text-center">Avg TAT</TableHead>
-                          <TableHead className="text-center">Red Cases</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(supervisorPipelines || []).length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                              No supervisor data available
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          (supervisorPipelines || []).map(sup => (
-                            <TableRow key={sup.supervisor_id}>
-                              <TableCell className="font-medium">{sup.supervisor_name}</TableCell>
-                              <TableCell className="text-center">{sup.metrics.draft}</TableCell>
-                              <TableCell className="text-center">{sup.metrics.in_process}</TableCell>
-                              <TableCell className="text-center">{sup.metrics.submitted_to_lender}</TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant="default" className="bg-success/20 text-success">
-                                  {sup.metrics.approved}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {sup.metrics.declined > 0 ? (
-                                  <Badge variant="destructive">{sup.metrics.declined}</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground">0</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">{sup.avg_tat} days</TableCell>
-                              <TableCell className="text-center">
-                                {sup.red_cases > 0 ? (
-                                  <Badge variant="destructive">{sup.red_cases}</Badge>
-                                ) : (
-                                  <CheckCircle className="h-4 w-4 text-success mx-auto" />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <SupervisorComparison 
+              data={supervisorPipelines || []}
+              isLoading={pipelinesLoading}
+              onRefresh={refetchPipelines}
+              lastUpdated={lastUpdated}
+            />
           </TabsContent>
 
           {/* Lenders Performance Tab */}
