@@ -9,7 +9,8 @@ import {
   ArrowLeft,
   TrendingUp,
   RefreshCw,
-  Radio
+  Radio,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,8 @@ import {
 } from '@/components/admin';
 import { useRealtimeAdmin } from '@/hooks/useRealtimeAdmin';
 import { supabase } from '@/integrations/supabase/client';
+import { DashboardExportService } from '@/services/dashboardExportService';
+import { toast } from '@/hooks/use-toast';
 import type { LenderPerformance, SupervisorPipeline } from '@/types/dashboard.types';
 
 export default function AdminDashboard() {
@@ -152,6 +155,39 @@ export default function AdminDashboard() {
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
+  const handleExport = async () => {
+    try {
+      await DashboardExportService.exportAdminDashboard({
+        globalMetrics: globalMetrics || {
+          totalApplications: 0,
+          approved: 0,
+          declined: 0,
+          pending: 0,
+          avgApprovalRate: 0,
+          avgTAT: 0,
+          activeLenders: 0,
+          activeAgents: 0,
+          redCases: 0
+        },
+        lenderPerformance: lenderPerformance || [],
+        supervisorPipelines: supervisorPipelines || [],
+        trendData: trendData || [],
+        period: trendPeriod
+      });
+      toast({
+        title: 'Export Complete',
+        description: 'Dashboard data exported to Excel successfully.'
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export dashboard data.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   // Calculate totals
   const totalApproved = lenderPerformance?.reduce((sum, l) => {
     const approved = Math.round(l.total_applications * l.approval_rate / 100);
@@ -202,6 +238,10 @@ export default function AdminDashboard() {
               <Button variant="outline" size="sm" onClick={refetchAll}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
               </Button>
               <ThemeToggle />
             </div>
