@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Download } from 'lucide-react';
+import { CalendarIcon, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -19,14 +19,17 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export interface DateRange {
   from: Date | undefined;
   to: Date | undefined;
 }
 
+export type ExportFormat = 'excel' | 'pdf';
+
 interface ExportDialogProps {
-  onExport: (dateRange: DateRange) => Promise<void>;
+  onExport: (dateRange: DateRange, format: ExportFormat) => Promise<void>;
   title?: string;
   description?: string;
   trigger?: React.ReactNode;
@@ -40,6 +43,7 @@ export function ExportDialog({
 }: ExportDialogProps) {
   const [open, setOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
   const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined
@@ -48,7 +52,7 @@ export function ExportDialog({
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await onExport(dateRange);
+      await onExport(dateRange, exportFormat);
       setOpen(false);
       setDateRange({ from: undefined, to: undefined });
     } finally {
@@ -76,7 +80,38 @@ export function ExportDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4">
+          {/* Export Format Selection */}
+          <div className="grid gap-3">
+            <Label>Export Format</Label>
+            <RadioGroup
+              value={exportFormat}
+              onValueChange={(value) => setExportFormat(value as ExportFormat)}
+              className="grid grid-cols-2 gap-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="excel" id="excel" />
+                <Label 
+                  htmlFor="excel" 
+                  className="flex items-center gap-2 cursor-pointer font-normal"
+                >
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                  Excel (.xlsx)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="pdf" id="pdf" />
+                <Label 
+                  htmlFor="pdf" 
+                  className="flex items-center gap-2 cursor-pointer font-normal"
+                >
+                  <FileText className="h-4 w-4 text-red-600" />
+                  PDF (.pdf)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
           <div className="grid gap-2">
             <Label>Date Range</Label>
             <div className="flex gap-2">

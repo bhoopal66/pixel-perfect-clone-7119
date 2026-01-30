@@ -21,9 +21,10 @@ import { DashboardService } from '@/services/dashboardService';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PipelineVisualization, LenderTrackingTable, SLAMonitoringPanel } from '@/components/dashboard';
 import { ExportDialog } from '@/components/admin';
-import type { DateRange } from '@/components/admin';
+import type { DateRange, ExportFormat } from '@/components/admin';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { DashboardExportService } from '@/services/dashboardExportService';
+import { DashboardPdfExportService } from '@/services/dashboardPdfExportService';
 import { toast } from '@/hooks/use-toast';
 import type { PipelineMetrics } from '@/types/dashboard.types';
 
@@ -48,18 +49,25 @@ export default function SupervisorDashboard() {
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
-  const handleExport = async (dateRange: DateRange) => {
+  const handleExport = async (dateRange: DateRange, format: ExportFormat) => {
     try {
-      await DashboardExportService.exportSupervisorDashboard({
+      const exportData = {
         pipelineMetrics: pipeline || defaultMetrics,
         lenderTracking: [],
         slaData: [],
         supervisorName: user?.email?.split('@')[0],
         dateRange
-      });
+      };
+
+      if (format === 'pdf') {
+        await DashboardPdfExportService.exportSupervisorDashboard(exportData);
+      } else {
+        await DashboardExportService.exportSupervisorDashboard(exportData);
+      }
+      
       toast({
         title: 'Export Complete',
-        description: 'Dashboard data exported to Excel successfully.'
+        description: `Dashboard data exported to ${format.toUpperCase()} successfully.`
       });
     } catch (error) {
       console.error('Export failed:', error);
