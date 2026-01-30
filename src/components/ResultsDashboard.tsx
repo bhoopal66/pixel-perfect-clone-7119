@@ -14,21 +14,15 @@ import {
   Globe,
   Calendar,
   CalendarIcon,
-  RotateCcw,
-  BarChart3,
-  FileText
+  RotateCcw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar as CalendarComponent } from './ui/calendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { cn } from '@/lib/utils';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { VATReturn, SisterCompany } from '../types/turnover.types';
-import { DEFAULT_SISTER_COMPANIES } from '../types/turnover.types';
 import { TransactionTable } from './TransactionTable';
-import { VATReturnsUpload } from './VATReturnsUpload';
 import { CurrencyService, type CurrencyCode } from '../services/currencyService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 
@@ -45,12 +39,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 }) => {
   const { summary, accountInfo } = report;
   const currency = summary.currency || 'AED';
-
-  // VAT Returns state
-  const [vatReturns, setVATReturns] = useState<VATReturn[]>([]);
-  
-  // Sister companies state
-  const [sisterCompanies, setSisterCompanies] = useState<SisterCompany[]>(DEFAULT_SISTER_COMPANIES);
 
   // Date range filter state for daily balance chart
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -203,7 +191,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex gap-3">
             <Button
               onClick={onReset}
               variant="outline"
@@ -296,30 +284,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             )}
           </div>
         </div>
-      </motion.div>
-
-      {/* VAT Returns Section */}
-      <motion.div variants={itemVariants} className="mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <BarChart3 className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              VAT Returns
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Compare bank turnover with VAT taxable sales
-            </p>
-          </div>
-        </div>
-        <VATReturnsUpload
-          vatReturns={vatReturns}
-          onVATReturnsChange={setVATReturns}
-          sisterCompanies={sisterCompanies}
-          onSisterCompaniesChange={setSisterCompanies}
-          currency={currency}
-        />
       </motion.div>
 
       {/* Charts Row */}
