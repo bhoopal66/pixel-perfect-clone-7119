@@ -13,6 +13,9 @@ import AgentManagement from "./pages/AgentManagement";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 import AccessDenied from "./pages/AccessDenied";
+import BusinessOnboarding from "./pages/BusinessOnboarding";
+import ClientCases from "./pages/ClientCases";
+import ClientCaseDetail from "./pages/ClientCaseDetail";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +121,10 @@ const AppRoutes = () => (
     <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
     <Route path="/admin/users" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
     <Route path="/admin/agents" element={<AgentManagementRoute><AgentManagement /></AgentManagementRoute>} />
+    {/* Business Onboarding Routes */}
+    <Route path="/onboarding" element={<ProtectedRoute><BusinessOnboarding /></ProtectedRoute>} />
+    <Route path="/client-cases" element={<ProtectedRoute><ClientCases /></ProtectedRoute>} />
+    <Route path="/client-cases/:id" element={<ProtectedRoute><ClientCaseDetail /></ProtectedRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>
