@@ -26,8 +26,10 @@ import {
   GlobalMetricsCards, 
   LenderPerformanceChart,
   SupervisorComparison,
-  TrendAnalytics
+  TrendAnalytics,
+  ExportDialog
 } from '@/components/admin';
+import type { DateRange } from '@/components/admin';
 import { useRealtimeAdmin } from '@/hooks/useRealtimeAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardExportService } from '@/services/dashboardExportService';
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
-  const handleExport = async () => {
+  const handleExport = async (dateRange: DateRange) => {
     try {
       await DashboardExportService.exportAdminDashboard({
         globalMetrics: globalMetrics || {
@@ -172,7 +174,8 @@ export default function AdminDashboard() {
         lenderPerformance: lenderPerformance || [],
         supervisorPipelines: supervisorPipelines || [],
         trendData: trendData || [],
-        period: trendPeriod
+        period: trendPeriod,
+        dateRange
       });
       toast({
         title: 'Export Complete',
@@ -239,10 +242,7 @@ export default function AdminDashboard() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+              <ExportDialog onExport={handleExport} title="Export Admin Dashboard" />
               <ThemeToggle />
             </div>
           </div>

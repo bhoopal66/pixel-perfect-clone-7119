@@ -4,15 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Clock,
-  Users,
   TrendingUp,
   ArrowLeft,
   AlertCircle,
   CheckCircle,
   Building2,
   RefreshCw,
-  Radio,
-  Download
+  Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +20,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardService } from '@/services/dashboardService';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PipelineVisualization, LenderTrackingTable, SLAMonitoringPanel } from '@/components/dashboard';
+import { ExportDialog } from '@/components/admin';
+import type { DateRange } from '@/components/admin';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { DashboardExportService } from '@/services/dashboardExportService';
 import { toast } from '@/hooks/use-toast';
@@ -48,13 +48,14 @@ export default function SupervisorDashboard() {
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
-  const handleExport = async () => {
+  const handleExport = async (dateRange: DateRange) => {
     try {
       await DashboardExportService.exportSupervisorDashboard({
         pipelineMetrics: pipeline || defaultMetrics,
-        lenderTracking: [], // Will be populated from LenderTrackingTable
-        slaData: [], // Will be populated from SLAMonitoringPanel
-        supervisorName: user?.email?.split('@')[0]
+        lenderTracking: [],
+        slaData: [],
+        supervisorName: user?.email?.split('@')[0],
+        dateRange
       });
       toast({
         title: 'Export Complete',
@@ -126,10 +127,11 @@ export default function SupervisorDashboard() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+              <ExportDialog 
+                onExport={handleExport} 
+                title="Export Supervisor Dashboard"
+                description="Select a date range to export pipeline and SLA data."
+              />
               <ThemeToggle />
             </div>
           </div>
