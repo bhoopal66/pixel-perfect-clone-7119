@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 const Index = () => {
   const navigate = useNavigate();
-  const { user, canManageUsers, canManageAgents, userRole, signOut } = useAuth();
+  const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, signOut } = useAuth();
 
   // Role display configuration with access descriptions
   const roleConfig = {
@@ -192,6 +192,21 @@ const Index = () => {
                     <User className="h-4 w-4 mr-2" />
                     My Profile
                   </DropdownMenuItem>
+                  {(isSupervisor || hasAdminPrivileges) && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/supervisor')}>
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Supervisor Dashboard
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {hasAdminPrivileges && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  )}
                   {canManageUsers && (
                     <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                       <Shield className="h-4 w-4 mr-2" />
