@@ -16,6 +16,8 @@ import AccessDenied from "./pages/AccessDenied";
 import BusinessOnboarding from "./pages/BusinessOnboarding";
 import ClientCases from "./pages/ClientCases";
 import ClientCaseDetail from "./pages/ClientCaseDetail";
+import SupervisorDashboard from "./pages/SupervisorDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +115,62 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Supervisor route (supervisor, admin, super_admin)
+function SupervisorRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, isSupervisor, hasAdminPrivileges } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  if (!isSupervisor && !hasAdminPrivileges) {
+    return (
+      <AccessDenied 
+        requiredRole="Supervisor, Admin, or Super Admin" 
+        message="You need supervisor privileges to access this dashboard."
+      />
+    );
+  }
+  
+  return <>{children}</>;
+}
+
+// Admin route (admin, super_admin only)
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, hasAdminPrivileges } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  if (!hasAdminPrivileges) {
+    return (
+      <AccessDenied 
+        requiredRole="Admin or Super Admin" 
+        message="You need administrative privileges to access this dashboard."
+      />
+    );
+  }
+  
+  return <>{children}</>;
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
@@ -121,6 +179,9 @@ const AppRoutes = () => (
     <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
     <Route path="/admin/users" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
     <Route path="/admin/agents" element={<AgentManagementRoute><AgentManagement /></AgentManagementRoute>} />
+    {/* Dashboard Routes */}
+    <Route path="/supervisor" element={<SupervisorRoute><SupervisorDashboard /></SupervisorRoute>} />
+    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
     {/* Business Onboarding Routes */}
     <Route path="/onboarding" element={<ProtectedRoute><BusinessOnboarding /></ProtectedRoute>} />
     <Route path="/client-cases" element={<ProtectedRoute><ClientCases /></ProtectedRoute>} />
