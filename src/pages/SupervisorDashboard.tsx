@@ -11,7 +11,8 @@ import {
   CheckCircle,
   Building2,
   RefreshCw,
-  Radio
+  Radio,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,8 @@ import { DashboardService } from '@/services/dashboardService';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PipelineVisualization, LenderTrackingTable, SLAMonitoringPanel } from '@/components/dashboard';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
+import { DashboardExportService } from '@/services/dashboardExportService';
+import { toast } from '@/hooks/use-toast';
 import type { PipelineMetrics } from '@/types/dashboard.types';
 
 export default function SupervisorDashboard() {
@@ -44,6 +47,28 @@ export default function SupervisorDashboard() {
   };
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
+
+  const handleExport = async () => {
+    try {
+      await DashboardExportService.exportSupervisorDashboard({
+        pipelineMetrics: pipeline || defaultMetrics,
+        lenderTracking: [], // Will be populated from LenderTrackingTable
+        slaData: [], // Will be populated from SLAMonitoringPanel
+        supervisorName: user?.email?.split('@')[0]
+      });
+      toast({
+        title: 'Export Complete',
+        description: 'Dashboard data exported to Excel successfully.'
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export dashboard data.',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const handleStatusClick = (status: string) => {
     navigate(`/client-cases?status=${status}`);
@@ -100,6 +125,10 @@ export default function SupervisorDashboard() {
               <Button variant="outline" size="sm" onClick={refetchAll}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
               </Button>
               <ThemeToggle />
             </div>
