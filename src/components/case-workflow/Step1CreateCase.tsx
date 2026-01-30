@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Building2, User, CreditCard, ArrowRight, UserCheck } from 'lucide-react';
 import { BANK_OPTIONS, PRODUCT_TYPE_LABELS, isPOSProduct } from '@/types/case.types';
-import { CaseService } from '@/services/caseService';
+import { AgentSelect } from '../AgentSelect';
 import type { ProductType, CaseCreateInput } from '@/types/case.types';
 
 interface Step1CreateCaseProps {
@@ -19,39 +19,7 @@ export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLo
   const [bankName, setBankName] = useState('');
   const [productType, setProductType] = useState<ProductType>('standard');
   const [agentReference, setAgentReference] = useState('');
-  const [agentSuggestions, setAgentSuggestions] = useState<string[]>([]);
-  const [allAgentRefs, setAllAgentRefs] = useState<string[]>([]);
-  const [showAgentDropdown, setShowAgentDropdown] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const agentInputRef = useRef<HTMLDivElement>(null);
-
-  // Load existing agent references on mount
-  useEffect(() => {
-    CaseService.getAgentReferences().then(setAllAgentRefs).catch(console.error);
-  }, []);
-
-  // Filter suggestions based on input
-  useEffect(() => {
-    if (agentReference.trim()) {
-      const filtered = allAgentRefs.filter(ref => 
-        ref.toLowerCase().includes(agentReference.toLowerCase())
-      );
-      setAgentSuggestions(filtered);
-    } else {
-      setAgentSuggestions(allAgentRefs);
-    }
-  }, [agentReference, allAgentRefs]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (agentInputRef.current && !agentInputRef.current.contains(event.target as Node)) {
-        setShowAgentDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -69,13 +37,8 @@ export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLo
       client_name: clientName.trim(),
       bank_name: bankName,
       product_type: productType,
-      agent_reference: agentReference.trim()
+      agent_reference: agentReference
     });
-  };
-
-  const handleSelectAgent = (ref: string) => {
-    setAgentReference(ref);
-    setShowAgentDropdown(false);
   };
 
   return (
@@ -107,41 +70,21 @@ export const Step1CreateCase: React.FC<Step1CreateCaseProps> = ({ onSubmit, isLo
             )}
           </div>
 
-          {/* Agent Reference with Autocomplete */}
-          <div className="space-y-2" ref={agentInputRef}>
-            <Label htmlFor="agent_reference">
+          {/* Agent Reference Dropdown */}
+          <div className="space-y-2">
+            <Label>
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
                 Agent Reference
               </div>
             </Label>
-            <div className="relative">
-              <Input
-                id="agent_reference"
-                type="text"
-                placeholder="Enter or select agent reference"
-                value={agentReference}
-                onChange={(e) => setAgentReference(e.target.value)}
-                onFocus={() => setShowAgentDropdown(true)}
-                autoComplete="off"
-              />
-              {showAgentDropdown && agentSuggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                  {agentSuggestions.map((ref, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
-                      onClick={() => handleSelectAgent(ref)}
-                    >
-                      {ref}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <AgentSelect
+              value={agentReference}
+              onValueChange={(value) => setAgentReference(value)}
+              placeholder="Select or register agent..."
+            />
             <p className="text-xs text-muted-foreground">
-              Type to add new or select from existing agent references
+              Select an existing agent or click "Register New Agent" to add one
             </p>
           </div>
 
