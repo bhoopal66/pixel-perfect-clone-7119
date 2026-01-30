@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Cases from "./pages/Cases";
 import UserManagement from "./pages/UserManagement";
+import AgentManagement from "./pages/AgentManagement";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,7 @@ const AppRoutes = () => (
     <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
     <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+    <Route path="/admin/agents" element={<ProtectedRoute><AgentManagement /></ProtectedRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>
