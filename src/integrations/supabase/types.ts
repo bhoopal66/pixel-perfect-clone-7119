@@ -246,6 +246,13 @@ export type Database = {
             referencedRelation: "onboarding_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "case_lender_applications_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cases: {
@@ -917,7 +924,100 @@ export type Database = {
             referencedRelation: "onboarding_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "onboarding_eligibility_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      onboarding_lender_workflows: {
+        Row: {
+          created_at: string
+          id: string
+          include_account_opened: boolean
+          lender_id: string
+          stages: Json
+          status_mappings: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          include_account_opened?: boolean
+          lender_id: string
+          stages?: Json
+          status_mappings?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          include_account_opened?: boolean
+          lender_id?: string
+          stages?: Json
+          status_mappings?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_lender_workflows_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: true
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_lenders: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          document_requirements: Json
+          eligibility_rules: Json
+          id: string
+          is_active: boolean
+          lender_type: Database["public"]["Enums"]["lender_type"]
+          logo_url: string | null
+          name: string
+          short_code: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_requirements?: Json
+          eligibility_rules?: Json
+          id?: string
+          is_active?: boolean
+          lender_type?: Database["public"]["Enums"]["lender_type"]
+          logo_url?: string | null
+          name: string
+          short_code: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_requirements?: Json
+          eligibility_rules?: Json
+          id?: string
+          is_active?: boolean
+          lender_type?: Database["public"]["Enums"]["lender_type"]
+          logo_url?: string | null
+          name?: string
+          short_code?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       onboarding_loan_requirements: {
         Row: {
