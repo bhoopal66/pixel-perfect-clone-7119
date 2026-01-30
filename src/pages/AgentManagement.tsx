@@ -30,7 +30,8 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X, Trash2, Info, Eye } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,7 +82,7 @@ const agentSchema = z.object({
 type AgentFormData = z.infer<typeof agentSchema>;
 
 export default function AgentManagement() {
-  const { isAdmin, isSuperAdmin, isLoading: authLoading } = useAuth();
+  const { isAdmin, isSuperAdmin, isSupervisor, canManageAgents, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [filteredAgents, setFilteredAgents] = useState<Agent[]>([]);
@@ -108,24 +109,24 @@ export default function AgentManagement() {
   });
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      toast.error('Access denied', { description: 'Admin privileges required' });
+    if (!authLoading && !canManageAgents) {
+      toast.error('Access denied', { description: 'Agent management privileges required' });
       navigate('/');
     }
-  }, [authLoading, isAdmin, navigate]);
+  }, [authLoading, canManageAgents, navigate]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canManageAgents) {
       fetchAgents();
     }
-  }, [isAdmin]);
+  }, [canManageAgents]);
 
   // Refetch performance data when date filters change
   useEffect(() => {
-    if (isAdmin) {
+    if (canManageAgents) {
       fetchPerformanceData(startDate, endDate);
     }
-  }, [isAdmin, startDate, endDate]);
+  }, [canManageAgents, startDate, endDate]);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -382,7 +383,7 @@ export default function AgentManagement() {
     return 'All Time';
   };
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || !canManageAgents) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -449,7 +450,17 @@ export default function AgentManagement() {
           </Button>
         </div>
 
-        {/* Stats Cards */}
+        {/* Supervisor Role Indicator */}
+        {isSupervisor && (
+          <Alert className="bg-accent/50 border-accent">
+            <Eye className="h-4 w-4 text-accent-foreground" />
+            <AlertDescription className="text-accent-foreground">
+              <span className="font-medium">Supervisor Access:</span> You can view, edit, and activate/deactivate agents. 
+              Agent deletion is restricted to Super Admins only.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
