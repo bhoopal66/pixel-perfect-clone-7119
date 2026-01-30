@@ -1,12 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, AlertTriangle, CheckCircle, Clock, RefreshCw, Filter } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, RefreshCw, Filter, Radio } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSLAMonitoring } from '@/hooks/useRealtimeDashboard';
 import type { RAGStatus, CaseStatus, ProcessStage } from '@/types/database.types';
 import { PROCESS_STAGE_LABELS, CASE_STATUS_LABELS } from '@/types/database.types';
 
@@ -185,20 +186,27 @@ function RAGCard({
 export function SLAMonitoringPanel({ onViewCase }: { onViewCase: (caseId: string) => void }) {
   const [filter, setFilter] = React.useState<RAGStatus | 'all'>('all');
 
-  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery({
+  // Enable real-time updates
+  useRealtimeSLAMonitoring();
+
+  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics, dataUpdatedAt: metricsUpdatedAt } = useQuery({
     queryKey: ['sla-metrics'],
-    queryFn: fetchSLAMetrics
+    queryFn: fetchSLAMetrics,
+    refetchInterval: 60000,
   });
 
   const { data: cases, isLoading: casesLoading, refetch: refetchCases } = useQuery({
     queryKey: ['sla-cases', filter],
-    queryFn: () => fetchSLACases(filter)
+    queryFn: () => fetchSLACases(filter),
+    refetchInterval: 60000,
   });
 
   const refetchAll = () => {
     refetchMetrics();
     refetchCases();
   };
+
+  const lastUpdated = metricsUpdatedAt ? new Date(metricsUpdatedAt).toLocaleTimeString() : null;
 
   const getStageLabel = (stage: string) => {
     return PROCESS_STAGE_LABELS[stage as ProcessStage] || CASE_STATUS_LABELS[stage as CaseStatus] || stage;
@@ -214,8 +222,15 @@ export function SLAMonitoringPanel({ onViewCase }: { onViewCase: (caseId: string
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
                 SLA Monitoring
+                <Badge variant="outline" className="gap-1 text-xs ml-2">
+                  <Radio className="h-2.5 w-2.5 text-success animate-pulse" />
+                  Live
+                </Badge>
               </CardTitle>
-              <CardDescription>Real-time case aging and performance tracking</CardDescription>
+              <CardDescription>
+                Real-time case aging and performance tracking
+                {lastUpdated && <span className="ml-2">• Updated: {lastUpdated}</span>}
+              </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={refetchAll}>
               <RefreshCw className="h-4 w-4 mr-2" />

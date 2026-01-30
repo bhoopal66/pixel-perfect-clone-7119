@@ -1,12 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, TrendingUp, Clock, RefreshCw, ExternalLink } from 'lucide-react';
+import { Building2, TrendingUp, Clock, RefreshCw, ExternalLink, Radio } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeLenderTracking } from '@/hooks/useRealtimeDashboard';
 import type { RAGStatus, ProcessStage } from '@/types/database.types';
 import { PROCESS_STAGE_LABELS, getRAGStatusColor } from '@/types/database.types';
 
@@ -127,20 +128,27 @@ function RAGIndicator({ status }: { status: RAGStatus }) {
 }
 
 export function LenderTrackingTable({ onViewCase }: { onViewCase: (caseId: string) => void }) {
-  const { data: applications, isLoading: appsLoading, refetch: refetchApps } = useQuery({
+  // Enable real-time updates
+  useRealtimeLenderTracking();
+
+  const { data: applications, isLoading: appsLoading, refetch: refetchApps, dataUpdatedAt: appsUpdatedAt } = useQuery({
     queryKey: ['lender-applications'],
-    queryFn: fetchLenderApplications
+    queryFn: fetchLenderApplications,
+    refetchInterval: 60000,
   });
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery({
     queryKey: ['lender-summary'],
-    queryFn: fetchLenderSummary
+    queryFn: fetchLenderSummary,
+    refetchInterval: 60000,
   });
 
   const refetchAll = () => {
     refetchApps();
     refetchSummary();
   };
+
+  const lastUpdated = appsUpdatedAt ? new Date(appsUpdatedAt).toLocaleTimeString() : null;
 
   const formatAmount = (amount: number | null) => {
     if (!amount) return '-';
@@ -161,8 +169,15 @@ export function LenderTrackingTable({ onViewCase }: { onViewCase: (caseId: strin
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
                 Lender Overview
+                <Badge variant="outline" className="gap-1 text-xs ml-2">
+                  <Radio className="h-2.5 w-2.5 text-success animate-pulse" />
+                  Live
+                </Badge>
               </CardTitle>
-              <CardDescription>Application distribution by lender</CardDescription>
+              <CardDescription>
+                Application distribution by lender
+                {lastUpdated && <span className="ml-2">• Updated: {lastUpdated}</span>}
+              </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={refetchAll}>
               <RefreshCw className="h-4 w-4 mr-2" />
