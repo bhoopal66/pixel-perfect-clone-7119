@@ -189,6 +189,7 @@ export type Database = {
           submission_date: string | null
           tenure_months: number | null
           updated_at: string
+          workflow_id: string | null
         }
         Insert: {
           approved_amount?: number | null
@@ -213,6 +214,7 @@ export type Database = {
           submission_date?: string | null
           tenure_months?: number | null
           updated_at?: string
+          workflow_id?: string | null
         }
         Update: {
           approved_amount?: number | null
@@ -237,6 +239,7 @@ export type Database = {
           submission_date?: string | null
           tenure_months?: number | null
           updated_at?: string
+          workflow_id?: string | null
         }
         Relationships: [
           {
@@ -251,6 +254,13 @@ export type Database = {
             columns: ["lender_id"]
             isOneToOne: false
             referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_lender_applications_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lender_workflows"
             referencedColumns: ["id"]
           },
         ]
@@ -693,10 +703,12 @@ export type Database = {
             | null
           process_stage: Database["public"]["Enums"]["process_stage"] | null
           rag_status: Database["public"]["Enums"]["rag_status"] | null
+          remarks: string | null
           stage_entered_at: string | null
           status: Database["public"]["Enums"]["case_status"]
           submitted_at: string | null
           supervisor_id: string | null
+          tags: string[] | null
           updated_at: string
           user_id: string | null
         }
@@ -721,10 +733,12 @@ export type Database = {
             | null
           process_stage?: Database["public"]["Enums"]["process_stage"] | null
           rag_status?: Database["public"]["Enums"]["rag_status"] | null
+          remarks?: string | null
           stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           submitted_at?: string | null
           supervisor_id?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -749,10 +763,12 @@ export type Database = {
             | null
           process_stage?: Database["public"]["Enums"]["process_stage"] | null
           rag_status?: Database["public"]["Enums"]["rag_status"] | null
+          remarks?: string | null
           stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["case_status"]
           submitted_at?: string | null
           supervisor_id?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -833,6 +849,7 @@ export type Database = {
           abcd_fee_amount: number | null
           abcd_fee_percent: number | null
           adjusted_turnover: number | null
+          base_multiplier: number | null
           calculated_at: string | null
           calculated_by: string | null
           case_id: string
@@ -862,6 +879,7 @@ export type Database = {
           abcd_fee_amount?: number | null
           abcd_fee_percent?: number | null
           adjusted_turnover?: number | null
+          base_multiplier?: number | null
           calculated_at?: string | null
           calculated_by?: string | null
           case_id: string
@@ -891,6 +909,7 @@ export type Database = {
           abcd_fee_amount?: number | null
           abcd_fee_percent?: number | null
           adjusted_turnover?: number | null
+          base_multiplier?: number | null
           calculated_at?: string | null
           calculated_by?: string | null
           case_id?: string
@@ -939,27 +958,33 @@ export type Database = {
           id: string
           include_account_opened: boolean
           lender_id: string
+          required_docs_by_stage: Json | null
           stages: Json
           status_mappings: Json
           updated_at: string
+          workflow_name: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           include_account_opened?: boolean
           lender_id: string
+          required_docs_by_stage?: Json | null
           stages?: Json
           status_mappings?: Json
           updated_at?: string
+          workflow_name?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           include_account_opened?: boolean
           lender_id?: string
+          required_docs_by_stage?: Json | null
           stages?: Json
           status_mappings?: Json
           updated_at?: string
+          workflow_name?: string | null
         }
         Relationships: [
           {
