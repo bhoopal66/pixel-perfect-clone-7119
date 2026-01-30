@@ -13,18 +13,49 @@ import { Button } from '../components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useAuth } from '../hooks/useAuth';
 import { Badge } from '../components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import type { ParsedStatementData } from '@/hooks/usePdfParsing';
 const Index = () => {
   const navigate = useNavigate();
   const { user, canManageUsers, canManageAgents, userRole, signOut } = useAuth();
 
-  // Role display configuration
+  // Role display configuration with access descriptions
   const roleConfig = {
-    super_admin: { label: 'Super Admin', icon: Crown, variant: 'default' as const, className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0' },
-    admin: { label: 'Admin', icon: Shield, variant: 'default' as const, className: 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0' },
-    supervisor: { label: 'Supervisor', icon: Eye, variant: 'secondary' as const, className: 'bg-blue-500/10 text-blue-600 border-blue-500/30' },
-    coordinator: { label: 'Coordinator', icon: ClipboardList, variant: 'outline' as const, className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
-    user: { label: 'User', icon: User, variant: 'outline' as const, className: '' }
+    super_admin: { 
+      label: 'Super Admin', 
+      icon: Crown, 
+      variant: 'default' as const, 
+      className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0',
+      description: 'Full system access: Manage all users, agents, and settings. Can delete agents and assign any role.'
+    },
+    admin: { 
+      label: 'Admin', 
+      icon: Shield, 
+      variant: 'default' as const, 
+      className: 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0',
+      description: 'Administrative access: Manage users and agents. Cannot assign Super Admin role or delete agents.'
+    },
+    supervisor: { 
+      label: 'Supervisor', 
+      icon: Eye, 
+      variant: 'secondary' as const, 
+      className: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+      description: 'Agent oversight: View, edit, and activate/deactivate agents. Cannot access user management.'
+    },
+    coordinator: { 
+      label: 'Coordinator', 
+      icon: ClipboardList, 
+      variant: 'outline' as const, 
+      className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+      description: 'Case coordination: Access to cases and analysis tools. No administrative privileges.'
+    },
+    user: { 
+      label: 'User', 
+      icon: User, 
+      variant: 'outline' as const, 
+      className: '',
+      description: 'Standard access: View and manage your own cases and loan applications.'
+    }
   };
 
   const currentRoleConfig = roleConfig[userRole];
@@ -110,11 +141,20 @@ const Index = () => {
               {/* Theme Toggle */}
               <ThemeToggle />
 
-              {/* Role Badge */}
-              <Badge variant={currentRoleConfig.variant} className={`hidden sm:flex items-center gap-1.5 ${currentRoleConfig.className}`}>
-                <RoleIcon className="h-3 w-3" />
-                {currentRoleConfig.label}
-              </Badge>
+              {/* Role Badge with Tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant={currentRoleConfig.variant} className={`hidden sm:flex items-center gap-1.5 cursor-help ${currentRoleConfig.className}`}>
+                      <RoleIcon className="h-3 w-3" />
+                      {currentRoleConfig.label}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-sm">{currentRoleConfig.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* User Menu */}
               <DropdownMenu>
@@ -133,10 +173,19 @@ const Index = () => {
                 <DropdownMenuContent align="end">
                   <div className="px-2 py-1.5">
                     <div className="text-sm font-medium">{user?.email}</div>
-                    <Badge variant={currentRoleConfig.variant} className={`mt-1 text-xs ${currentRoleConfig.className}`}>
-                      <RoleIcon className="h-3 w-3 mr-1" />
-                      {currentRoleConfig.label}
-                    </Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant={currentRoleConfig.variant} className={`mt-1 text-xs cursor-help ${currentRoleConfig.className}`}>
+                            <RoleIcon className="h-3 w-3 mr-1" />
+                            {currentRoleConfig.label}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="text-sm">{currentRoleConfig.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
