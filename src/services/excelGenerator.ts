@@ -1,6 +1,5 @@
 import ExcelJS from 'exceljs';
 import type { AnalysisReport } from '../types/transaction.types';
-import { CurrencyService } from './currencyService';
 
 export class ExcelGenerator {
   static async generateReport(report: AnalysisReport): Promise<Blob> {
@@ -132,9 +131,8 @@ export class ExcelGenerator {
 
   private static createMonthlyBalanceSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Monthly Average Balance');
-    const currency = report.summary.currency || 'AED';
     
-    const headers = ['Month', `Average Balance (${currency})`, 'Days', 'Opening Balance', 'Closing Balance'];
+    const headers = ['Month', 'Average Balance (AED)', 'Days', 'Opening Balance', 'Closing Balance'];
     const headerRow = sheet.addRow(headers);
     this.styleHeader(headerRow);
     
@@ -177,91 +175,37 @@ export class ExcelGenerator {
   }
 
   private static createDailyBalanceSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
-    const sheet = workbook.addWorksheet('Daily Closing Balance');
-    const currency = report.summary.currency || 'AED';
+    const sheet = workbook.addWorksheet('Daily Average Balance');
     
-    const headerRow = sheet.addRow(['Date', `Closing Balance (${currency})`, 'Month', 'Has Transactions']);
+    const headerRow = sheet.addRow(['Date', 'Balance (AED)', 'Month']);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 15;
-    sheet.getColumn(2).width = 25;
+    sheet.getColumn(2).width = 20;
     sheet.getColumn(3).width = 20;
-    sheet.getColumn(4).width = 18;
     
     report.dailyBalances.forEach(day => {
-      const formattedDate = new Date(day.date).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-      sheet.addRow([
-        formattedDate, 
-        day.closingBalance, 
-        day.month,
-        day.hasTransactions ? 'Yes' : 'No (Carried Forward)'
-      ]);
+      sheet.addRow([day.date, day.balance, day.month]);
     });
     
-    // Format currency column
     for (let i = 2; i <= sheet.rowCount; i++) {
       sheet.getCell(`B${i}`).numFmt = '#,##0.00';
-      // Highlight rows with no transactions
-      if (!report.dailyBalances[i - 2]?.hasTransactions) {
-        sheet.getRow(i).fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFF5F5F5' }
-        };
-      }
     }
-    
-    // Add explanatory notes
-    const noteRow = sheet.rowCount + 2;
-    sheet.getCell(`A${noteRow}`).value = 'Note:';
-    sheet.getCell(`A${noteRow}`).font = { bold: true, italic: true };
-    
-    sheet.getCell(`A${noteRow + 1}`).value = 
-      'Daily Closing Balance shows the final balance at the end of each day (last transaction balance).';
-    sheet.getCell(`A${noteRow + 1}`).font = { italic: true, size: 9 };
-    sheet.mergeCells(`A${noteRow + 1}:D${noteRow + 1}`);
-    
-    sheet.getCell(`A${noteRow + 2}`).value = 
-      'For days with no transactions, the previous day\'s closing balance is carried forward.';
-    sheet.getCell(`A${noteRow + 2}`).font = { italic: true, size: 9 };
-    sheet.mergeCells(`A${noteRow + 2}:D${noteRow + 2}`);
-    
-    // Add average calculation
-    const avgRow = noteRow + 4;
-    sheet.getCell(`A${avgRow}`).value = 'Average of Daily Closing Balances';
-    sheet.getCell(`A${avgRow}`).font = { bold: true };
-    sheet.getCell(`B${avgRow}`).value = { 
-      formula: `AVERAGE(B2:B${noteRow - 1})` 
-    };
-    sheet.getCell(`B${avgRow}`).numFmt = '#,##0.00';
-    sheet.getCell(`B${avgRow}`).font = { bold: true };
-    sheet.getCell(`B${avgRow}`).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF00' }
-    };
   }
 
   private static createTransactionGroupingSheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Transaction Grouping');
-    const currency = report.summary.currency || 'AED';
     
-    const headerRow = sheet.addRow(['Date', 'Month', 'Description', 'Category', 'Currency', 'Debit', 'Credit', 'Balance']);
-    this.styleHeader(headerRow);
+    const headerRow = sheet.addRow(['Date', 'Month', 'Description', 'Category', 'Debit', 'Credit', 'Balance']);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 15;
     sheet.getColumn(2).width = 18;
     sheet.getColumn(3).width = 40;
     sheet.getColumn(4).width = 25;
-    sheet.getColumn(5).width = 10;
+    sheet.getColumn(5).width = 15;
     sheet.getColumn(6).width = 15;
-    sheet.getColumn(7).width = 15;
-    sheet.getColumn(8).width = 18;
+    sheet.getColumn(7).width = 18;
     
     report.transactions.forEach(txn => {
       const txnDate = new Date(txn.date);
@@ -270,7 +214,6 @@ export class ExcelGenerator {
         txnDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
         txn.description,
         txn.category,
-        txn.originalCurrency || txn.currency,
         txn.debit || '',
         txn.credit || '',
         txn.balance
@@ -278,7 +221,7 @@ export class ExcelGenerator {
     });
     
     for (let i = 2; i <= sheet.rowCount; i++) {
-      ['F', 'G', 'H'].forEach(col => {
+      ['E', 'F', 'G'].forEach(col => {
         const cell = sheet.getCell(`${col}${i}`);
         if (cell.value) {
           cell.numFmt = '#,##0.00';
@@ -290,9 +233,9 @@ export class ExcelGenerator {
     const totalRow = sheet.rowCount + 1;
     sheet.getCell(`C${totalRow}`).value = 'TOTAL';
     sheet.getCell(`C${totalRow}`).font = { bold: true };
+    sheet.getCell(`E${totalRow}`).value = { formula: `SUM(E2:E${totalRow - 1})` };
     sheet.getCell(`F${totalRow}`).value = { formula: `SUM(F2:F${totalRow - 1})` };
-    sheet.getCell(`G${totalRow}`).value = { formula: `SUM(G2:G${totalRow - 1})` };
-    ['F', 'G'].forEach(col => {
+    ['E', 'F'].forEach(col => {
       sheet.getCell(`${col}${totalRow}`).font = { bold: true };
       sheet.getCell(`${col}${totalRow}`).numFmt = '#,##0.00';
     });
@@ -300,9 +243,8 @@ export class ExcelGenerator {
 
   private static createCategorySummarySheet(workbook: ExcelJS.Workbook, report: AnalysisReport) {
     const sheet = workbook.addWorksheet('Category Summary');
-    const currency = report.summary.currency || 'AED';
     
-    const headerRow = sheet.addRow(['Transaction Category', 'Count', `Total Debit (${currency})`, `Total Credit (${currency})`, 'Net Amount']);
+    const headerRow = sheet.addRow(['Transaction Category', 'Count', 'Total Debit (AED)', 'Total Credit (AED)', 'Net Amount']);
     this.styleHeader(headerRow);
     
     sheet.getColumn(1).width = 30;

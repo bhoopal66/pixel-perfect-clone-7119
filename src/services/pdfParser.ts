@@ -55,12 +55,22 @@ export class PDFParser {
   }
 
   static extractTransactions(pdfText: string): ExtractedTransaction[] {
-    const transactions: ExtractedTransaction[] = [];
-    let match;
+    // Multiple regex patterns to handle different bank statement formats
+    const patterns = [
+      // Pattern 1: ADCB format - Date ValueDate Reference Description Debit Credit Balance
+      /(\d{2}-\w{3}-\d{4})\s+(\d{2}-\w{3}-\d{4})\s+([A-Z0-9]+)\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g,
+      // Pattern 2: Simple format - Date Description Amount Balance
+      /(\d{2}\/\d{2}\/\d{4})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g,
+      // Pattern 3: ISO date format
+      /(\d{4}-\d{2}-\d{2})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g,
+    ];
 
-    // Pattern 1: ADCB format - Date ValueDate Reference Description Debit Credit Balance
-    const adcbPattern = /(\d{2}-\w{3}-\d{4})\s+(\d{2}-\w{3}-\d{4})\s+([A-Z0-9]+)\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
-    while ((match = adcbPattern.exec(pdfText)) !== null) {
+    const transactions: ExtractedTransaction[] = [];
+    
+    // Try first pattern (ADCB format)
+    let match;
+    const pattern1 = patterns[0];
+    while ((match = pattern1.exec(pdfText)) !== null) {
       transactions.push({
         date: match[1],
         valueDate: match[2],
@@ -72,86 +82,14 @@ export class PDFParser {
       });
     }
 
-    // Pattern 2: Emirates NBD format - DD/MM/YYYY Description Debit Credit Balance
+    // If no transactions found, try simpler patterns
     if (transactions.length === 0) {
-      const enbdPattern = /(\d{2}\/\d{2}\/\d{4})\s+([A-Za-z0-9\s\-\/]+?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
-      while ((match = enbdPattern.exec(pdfText)) !== null) {
-        const debit = match[3] ? parseFloat(match[3].replace(/,/g, '')) : 0;
-        const credit = match[4] ? parseFloat(match[4].replace(/,/g, '')) : 0;
-        if (debit > 0 || credit > 0) {
-          transactions.push({
-            date: match[1],
-            description: match[2].trim(),
-            debit,
-            credit,
-            balance: parseFloat(match[5].replace(/,/g, ''))
-          });
-        }
-      }
-    }
-
-    // Pattern 3: FAB (First Abu Dhabi Bank) format - DD-MMM-YY Reference Description Amount Balance
-    if (transactions.length === 0) {
-      const fabPattern = /(\d{2}-\w{3}-\d{2,4})\s+([A-Z0-9]{6,})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s*(CR|DR)?\s+([\d,]+\.\d{2})/g;
-      while ((match = fabPattern.exec(pdfText)) !== null) {
-        const amount = parseFloat(match[4].replace(/,/g, ''));
-        const isCredit = match[5] === 'CR' || match[3].toLowerCase().includes('credit');
-        transactions.push({
-          date: match[1],
-          reference: match[2],
-          description: match[3].trim(),
-          debit: isCredit ? 0 : amount,
-          credit: isCredit ? amount : 0,
-          balance: parseFloat(match[6].replace(/,/g, ''))
-        });
-      }
-    }
-
-    // Pattern 4: Mashreq format - DD/MM/YY ValueDate Reference Description Debit Credit Balance
-    if (transactions.length === 0) {
-      const mashreqPattern = /(\d{2}\/\d{2}\/\d{2,4})\s+(\d{2}\/\d{2}\/\d{2,4})?\s*([A-Z0-9]+)?\s+([^\d]+?)\s+([\d,]+\.\d{2})?\s*([\d,]+\.\d{2})?\s+([\d,]+\.\d{2})/g;
-      while ((match = mashreqPattern.exec(pdfText)) !== null) {
-        const debit = match[5] ? parseFloat(match[5].replace(/,/g, '')) : 0;
-        const credit = match[6] ? parseFloat(match[6].replace(/,/g, '')) : 0;
-        if (debit > 0 || credit > 0) {
-          transactions.push({
-            date: match[1],
-            valueDate: match[2],
-            reference: match[3],
-            description: match[4].trim(),
-            debit,
-            credit,
-            balance: parseFloat(match[7].replace(/,/g, ''))
-          });
-        }
-      }
-    }
-
-    // Pattern 5: Generic DD/MM/YYYY with single amount column
-    if (transactions.length === 0) {
-      const genericPattern = /(\d{2}\/\d{2}\/\d{4})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
-      while ((match = genericPattern.exec(pdfText)) !== null) {
+      const pattern2 = patterns[1];
+      while ((match = pattern2.exec(pdfText)) !== null) {
         const amount = parseFloat(match[3].replace(/,/g, ''));
-        const desc = match[2].toLowerCase();
-        const isDebit = desc.includes('debit') || desc.includes('withdrawal') || 
-                       desc.includes('payment') || desc.includes('transfer out');
-        transactions.push({
-          date: match[1],
-          description: match[2].trim(),
-          debit: isDebit ? amount : 0,
-          credit: isDebit ? 0 : amount,
-          balance: parseFloat(match[4].replace(/,/g, ''))
-        });
-      }
-    }
-
-    // Pattern 6: ISO date format YYYY-MM-DD
-    if (transactions.length === 0) {
-      const isoPattern = /(\d{4}-\d{2}-\d{2})\s+([^\d]+?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})/g;
-      while ((match = isoPattern.exec(pdfText)) !== null) {
-        const amount = parseFloat(match[3].replace(/,/g, ''));
-        const desc = match[2].toLowerCase();
-        const isDebit = desc.includes('debit') || desc.includes('withdrawal') || desc.includes('payment');
+        const isDebit = match[2].toLowerCase().includes('debit') || 
+                       match[2].toLowerCase().includes('withdrawal') ||
+                       match[2].toLowerCase().includes('payment');
         transactions.push({
           date: match[1],
           description: match[2].trim(),
