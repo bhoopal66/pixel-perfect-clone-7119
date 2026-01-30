@@ -10,31 +10,40 @@ import {
   AlertCircle,
   CheckCircle,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardService } from '@/services/dashboardService';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PipelineVisualization, LenderTrackingTable, SLAMonitoringPanel } from '@/components/dashboard';
+import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import type { PipelineMetrics } from '@/types/dashboard.types';
 
 export default function SupervisorDashboard() {
   const navigate = useNavigate();
   const { user, isSupervisor } = useAuth();
 
+  // Enable real-time updates for all dashboard data
+  useRealtimeDashboard();
+
   // Fetch pipeline metrics
-  const { data: pipeline, isLoading: pipelineLoading, refetch: refetchPipeline } = useQuery({
+  const { data: pipeline, isLoading: pipelineLoading, refetch: refetchPipeline, dataUpdatedAt } = useQuery({
     queryKey: ['supervisor-pipeline', user?.id],
     queryFn: () => DashboardService.getPipelineMetrics(isSupervisor ? user?.id : undefined),
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 60000, // Also poll every 60 seconds as fallback
   });
 
   const refetchAll = () => {
     refetchPipeline();
   };
+
+  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
   const handleStatusClick = (status: string) => {
     navigate(`/client-cases?status=${status}`);
@@ -78,7 +87,16 @@ export default function SupervisorDashboard() {
                 <p className="text-xs text-muted-foreground">Team Pipeline & Performance</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="gap-1.5 text-xs">
+                <Radio className="h-3 w-3 text-success animate-pulse" />
+                Live
+              </Badge>
+              {lastUpdated && (
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  Updated: {lastUpdated}
+                </span>
+              )}
               <Button variant="outline" size="sm" onClick={refetchAll}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
