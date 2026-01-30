@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import AccessDenied from './AccessDenied';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -108,12 +109,7 @@ export default function AgentManagement() {
     }
   });
 
-  useEffect(() => {
-    if (!authLoading && !canManageAgents) {
-      toast.error('Access denied', { description: 'Agent management privileges required' });
-      navigate('/');
-    }
-  }, [authLoading, canManageAgents, navigate]);
+  // No redirect - we show AccessDenied component instead
 
   useEffect(() => {
     if (canManageAgents) {
@@ -383,11 +379,20 @@ export default function AgentManagement() {
     return 'All Time';
   };
 
-  if (authLoading || !canManageAgents) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (!canManageAgents) {
+    return (
+      <AccessDenied 
+        requiredRole="Supervisor, Admin, or Super Admin" 
+        message="You need agent management privileges to access this page."
+      />
     );
   }
 

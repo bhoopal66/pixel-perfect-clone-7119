@@ -12,6 +12,7 @@ import UserManagement from "./pages/UserManagement";
 import AgentManagement from "./pages/AgentManagement";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
+import AccessDenied from "./pages/AccessDenied";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,12 @@ function UserManagementRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (!canManageUsers) {
-    return <Navigate to="/" replace />;
+    return (
+      <AccessDenied 
+        requiredRole="Admin or Super Admin" 
+        message="You need administrator privileges to manage users and roles."
+      />
+    );
   }
   
   return <>{children}</>;
@@ -74,7 +80,12 @@ function AgentManagementRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (!canManageAgents) {
-    return <Navigate to="/" replace />;
+    return (
+      <AccessDenied 
+        requiredRole="Supervisor, Admin, or Super Admin" 
+        message="You need agent management privileges to access this page."
+      />
+    );
   }
   
   return <>{children}</>;
