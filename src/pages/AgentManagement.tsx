@@ -21,15 +21,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase } from 'lucide-react';
-import { format } from 'date-fns';
+import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X } from 'lucide-react';
+import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+
+type DatePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
 
 interface Agent {
   id: string;
@@ -70,6 +82,9 @@ export default function AgentManagement() {
   const [togglingAgentId, setTogglingAgentId] = useState<string | null>(null);
   const [performanceData, setPerformanceData] = useState<AgentPerformance[]>([]);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(true);
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const form = useForm<AgentFormData>({
     resolver: zodResolver(agentSchema),
@@ -90,9 +105,15 @@ export default function AgentManagement() {
   useEffect(() => {
     if (isAdmin) {
       fetchAgents();
-      fetchPerformanceData();
     }
   }, [isAdmin]);
+
+  // Refetch performance data when date filters change
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPerformanceData(startDate, endDate);
+    }
+  }, [isAdmin, startDate, endDate]);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -128,13 +149,25 @@ export default function AgentManagement() {
     setIsLoading(false);
   };
 
-  const fetchPerformanceData = async () => {
+  const fetchPerformanceData = async (filterStartDate?: Date, filterEndDate?: Date) => {
     setIsLoadingPerformance(true);
     try {
-      // Fetch cases grouped by agent_reference
-      const { data: cases, error: casesError } = await supabase
+      // Build query with optional date filters
+      let query = supabase
         .from('cases')
-        .select('agent_reference, eligible_loan_amount');
+        .select('agent_reference, eligible_loan_amount, created_at');
+      
+      if (filterStartDate) {
+        query = query.gte('created_at', filterStartDate.toISOString());
+      }
+      if (filterEndDate) {
+        // Add 1 day to include the end date fully
+        const endOfDay = new Date(filterEndDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', endOfDay.toISOString());
+      }
+
+      const { data: cases, error: casesError } = await query;
 
       if (casesError) throw casesError;
 
@@ -252,7 +285,66 @@ export default function AgentManagement() {
 
   const handleRefresh = () => {
     fetchAgents();
-    fetchPerformanceData();
+    fetchPerformanceData(startDate, endDate);
+  };
+
+  const handleDatePresetChange = (preset: DatePreset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    
+    switch (preset) {
+      case 'all':
+        setStartDate(undefined);
+        setEndDate(undefined);
+        break;
+      case 'today':
+        setStartDate(today);
+        setEndDate(today);
+        break;
+      case 'last7days':
+        setStartDate(subDays(today, 6));
+        setEndDate(today);
+        break;
+      case 'last30days':
+        setStartDate(subDays(today, 29));
+        setEndDate(today);
+        break;
+      case 'thisMonth':
+        setStartDate(startOfMonth(today));
+        setEndDate(endOfMonth(today));
+        break;
+      case 'lastMonth':
+        const lastMonth = subMonths(today, 1);
+        setStartDate(startOfMonth(lastMonth));
+        setEndDate(endOfMonth(lastMonth));
+        break;
+      case 'thisYear':
+        setStartDate(startOfYear(today));
+        setEndDate(endOfYear(today));
+        break;
+      case 'custom':
+        // Keep current dates, user will select
+        break;
+    }
+  };
+
+  const clearDateFilter = () => {
+    setDatePreset('all');
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
+
+  const getDateRangeLabel = () => {
+    if (!startDate && !endDate) return 'All Time';
+    if (startDate && endDate) {
+      if (format(startDate, 'yyyy-MM-dd') === format(endDate, 'yyyy-MM-dd')) {
+        return format(startDate, 'MMM d, yyyy');
+      }
+      return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
+    }
+    if (startDate) return `From ${format(startDate, 'MMM d, yyyy')}`;
+    if (endDate) return `Until ${format(endDate, 'MMM d, yyyy')}`;
+    return 'All Time';
   };
 
   if (authLoading || !isAdmin) {
@@ -370,6 +462,102 @@ export default function AgentManagement() {
           </Card>
         </div>
 
+        {/* Date Filter */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filter by Period:</span>
+              </div>
+              
+              <Select value={datePreset} onValueChange={(value) => handleDatePresetChange(value as DatePreset)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="last7days">Last 7 Days</SelectItem>
+                  <SelectItem value="last30days">Last 30 Days</SelectItem>
+                  <SelectItem value="thisMonth">This Month</SelectItem>
+                  <SelectItem value="lastMonth">Last Month</SelectItem>
+                  <SelectItem value="thisYear">This Year</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {datePreset === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-muted-foreground">to</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
+              {(startDate || endDate) && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    {getDateRangeLabel()}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={clearDateFilter}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Performance Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Performance Chart */}
@@ -380,7 +568,7 @@ export default function AgentManagement() {
                 Agent Performance
               </CardTitle>
               <CardDescription>
-                Cases created by top 10 agents
+                Cases created by top 10 agents {startDate || endDate ? `(${getDateRangeLabel()})` : ''}
               </CardDescription>
             </CardHeader>
             <CardContent>
