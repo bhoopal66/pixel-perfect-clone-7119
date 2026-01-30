@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, AppRole } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Shield, User, Users } from 'lucide-react';
+import { ArrowLeft, Loader2, Shield, User, Users, Crown, Eye, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserWithRole {
@@ -32,8 +32,16 @@ interface UserWithRole {
   created_at: string;
 }
 
+const ROLE_CONFIG: Record<string, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+  super_admin: { label: 'Super Admin', icon: <Crown className="h-4 w-4" />, variant: 'destructive' },
+  admin: { label: 'Admin', icon: <Shield className="h-4 w-4" />, variant: 'default' },
+  supervisor: { label: 'Supervisor', icon: <Eye className="h-4 w-4" />, variant: 'secondary' },
+  coordinator: { label: 'Coordinator', icon: <UserCheck className="h-4 w-4" />, variant: 'outline' },
+  user: { label: 'User', icon: <User className="h-4 w-4" />, variant: 'outline' },
+};
+
 export default function UserManagement() {
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, isAdmin, isSuperAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,9 +73,15 @@ export default function UserManagement() {
     setIsLoading(false);
   };
 
-  const handleRoleChange = async (userId: string, newRole: 'admin' | 'user') => {
+  const handleRoleChange = async (userId: string, newRole: AppRole) => {
     if (userId === user?.id) {
       toast.error('Cannot change your own role');
+      return;
+    }
+
+    // Only super admins can assign super_admin role
+    if (newRole === 'super_admin' && !isSuperAdmin) {
+      toast.error('Only super admins can assign the super admin role');
       return;
     }
 
@@ -90,6 +104,25 @@ export default function UserManagement() {
 
     setUpdatingUserId(null);
   };
+
+  const getRoleIcon = (role: string) => {
+    return ROLE_CONFIG[role]?.icon || <User className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const getRoleBadge = (role: string) => {
+    const config = ROLE_CONFIG[role] || ROLE_CONFIG.user;
+    return (
+      <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
+        {config.icon}
+        {config.label}
+      </Badge>
+    );
+  };
+
+  // Available roles based on current user's privileges
+  const availableRoles: AppRole[] = isSuperAdmin 
+    ? ['super_admin', 'admin', 'supervisor', 'coordinator', 'user']
+    : ['admin', 'supervisor', 'coordinator', 'user'];
 
   if (authLoading || !isAdmin) {
     return (
@@ -115,11 +148,28 @@ export default function UserManagement() {
           </div>
         </div>
 
+        {/* Role Legend */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Role Hierarchy</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {Object.entries(ROLE_CONFIG).map(([role, config]) => (
+                <Badge key={role} variant={config.variant} className="flex items-center gap-1">
+                  {config.icon}
+                  {config.label}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>All Users</CardTitle>
             <CardDescription>
-              View and manage user roles. Admins have full access to all features.
+              View and manage user roles. {isSuperAdmin ? 'As a Super Admin, you can assign any role.' : 'As an Admin, you can assign roles except Super Admin.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -147,11 +197,7 @@ export default function UserManagement() {
                     <TableRow key={u.user_id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {u.role === 'admin' ? (
-                            <Shield className="h-4 w-4 text-primary" />
-                          ) : (
-                            <User className="h-4 w-4 text-muted-foreground" />
-                          )}
+                          {getRoleIcon(u.role)}
                           <span className="font-medium">
                             {u.full_name || 'Unnamed User'}
                           </span>
@@ -164,9 +210,7 @@ export default function UserManagement() {
                         {u.email}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
-                          {u.role}
-                        </Badge>
+                        {getRoleBadge(u.role)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(new Date(u.created_at), 'MMM d, yyyy')}
@@ -177,10 +221,10 @@ export default function UserManagement() {
                         ) : (
                           <Select
                             value={u.role}
-                            onValueChange={(value) => handleRoleChange(u.user_id, value as 'admin' | 'user')}
-                            disabled={updatingUserId === u.user_id}
+                            onValueChange={(value) => handleRoleChange(u.user_id, value as AppRole)}
+                            disabled={updatingUserId === u.user_id || (u.role === 'super_admin' && !isSuperAdmin)}
                           >
-                            <SelectTrigger className="w-28">
+                            <SelectTrigger className="w-36">
                               {updatingUserId === u.user_id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
@@ -188,8 +232,14 @@ export default function UserManagement() {
                               )}
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
+                              {availableRoles.map((role) => (
+                                <SelectItem key={role} value={role}>
+                                  <div className="flex items-center gap-2">
+                                    {ROLE_CONFIG[role]?.icon}
+                                    {ROLE_CONFIG[role]?.label}
+                                  </div>
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         )}
