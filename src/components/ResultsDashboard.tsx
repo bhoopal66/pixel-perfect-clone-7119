@@ -25,11 +25,12 @@ import { Calendar as CalendarComponent } from './ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { cn } from '@/lib/utils';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { VATReturn, SisterCompany } from '../types/turnover.types';
-import { DEFAULT_SISTER_COMPANIES } from '../types/turnover.types';
+import type { VATReturn } from '../types/turnoverAnalysis.types';
 import { TransactionTable } from './TransactionTable';
+import { TurnoverAnalysisView } from './TurnoverAnalysisView';
 import { VATReturnsUpload } from './VATReturnsUpload';
 import { CurrencyService, type CurrencyCode } from '../services/currencyService';
+import { TurnoverAnalysisService } from '../services/turnoverAnalysisService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
 
 interface ResultsDashboardProps {
@@ -48,9 +49,15 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
   // VAT Returns state
   const [vatReturns, setVATReturns] = useState<VATReturn[]>([]);
-  
-  // Sister companies state
-  const [sisterCompanies, setSisterCompanies] = useState<SisterCompany[]>(DEFAULT_SISTER_COMPANIES);
+
+  // Calculate CORRECT turnover analysis (Turnover = Total Credits, Avg Balance % = Avg Balance / Turnover)
+  const turnoverAnalysis = useMemo(() => {
+    return TurnoverAnalysisService.calculateTurnoverAnalysisSummary(
+      report.transactions,
+      report.dailyBalances || [],
+      currency
+    );
+  }, [report.transactions, report.dailyBalances, currency]);
 
   // Date range filter state for daily balance chart
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -298,28 +305,41 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         </div>
       </motion.div>
 
-      {/* VAT Returns Section */}
+      {/* Turnover & VAT Analysis Section */}
       <motion.div variants={itemVariants} className="mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <BarChart3 className="h-5 w-5 text-primary" />
+        <Tabs defaultValue="turnover" className="w-full">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  Turnover & Average Balance Analysis
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Turnover = Total Credits | Avg Balance % = (Avg Balance / Turnover) × 100
+                </p>
+              </div>
+            </div>
+            <TabsList>
+              <TabsTrigger value="turnover">Turnover Analysis</TabsTrigger>
+              <TabsTrigger value="vat">VAT Returns</TabsTrigger>
+            </TabsList>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              VAT Returns
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Compare bank turnover with VAT taxable sales
-            </p>
-          </div>
-        </div>
-        <VATReturnsUpload
-          vatReturns={vatReturns}
-          onVATReturnsChange={setVATReturns}
-          sisterCompanies={sisterCompanies}
-          onSisterCompaniesChange={setSisterCompanies}
-          currency={currency}
-        />
+
+          <TabsContent value="turnover" className="mt-0">
+            <TurnoverAnalysisView summary={turnoverAnalysis} />
+          </TabsContent>
+
+          <TabsContent value="vat" className="mt-0">
+            <VATReturnsUpload
+              vatReturns={vatReturns}
+              onVATReturnsChange={setVATReturns}
+              currency={currency}
+            />
+          </TabsContent>
+        </Tabs>
       </motion.div>
 
       {/* Charts Row */}

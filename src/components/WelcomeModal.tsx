@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Briefcase, FolderOpen, ArrowRight, Sparkles, FileText, Calculator, BarChart3 } from 'lucide-react';
+import { X, Briefcase, Calculator, FileSpreadsheet, ArrowRight, Sparkles } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const WELCOME_DISMISSED_KEY = 'welcome_modal_dismissed';
 
 interface WelcomeModalProps {
-  onSelectModule?: (module: 'cases' | 'loans') => void;
+  onSelectModule?: (module: 'analysis' | 'loans' | 'eligibility') => void;
 }
 
 export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onSelectModule }) => {
@@ -29,45 +29,53 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onSelectModule }) =>
     setOpen(false);
   };
 
-  const handleSelectModule = (module: 'cases' | 'loans') => {
+  const handleSelectModule = (module: 'analysis' | 'loans' | 'eligibility') => {
     handleDismiss();
     onSelectModule?.(module);
   };
 
   const modules = [
     {
-      id: 'cases' as const,
-      icon: FolderOpen,
-      title: 'Case Management',
-      description: 'Complete 3-step workflow for loan processing with integrated statement analysis and eligibility checks.',
-      features: [
-        'Step 1: Create case with client & bank info',
-        'Step 2: Upload & parse bank statement PDFs',
-        'Step 3: Auto-calculated eligibility with VAT variance',
-        'All data flows seamlessly between steps'
-      ],
-      highlights: [
-        { icon: FileText, label: 'PDF Parsing' },
-        { icon: Calculator, label: 'Eligibility' },
-        { icon: BarChart3, label: 'Analysis' },
-      ],
-      color: 'text-accent',
-      bgColor: 'bg-accent/10'
-    },
-    {
       id: 'loans' as const,
       icon: Briefcase,
       title: 'Cash Loans',
-      description: 'Track and manage individual loan applications with lender comparison and EMI calculations.',
+      description: 'Track and manage loan applications from draft to disbursement.',
       features: [
         '8 lender options (RAK, Wio, Flapcap, CredibleX, etc.)',
         'Compare rates and EMIs side-by-side',
         'Cash & POS financing options',
         'Document tracking & status updates'
       ],
-      highlights: [],
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10'
+    },
+    {
+      id: 'eligibility' as const,
+      icon: Calculator,
+      title: 'Loan Eligibility',
+      description: 'Calculate eligibility based on VAT returns and declared turnover.',
+      features: [
+        'VAT vs Declared Turnover analysis',
+        'RAG status indicators (Red/Amber/Green)',
+        '8x/6x multiplier calculations',
+        'Cash & sister concern adjustments'
+      ],
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10'
+    },
+    {
+      id: 'analysis' as const,
+      icon: FileSpreadsheet,
+      title: 'Statement Analysis',
+      description: 'Upload bank statements for instant categorization and analysis.',
+      features: [
+        'PDF statement parsing',
+        'Auto-categorize transactions',
+        'Balance tracking & validation',
+        'Export to Excel with 7 worksheets'
+      ],
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10'
     }
   ];
 
@@ -87,10 +95,10 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onSelectModule }) =>
               <div className="p-2 rounded-xl bg-primary/20">
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
-              <DialogTitle className="text-xl">Welcome to Loan Processing Suite</DialogTitle>
+              <DialogTitle className="text-xl">Welcome to Case Management</DialogTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Streamlined workflows for statement analysis and loan eligibility. Choose where to start:
+              Your complete loan processing suite. Here's what you can do:
             </p>
           </DialogHeader>
         </div>
@@ -130,21 +138,6 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onSelectModule }) =>
                       )} />
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">{module.description}</p>
-                    
-                    {/* Highlight chips */}
-                    {module.highlights.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {module.highlights.map((h, i) => {
-                          const HIcon = h.icon;
-                          return (
-                            <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
-                              <HIcon className="h-3 w-3" />
-                              {h.label}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
                     
                     <AnimatePresence>
                       {isActive && (

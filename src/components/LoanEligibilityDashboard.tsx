@@ -15,27 +15,23 @@ import {
   RefreshCw,
   Calculator,
   CheckCircle,
-  CreditCard,
   XCircle,
   AlertCircle,
-  FileText,
-  Pencil
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CurrencyService } from '@/services/currencyService';
 import { LoanEligibilityService } from '@/services/loanEligibilityService';
 import { LoanEligibilityForm } from './LoanEligibilityForm';
-import { useAuth } from '@/hooks/useAuth';
 import type { 
   LoanEligibility, 
   LoanEligibilityInput, 
   EligibilityFilters,
   EligibilityStatus,
-  VarianceBucket,
-  ProductType
+  VarianceBucket
 } from '@/types/loanEligibility.types';
-import { getStatusColor, getBucketColor, PRODUCT_TYPE_LABELS, isPOSProduct } from '@/types/loanEligibility.types';
+import { getStatusColor, getBucketColor } from '@/types/loanEligibility.types';
 
 interface LoanEligibilityDashboardProps {
   currency?: 'AED' | 'USD';
@@ -44,16 +40,12 @@ interface LoanEligibilityDashboardProps {
 export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> = ({ 
   currency = 'AED' 
 }) => {
-  const { isAdmin } = useAuth();
   const [records, setRecords] = useState<LoanEligibility[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<LoanEligibility | null>(null);
-  const [activeTab, setActiveTab] = useState('calculator');
   const [filters, setFilters] = useState<EligibilityFilters>({
     eligibility_status: 'all',
-    variance_bucket: 'all',
-    product_type: 'all'
+    variance_bucket: 'all'
   });
 
   const formatCurrency = (value: number) => CurrencyService.format(value, currency);
@@ -76,39 +68,21 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
     loadRecords();
   }, [filters]);
 
-  // Create or update record
-  const handleSubmit = async (input: LoanEligibilityInput): Promise<LoanEligibility> => {
+  // Create new record
+  const handleCreate = async (input: LoanEligibilityInput): Promise<LoanEligibility> => {
     setIsSaving(true);
     try {
-      let result: LoanEligibility;
-      if (editingRecord) {
-        result = await LoanEligibilityService.update(editingRecord.id, input);
-        toast.success('Eligibility record updated');
-        setEditingRecord(null);
-      } else {
-        result = await LoanEligibilityService.create(input);
-        toast.success('Eligibility record saved');
-      }
+      const result = await LoanEligibilityService.create(input);
+      toast.success('Eligibility record saved');
       loadRecords();
       return result;
     } catch (error) {
-      console.error('Failed to save record:', error);
+      console.error('Failed to create record:', error);
       toast.error('Failed to save eligibility record');
       throw error;
     } finally {
       setIsSaving(false);
     }
-  };
-
-  // Edit record
-  const handleEdit = (record: LoanEligibility) => {
-    setEditingRecord(record);
-    setActiveTab('calculator');
-  };
-
-  // Cancel edit
-  const handleCancelEdit = () => {
-    setEditingRecord(null);
   };
 
   // Delete record
@@ -141,10 +115,8 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
     const reduced = records.filter(r => r.eligibility_status === 'Eligible (Reduced)').length;
     const notEligible = records.filter(r => r.eligibility_status === 'Not Eligible').length;
     const totalAmount = records.reduce((sum, r) => sum + r.eligible_loan_amount, 0);
-    const standard = records.filter(r => r.product_type === 'standard').length;
-    const pos = records.filter(r => isPOSProduct(r.product_type)).length;
     
-    return { eligible, reduced, notEligible, total: records.length, totalAmount, standard, pos };
+    return { eligible, reduced, notEligible, total: records.length, totalAmount };
   }, [records]);
 
   const getStatusBadge = (status: EligibilityStatus) => {
@@ -152,7 +124,6 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
     const styles: Record<string, string> = {
       success: 'bg-success/20 text-success',
       warning: 'bg-warning/20 text-warning',
-      alternative: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
       destructive: 'bg-destructive/20 text-destructive',
       muted: 'bg-muted text-muted-foreground'
     };
@@ -170,7 +141,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -179,28 +150,6 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <FileText className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Standard</p>
-                <p className="text-2xl font-bold">{stats.standard}</p>
-              </div>
-              <Calculator className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">POS Loans</p>
-                <p className="text-2xl font-bold text-primary">{stats.pos}</p>
-              </div>
-              <CreditCard className="h-8 w-8 text-primary/50" />
             </div>
           </CardContent>
         </Card>
@@ -237,7 +186,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="col-span-2 md:col-span-1">
           <CardContent className="pt-4">
             <div>
               <p className="text-xs text-muted-foreground">Total Eligible Amount</p>
@@ -248,11 +197,11 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="calculator" className="w-full">
         <TabsList>
           <TabsTrigger value="calculator">
             <Calculator className="h-4 w-4 mr-2" />
-            {editingRecord ? 'Edit Record' : 'Calculator'}
+            Calculator
           </TabsTrigger>
           <TabsTrigger value="records">
             <FileText className="h-4 w-4 mr-2" />
@@ -262,11 +211,9 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
 
         <TabsContent value="calculator" className="mt-4">
           <LoanEligibilityForm 
-            onSubmit={handleSubmit} 
-            initialData={editingRecord || undefined}
+            onSubmit={handleCreate} 
             isLoading={isSaving}
             currency={currency}
-            onCancel={editingRecord ? handleCancelEdit : undefined}
           />
         </TabsContent>
 
@@ -286,7 +233,7 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="Eligible">Eligible</SelectItem>
                       <SelectItem value="Eligible (Reduced)">Eligible (Reduced)</SelectItem>
@@ -304,38 +251,11 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                     <SelectTrigger className="w-[120px]">
                       <SelectValue placeholder="Variance" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectContent>
                       <SelectItem value="all">All Buckets</SelectItem>
                       <SelectItem value="<=10%">≤10%</SelectItem>
                       <SelectItem value="11%-25%">11%-25%</SelectItem>
                       <SelectItem value=">25%">&gt;25%</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select 
-                    value={filters.product_type || 'all'} 
-                    onValueChange={(v) => setFilters(prev => ({ 
-                      ...prev, 
-                      product_type: v as ProductType | 'all' 
-                    }))}
-                  >
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Product Type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="all">All Products</SelectItem>
-                      <SelectItem value="standard">Standard Loan</SelectItem>
-                      <SelectItem value="rak_pos">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-3.5 w-3.5" />
-                          RAK POS Loan
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="wio_pos">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-3.5 w-3.5" />
-                          WIO POS Loan
-                        </div>
-                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <div className="flex gap-2">
@@ -381,8 +301,6 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Method</TableHead>
                         <TableHead className="text-right">VAT Turnover</TableHead>
                         <TableHead className="text-right">Declared</TableHead>
                         <TableHead className="text-right">Adjusted</TableHead>
@@ -397,31 +315,6 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                         <TableRow key={record.id}>
                           <TableCell className="text-sm text-muted-foreground">
                             {new Date(record.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant="outline" 
-                              className={cn(
-                                "text-xs",
-                                isPOSProduct(record.product_type) && "border-primary/50 bg-primary/5"
-                              )}
-                            >
-                              {isPOSProduct(record.product_type) && (
-                                <CreditCard className="h-3 w-3 mr-1" />
-                              )}
-                              {PRODUCT_TYPE_LABELS[record.product_type] || record.product_type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {record.eligibility_method === 'Reverse' ? (
-                              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200 text-xs">
-                                Reverse
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">
-                                Standard
-                              </Badge>
-                            )}
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(record.vat_turnover)}
@@ -445,26 +338,15 @@ export const LoanEligibilityDashboard: React.FC<LoanEligibilityDashboardProps> =
                             {formatCurrency(record.eligible_loan_amount)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center justify-center gap-1">
+                            <div className="flex items-center justify-center">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleEdit(record)}
-                                title="Edit record"
+                                onClick={() => handleDelete(record.id)}
+                                className="text-destructive hover:text-destructive"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                              {isAdmin && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDelete(record.id)}
-                                  className="text-destructive hover:text-destructive"
-                                  title="Delete record"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
                             </div>
                           </TableCell>
                         </TableRow>

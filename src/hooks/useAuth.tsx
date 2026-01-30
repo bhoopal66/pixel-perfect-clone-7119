@@ -2,21 +2,11 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-export type AppRole = 'super_admin' | 'admin' | 'supervisor' | 'coordinator' | 'user';
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  isSuperAdmin: boolean;
-  isSupervisor: boolean;
-  isCoordinator: boolean;
-  userRole: AppRole;
-  hasAdminPrivileges: boolean;
-  canManageAgents: boolean;
-  canManageUsers: boolean;
-  canAccessCases: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -28,54 +18,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userRole, setUserRole] = useState<AppRole>('user');
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const isSuperAdmin = userRole === 'super_admin';
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const isSupervisor = userRole === 'supervisor';
-  const isCoordinator = userRole === 'coordinator';
-  const hasAdminPrivileges = isAdmin;
-  
-  // Access control based on role hierarchy
-  // super_admin, admin: full access
-  // supervisor: cases + agents (no user management)
-  // coordinator: cases only
-  // user: cases only (basic access)
-  const canManageUsers = isAdmin; // Only admin and super_admin
-  const canManageAgents = isAdmin || isSupervisor; // Admin, super_admin, supervisor
-  const canAccessCases = true; // Everyone can access cases
-
-  const checkUserRole = async (userId: string) => {
+  const checkAdminRole = async (userId: string) => {
     try {
-      // Check roles in order of privilege
-      const { data: superAdminData } = await supabase.rpc('is_super_admin');
-      if (superAdminData === true) {
-        setUserRole('super_admin');
+      const { data, error } = await supabase.rpc('is_admin');
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
         return;
       }
-
-      const { data: adminData } = await supabase.rpc('is_admin');
-      if (adminData === true) {
-        setUserRole('admin');
-        return;
-      }
-
-      const { data: supervisorData } = await supabase.rpc('is_supervisor');
-      if (supervisorData === true) {
-        setUserRole('supervisor');
-        return;
-      }
-
-      const { data: coordinatorData } = await supabase.rpc('is_coordinator');
-      if (coordinatorData === true) {
-        setUserRole('coordinator');
-        return;
-      }
-
-      setUserRole('user');
+      setIsAdmin(data === true);
     } catch (err) {
-      console.error('Error checking user role:', err);
-      setUserRole('user');
+      console.error('Error checking admin role:', err);
+      setIsAdmin(false);
     }
   };
 
@@ -89,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           // Use setTimeout to prevent potential deadlock with Supabase
           setTimeout(() => {
-            checkUserRole(session.user.id);
+            checkAdminRole(session.user.id);
           }, 0);
         } else {
-          setUserRole('user');
+          setIsAdmin(false);
         }
         
         setIsLoading(false);
@@ -105,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkUserRole(session.user.id);
+        checkAdminRole(session.user.id);
       }
       
       setIsLoading(false);
@@ -146,27 +102,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setUserRole('user');
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      isLoading, 
-      isAdmin, 
-      isSuperAdmin,
-      isSupervisor,
-      isCoordinator,
-      userRole, 
-      hasAdminPrivileges,
-      canManageAgents,
-      canManageUsers,
-      canAccessCases,
-      signUp, 
-      signIn, 
-      signOut 
-    }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

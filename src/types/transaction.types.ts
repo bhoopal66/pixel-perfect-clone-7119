@@ -141,4 +141,4 @@ export interface AnalysisStep {
   status: 'pending' | 'processing' | 'completed' | 'error';
 }
 
-export type AppState = 'upload' | 'parsing' | 'preview' | 'analyzing' | 'results';
+export type AppState = 'upload' | 'analyzing' | 'results';

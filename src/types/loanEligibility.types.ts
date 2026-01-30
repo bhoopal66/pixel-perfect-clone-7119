@@ -1,9 +1,8 @@
 // Loan Eligibility Types
 
-export type EligibilityStatus = 'Eligible' | 'Eligible (Reduced)' | 'Eligible (Reverse)' | 'Not Eligible' | 'Insufficient Data';
+export type EligibilityStatus = 'Eligible' | 'Eligible (Reduced)' | 'Not Eligible' | 'Insufficient Data';
 export type VarianceBucket = '<=10%' | '11%-25%' | '>25%' | 'N/A';
 export type ProductType = 'standard' | 'rak_pos' | 'wio_pos';
-export type EligibilityMethod = 'Standard' | 'Reverse';
 
 export interface LoanEligibility {
   id: string;
@@ -34,18 +33,7 @@ export interface LoanEligibility {
   pos_eligible_turnover: number;
   turnover_basis: number;
   
-  // ABCT Fee fields (RAK POS only)
-  abcd_fee_rate: number;
-  abcd_fee_amount: number;
-  total_with_abcd: number;
-  
-  // Eligibility method (Standard or Reverse for RAK POS)
-  eligibility_method: EligibilityMethod;
-  
   // Metadata
-  company_name?: string;
-  period_start?: string;
-  period_end?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -58,9 +46,6 @@ export interface LoanEligibilityInput {
   cash_adjustment: number;
   sister_concern_adjustment: number;
   pos_monthly_turnover: number;
-  company_name?: string;
-  period_start?: string;
-  period_end?: string;
   notes?: string;
 }
 
@@ -75,8 +60,8 @@ export interface EligibilityFilters {
 // Product type labels
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   standard: 'Standard Loan',
-  rak_pos: 'RAK POS Loan (40% cap)',
-  wio_pos: 'WIO POS Loan (30% cap)'
+  rak_pos: 'RAK POS Loan',
+  wio_pos: 'WIO POS Loan'
 };
 
 // POS cap rates
@@ -87,14 +72,12 @@ export const POS_CAP_RATES: Record<ProductType, number> = {
 };
 
 // Helper to get RAG color for status
-export function getStatusColor(status: EligibilityStatus): 'success' | 'warning' | 'destructive' | 'muted' | 'reverse' {
+export function getStatusColor(status: EligibilityStatus): 'success' | 'warning' | 'destructive' | 'muted' {
   switch (status) {
     case 'Eligible':
       return 'success';
     case 'Eligible (Reduced)':
       return 'warning';
-    case 'Eligible (Reverse)':
-      return 'reverse';
     case 'Not Eligible':
       return 'destructive';
     case 'Insufficient Data':

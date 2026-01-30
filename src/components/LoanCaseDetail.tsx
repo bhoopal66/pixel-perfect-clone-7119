@@ -128,22 +128,10 @@ export const LoanCaseDetail: React.FC<LoanCaseDetailProps> = ({
                   <span>{loanCase.applicantEmail}</span>
                 </div>
               )}
-              {loanCase.companyName && (
+              {loanCase.employer && (
                 <div className="flex items-center gap-2 text-sm">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span>{loanCase.companyName}</span>
-                </div>
-              )}
-              {loanCase.agentReference && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Agent Ref: </span>
-                  <span className="font-medium">{loanCase.agentReference}</span>
-                </div>
-              )}
-              {loanCase.analystName && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Analyst: </span>
-                  <span className="font-medium">{loanCase.analystName}</span>
+                  <span>{loanCase.employer}</span>
                 </div>
               )}
               {loanCase.monthlySalary > 0 && (
