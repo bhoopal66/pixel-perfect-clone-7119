@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import React from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,28 +9,13 @@ import {
   Wallet,
   CreditCard,
   PieChart,
-  RefreshCw,
-  Globe,
-  Calendar,
-  CalendarIcon,
-  RotateCcw,
-  BarChart3,
-  FileText
+  RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar as CalendarComponent } from './ui/calendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { cn } from '@/lib/utils';
 import type { AnalysisReport } from '../types/transaction.types';
-import type { VATReturn } from '../types/turnoverAnalysis.types';
 import { TransactionTable } from './TransactionTable';
-import { TurnoverAnalysisView } from './TurnoverAnalysisView';
-import { VATReturnsUpload } from './VATReturnsUpload';
-import { CurrencyService, type CurrencyCode } from '../services/currencyService';
-import { TurnoverAnalysisService } from '../services/turnoverAnalysisService';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend, ComposedChart, Line, ReferenceLine } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 interface ResultsDashboardProps {
   report: AnalysisReport;
@@ -45,44 +29,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   onReset
 }) => {
   const { summary, accountInfo } = report;
-  const currency = summary.currency || 'AED';
 
-  // VAT Returns state
-  const [vatReturns, setVATReturns] = useState<VATReturn[]>([]);
-
-  // Calculate CORRECT turnover analysis (Turnover = Total Credits, Avg Balance % = Avg Balance / Turnover)
-  const turnoverAnalysis = useMemo(() => {
-    return TurnoverAnalysisService.calculateTurnoverAnalysisSummary(
-      report.transactions,
-      report.dailyBalances || [],
-      currency
-    );
-  }, [report.transactions, report.dailyBalances, currency]);
-
-  // Date range filter state for daily balance chart
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: undefined,
-    to: undefined
-  });
-
-  // Get min/max dates from daily balances
-  const dateRangeBounds = useMemo(() => {
-    if (!report.dailyBalances || report.dailyBalances.length === 0) {
-      return { min: undefined, max: undefined };
-    }
-    const dates = report.dailyBalances.map(d => new Date(d.date));
-    return {
-      min: new Date(Math.min(...dates.map(d => d.getTime()))),
-      max: new Date(Math.max(...dates.map(d => d.getTime())))
-    };
-  }, [report.dailyBalances]);
-
-  const formatCurrency = (value: number, curr: CurrencyCode = currency) => {
-    return CurrencyService.format(value, curr);
-  };
-
-  const formatCurrencyShort = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-AE', {
+      style: 'decimal',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(value);
@@ -136,54 +86,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     'hsl(30 80% 55%)'
   ];
 
-  // Filter daily balances by date range
-  const filteredDailyBalances = useMemo(() => {
-    if (!report.dailyBalances || report.dailyBalances.length === 0) return [];
-    
-    return report.dailyBalances.filter(day => {
-      const dayDate = new Date(day.date);
-      if (dateRange.from && dayDate < dateRange.from) return false;
-      if (dateRange.to && dayDate > dateRange.to) return false;
-      return true;
-    });
-  }, [report.dailyBalances, dateRange]);
-
-  // Prepare daily closing balance chart data - sample every nth day for better visualization
-  const dailyClosingChartData = useMemo(() => {
-    if (filteredDailyBalances.length === 0) return [];
-    
-    // For large datasets, sample to show ~60 points for readability
-    const step = Math.max(1, Math.floor(filteredDailyBalances.length / 60));
-    
-    return filteredDailyBalances
-      .filter((_, index) => index % step === 0 || index === filteredDailyBalances.length - 1)
-      .map(day => ({
-        date: new Date(day.date).toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        }),
-        fullDate: day.date,
-        closingBalance: day.closingBalance,
-        hasTransactions: day.hasTransactions,
-        month: day.month
-      }));
-  }, [filteredDailyBalances]);
-
-  // Calculate average daily closing balance for filtered data
-  const averageDailyClosing = useMemo(() => {
-    if (filteredDailyBalances.length === 0) return 0;
-    const sum = filteredDailyBalances.reduce((acc, day) => acc + day.closingBalance, 0);
-    return sum / filteredDailyBalances.length;
-  }, [filteredDailyBalances]);
-
-  // Reset date range filter
-  const resetDateRange = () => {
-    setDateRange({ from: undefined, to: undefined });
-  };
-
-  // Check if filter is active
-  const isFilterActive = dateRange.from || dateRange.to;
-
   return (
     <motion.div
       variants={containerVariants}
@@ -201,16 +103,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <p className="text-muted-foreground">
               {accountInfo.accountName || 'Bank Account'} • {accountInfo.period || '6 Month Analysis'}
             </p>
-            {accountInfo.currencies && accountInfo.currencies.length > 1 && (
-              <div className="flex items-center gap-2 mt-2">
-                <Globe className="h-4 w-4 text-accent" />
-                <span className="text-sm text-accent">
-                  Multi-currency: {accountInfo.currencies.join(', ')}
-                </span>
-              </div>
-            )}
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex gap-3">
             <Button
               onClick={onReset}
               variant="outline"
@@ -239,7 +133,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           format="currency"
           iconBg="bg-primary/10"
           iconColor="text-primary"
-          currency={currency}
         />
         <MetricCard
           icon={<DollarSign className="h-5 w-5" />}
@@ -248,7 +141,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           format="currency"
           iconBg="bg-accent/10"
           iconColor="text-accent"
-          currency={currency}
         />
         <MetricCard
           icon={<ArrowUpRight className="h-5 w-5" />}
@@ -258,7 +150,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           subtitle={`${summary.creditCount} transactions`}
           iconBg="bg-success/10"
           iconColor="text-success"
-          currency={currency}
         />
         <MetricCard
           icon={<ArrowDownRight className="h-5 w-5" />}
@@ -268,7 +159,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           subtitle={`${summary.debitCount} transactions`}
           iconBg="bg-destructive/10"
           iconColor="text-destructive"
-          currency={currency}
         />
       </motion.div>
 
@@ -282,7 +172,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <p className={`text-4xl font-bold ${
               summary.netChange >= 0 ? 'text-success' : 'text-destructive'
             }`}>
-              {formatCurrency(summary.netChange)}
+              AED {formatCurrency(summary.netChange)}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               {summary.openingBalance > 0 ? (
@@ -303,43 +193,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             )}
           </div>
         </div>
-      </motion.div>
-
-      {/* Turnover & VAT Analysis Section */}
-      <motion.div variants={itemVariants} className="mb-6">
-        <Tabs defaultValue="turnover" className="w-full">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BarChart3 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  Turnover & Average Balance Analysis
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Turnover = Total Credits | Avg Balance % = (Avg Balance / Turnover) × 100
-                </p>
-              </div>
-            </div>
-            <TabsList>
-              <TabsTrigger value="turnover">Turnover Analysis</TabsTrigger>
-              <TabsTrigger value="vat">VAT Returns</TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="turnover" className="mt-0">
-            <TurnoverAnalysisView summary={turnoverAnalysis} />
-          </TabsContent>
-
-          <TabsContent value="vat" className="mt-0">
-            <VATReturnsUpload
-              vatReturns={vatReturns}
-              onVATReturnsChange={setVATReturns}
-              currency={currency}
-            />
-          </TabsContent>
-        </Tabs>
       </motion.div>
 
       {/* Charts Row */}
@@ -367,7 +220,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: number) => [`${formatCurrency(value)}`, 'Average']}
+                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, 'Average']}
                 />
                 <Area 
                   type="monotone" 
@@ -412,7 +265,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     borderRadius: '8px'
                   }}
                   formatter={(value: number, name: string, props: any) => [
-                    `${formatCurrency(value)}`, 
+                    `AED ${formatCurrency(value)}`, 
                     props.payload?.fullName || name
                   ]}
                 />
@@ -441,7 +294,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: number) => [`${formatCurrency(value)}`, 'Amount']}
+                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, 'Amount']}
                 />
                 <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -478,7 +331,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
-                  formatter={(value: number) => [`${formatCurrency(value)}`, '']}
+                  formatter={(value: number) => [`AED ${formatCurrency(value)}`, '']}
                 />
                 <Legend 
                   verticalAlign="bottom" 
@@ -490,210 +343,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
         </motion.div>
       </div>
-
-      {/* Daily Closing Balance Trend Chart */}
-      <motion.div variants={itemVariants} className="card-elevated p-6 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-accent/10">
-              <Calendar className="h-5 w-5 text-accent" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">
-                Daily Closing Balance Trend
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {filteredDailyBalances.length} of {report.dailyBalances?.length || 0} days
-                {isFilterActive && ' (filtered)'} • End-of-day balances
-              </p>
-            </div>
-          </div>
-          
-          {/* Date Range Selector */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "justify-start text-left font-normal h-9",
-                    !dateRange.from && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? format(dateRange.from, "MMM d, yyyy") : "From date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={dateRange.from}
-                  onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
-                  disabled={(date) => 
-                    (dateRangeBounds.min && date < dateRangeBounds.min) ||
-                    (dateRangeBounds.max && date > dateRangeBounds.max) ||
-                    (dateRange.to && date > dateRange.to)
-                  }
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <span className="text-muted-foreground text-sm">to</span>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "justify-start text-left font-normal h-9",
-                    !dateRange.to && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.to ? format(dateRange.to, "MMM d, yyyy") : "To date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={dateRange.to}
-                  onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-                  disabled={(date) => 
-                    (dateRangeBounds.min && date < dateRangeBounds.min) ||
-                    (dateRangeBounds.max && date > dateRangeBounds.max) ||
-                    (dateRange.from && date < dateRange.from)
-                  }
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            
-            {isFilterActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetDateRange}
-                className="h-9 px-2 text-muted-foreground hover:text-foreground"
-              >
-                <RotateCcw className="h-4 w-4 mr-1" />
-                Reset
-              </Button>
-            )}
-            
-            <div className="ml-auto text-right hidden sm:block">
-              <p className="text-xs text-muted-foreground">Average Daily Closing</p>
-              <p className="text-lg font-bold text-accent">
-                {formatCurrency(averageDailyClosing)}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={dailyClosingChartData}>
-              <defs>
-                <linearGradient id="colorClosingBalance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="date" 
-                stroke="hsl(var(--muted-foreground))" 
-                fontSize={11}
-                tickLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))" 
-                fontSize={11}
-                tickFormatter={(v) => `${(v/1000).toFixed(0)}K`}
-                tickLine={false}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}
-                formatter={(value: number, name: string, props: any) => [
-                  `${formatCurrency(value)}`,
-                  'Closing Balance'
-                ]}
-                labelFormatter={(label, payload) => {
-                  if (payload?.[0]?.payload) {
-                    const data = payload[0].payload;
-                    return (
-                      <div>
-                        <div className="font-medium">{data.fullDate}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {data.hasTransactions ? '✓ Transaction day' : '→ Carried forward'}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return label;
-                }}
-              />
-              <ReferenceLine 
-                y={averageDailyClosing} 
-                stroke="hsl(var(--accent))" 
-                strokeDasharray="5 5"
-                strokeWidth={2}
-                label={{ 
-                  value: 'Avg', 
-                  position: 'right',
-                  fill: 'hsl(var(--accent))',
-                  fontSize: 11
-                }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="closingBalance" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorClosingBalance)" 
-              />
-              <Line
-                type="monotone"
-                dataKey="closingBalance"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ 
-                  r: 6, 
-                  fill: 'hsl(var(--primary))',
-                  stroke: 'hsl(var(--background))',
-                  strokeWidth: 2
-                }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-        
-        <div className="mt-4 flex items-center gap-6 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-primary"></div>
-            <span>Daily Closing Balance</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-0.5 bg-accent" style={{ borderStyle: 'dashed' }}></div>
-            <span>Average ({formatCurrency(averageDailyClosing)})</span>
-          </div>
-          <div className="ml-auto text-muted-foreground/70">
-            Closing balance = last transaction balance of each day
-          </div>
-        </div>
-      </motion.div>
 
       {/* Monthly Balances Table */}
       <motion.div variants={itemVariants} className="card-elevated p-6 mb-6">
@@ -733,13 +382,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {month.month}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-foreground text-right font-medium">
-                    {formatCurrency(month.average)}
+                    AED {formatCurrency(month.average)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-right">
-                    {formatCurrency(month.opening)}
+                    AED {formatCurrency(month.opening)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-right">
-                    {formatCurrency(month.closing)}
+                    AED {formatCurrency(month.closing)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">
                     {month.days}
@@ -778,7 +427,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </p>
               <div className="flex items-baseline justify-between">
                 <span className="text-lg font-bold text-foreground">
-                  {formatCurrency(cat.totalDebit + cat.totalCredit)}
+                  AED {formatCurrency(cat.totalDebit + cat.totalCredit)}
                 </span>
                 {cat.totalCredit > cat.totalDebit ? (
                   <span className="text-xs text-success font-medium">+Credit</span>
@@ -807,7 +456,6 @@ interface MetricCardProps {
   subtitle?: string;
   iconBg: string;
   iconColor: string;
-  currency?: CurrencyCode;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -817,14 +465,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
   format, 
   subtitle,
   iconBg,
-  iconColor,
-  currency = 'AED'
+  iconColor
 }) => {
-  const formatValue = (val: number) => {
-    if (format === 'currency') {
-      return CurrencyService.format(val, currency);
-    }
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-AE', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(val);
@@ -843,7 +487,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
         </div>
       </div>
       <p className="text-2xl font-bold text-foreground">
-        {formatValue(value)}
+        {format === 'currency' ? 'AED ' : ''}
+        {formatCurrency(value)}
       </p>
       {subtitle && (
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
