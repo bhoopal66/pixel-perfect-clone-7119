@@ -157,9 +157,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <h3 className="text-sm font-semibold text-foreground">
                 Uploaded Files
               </h3>
-              <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
-                {uploadedFiles.length}/12 files
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setUploadedFiles([])}
+                  className="text-sm text-destructive hover:text-destructive/80 px-3 py-1 hover:bg-destructive/10 rounded-full transition-colors"
+                >
+                  Clear All
+                </button>
+                <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
+                  {uploadedFiles.length}/12 files
+                </span>
+              </div>
             </div>
             
             {uploadedFiles.map((file, index) => (
