@@ -1,25 +1,25 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X, FileCheck, AlertCircle } from 'lucide-react';
+import { Upload, FileText, X, FileCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
-import { toast } from 'sonner';
 
 interface UploadedFile {
   file: File;
   id: string;
   name: string;
   size: string;
-  sizeBytes: number;
 }
 
 interface FileUploadProps {
   onFilesSelected: (files: File[]) => void;
+  onDemoMode?: () => void;
   isProcessing?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
   onFilesSelected, 
+  onDemoMode,
   isProcessing = false 
 }) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -30,41 +30,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const isDuplicate = (file: File, existingFiles: UploadedFile[]): boolean => {
-    return existingFiles.some(
-      existing => existing.name === file.name && existing.sizeBytes === file.size
-    );
-  };
-
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const duplicates: string[] = [];
-    const uniqueFiles: File[] = [];
-
+    const newFiles = acceptedFiles.map(file => ({
+      file,
+      id: Math.random().toString(36).substring(7),
+      name: file.name,
+      size: formatFileSize(file.size)
+    }));
+    
     setUploadedFiles(prev => {
-      acceptedFiles.forEach(file => {
-        if (isDuplicate(file, prev)) {
-          duplicates.push(file.name);
-        } else if (!uniqueFiles.some(f => f.name === file.name && f.size === file.size)) {
-          uniqueFiles.push(file);
-        }
-      });
-
-      if (duplicates.length > 0) {
-        toast.error(`Duplicate files ignored: ${duplicates.join(', ')}`, {
-          icon: <AlertCircle className="h-4 w-4" />,
-        });
-      }
-
-      const newFiles = uniqueFiles.map(file => ({
-        file,
-        id: Math.random().toString(36).substring(7),
-        name: file.name,
-        size: formatFileSize(file.size),
-        sizeBytes: file.size
-      }));
-
       const combined = [...prev, ...newFiles];
-      return combined.slice(0, 12); // Max 12 files
+      return combined.slice(0, 6); // Max 6 files
     });
   }, []);
 
@@ -73,7 +49,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     accept: {
       'application/pdf': ['.pdf']
     },
-    maxFiles: 12,
+    maxFiles: 6,
     disabled: isProcessing
   });
 
@@ -98,7 +74,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           Upload Your Bank Statements
         </h2>
         <p className="text-muted-foreground text-lg">
-          Drop up to 12 monthly PDF statements for comprehensive analysis
+          Drop up to 6 monthly PDF statements for comprehensive analysis
         </p>
       </motion.div>
 
@@ -140,8 +116,27 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground">
             <FileCheck className="h-4 w-4" />
-            <span>Accepts PDF files • Max 12 files</span>
+            <span>Accepts PDF files • Max 6 files</span>
           </div>
+          
+          {onDemoMode && (
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDemoMode();
+                }}
+                disabled={isProcessing}
+                className="text-sm"
+              >
+                Try Demo Mode
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                See a sample analysis with demo data
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -157,17 +152,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <h3 className="text-sm font-semibold text-foreground">
                 Uploaded Files
               </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setUploadedFiles([])}
-                  className="text-sm text-destructive hover:text-destructive/80 px-3 py-1 hover:bg-destructive/10 rounded-full transition-colors"
-                >
-                  Clear All
-                </button>
-                <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
-                  {uploadedFiles.length}/12 files
-                </span>
-              </div>
+              <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full">
+                {uploadedFiles.length}/6 files
+              </span>
             </div>
             
             {uploadedFiles.map((file, index) => (

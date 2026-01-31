@@ -1,16 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3 } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ResultsDashboard } from '../components/ResultsDashboard';
 import { ReportBuilder } from '../services/reportBuilder';
 import { ExcelGenerator } from '../services/excelGenerator';
+import { CurrencyService } from '../services/currencyService';
+import { toast } from 'sonner';
 import type { AnalysisReport, AnalysisStep, AppState } from '../types/transaction.types';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('upload');
   const [report, setReport] = useState<AnalysisReport | null>(null);
+  const [ratesStatus, setRatesStatus] = useState<'loading' | 'live' | 'default'>('loading');
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([
     { id: '1', label: 'Parsing PDF files', status: 'pending' },
     { id: '2', label: 'Extracting transactions', status: 'pending' },
@@ -20,6 +23,26 @@ const Index = () => {
     { id: '6', label: 'Creating report', status: 'pending' }
   ]);
 
+  // Fetch live exchange rates on mount
+  useEffect(() => {
+    const fetchRates = async () => {
+      setRatesStatus('loading');
+      const success = await CurrencyService.fetchLiveRates('AED');
+      if (success) {
+        setRatesStatus('live');
+        toast.success('Live exchange rates loaded', {
+          description: `Rates updated as of ${CurrencyService.getRatesDate()}`,
+        });
+      } else {
+        setRatesStatus('default');
+        toast.info('Using default exchange rates', {
+          description: 'Could not fetch live rates, using cached values',
+        });
+      }
+    };
+    fetchRates();
+  }, []);
+
   const updateStepStatus = useCallback((index: number, status: AnalysisStep['status']) => {
     setAnalysisSteps(prev => 
       prev.map((step, i) => i === index ? { ...step, status } : step)
@@ -27,6 +50,29 @@ const Index = () => {
   }, []);
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const handleDemoMode = async () => {
+    setAppState('analyzing');
+    
+    // Reset steps
+    setAnalysisSteps(prev => prev.map(s => ({ ...s, status: 'pending' as const })));
+    
+    try {
+      // Quick demo flow
+      for (let i = 0; i < 6; i++) {
+        updateStepStatus(i, 'processing');
+        await delay(300);
+        updateStepStatus(i, 'completed');
+      }
+      
+      const demoReport = ReportBuilder.generateDemoReport();
+      setReport(demoReport);
+      await delay(200);
+      setAppState('results');
+    } catch (error) {
+      console.error('Demo failed:', error);
+    }
+  };
 
   const handleFilesSelected = async (files: File[]) => {
     setAppState('analyzing');
@@ -138,6 +184,28 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground hidden sm:block">Transform PDFs into insights</p>
               </div>
             </div>
+            
+            {/* Exchange Rate Status */}
+            <div className="flex items-center gap-2">
+              {ratesStatus === 'loading' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground text-xs">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  <span className="hidden sm:inline">Loading rates...</span>
+                </div>
+              )}
+              {ratesStatus === 'live' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-xs">
+                  <CheckCircle className="h-3 w-3" />
+                  <span className="hidden sm:inline">Live rates ({CurrencyService.getRatesDate()})</span>
+                </div>
+              )}
+              {ratesStatus === 'default' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs">
+                  <AlertCircle className="h-3 w-3" />
+                  <span className="hidden sm:inline">Default rates</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -199,7 +267,7 @@ const Index = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {appState === 'upload' && (
-          <FileUpload onFilesSelected={handleFilesSelected} />
+          <FileUpload onFilesSelected={handleFilesSelected} onDemoMode={handleDemoMode} />
         )}
         
         {appState === 'analyzing' && (
