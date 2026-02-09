@@ -4,13 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Clock,
+  Users,
   TrendingUp,
   ArrowLeft,
   AlertCircle,
   CheckCircle,
   Building2,
   RefreshCw,
-  Radio
+  Radio,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,11 +22,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardService } from '@/services/dashboardService';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PipelineVisualization, LenderTrackingTable, SLAMonitoringPanel } from '@/components/dashboard';
-import { ExportDialog } from '@/components/admin';
-import type { DateRange, ExportFormat } from '@/components/admin';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { DashboardExportService } from '@/services/dashboardExportService';
-import { DashboardPdfExportService } from '@/services/dashboardPdfExportService';
 import { toast } from '@/hooks/use-toast';
 import type { PipelineMetrics } from '@/types/dashboard.types';
 
@@ -49,25 +48,17 @@ export default function SupervisorDashboard() {
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
-  const handleExport = async (dateRange: DateRange, format: ExportFormat) => {
+  const handleExport = async () => {
     try {
-      const exportData = {
+      await DashboardExportService.exportSupervisorDashboard({
         pipelineMetrics: pipeline || defaultMetrics,
-        lenderTracking: [],
-        slaData: [],
-        supervisorName: user?.email?.split('@')[0],
-        dateRange
-      };
-
-      if (format === 'pdf') {
-        await DashboardPdfExportService.exportSupervisorDashboard(exportData);
-      } else {
-        await DashboardExportService.exportSupervisorDashboard(exportData);
-      }
-      
+        lenderTracking: [], // Will be populated from LenderTrackingTable
+        slaData: [], // Will be populated from SLAMonitoringPanel
+        supervisorName: user?.email?.split('@')[0]
+      });
       toast({
         title: 'Export Complete',
-        description: `Dashboard data exported to ${format.toUpperCase()} successfully.`
+        description: 'Dashboard data exported to Excel successfully.'
       });
     } catch (error) {
       console.error('Export failed:', error);
@@ -135,11 +126,10 @@ export default function SupervisorDashboard() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <ExportDialog 
-                onExport={handleExport} 
-                title="Export Supervisor Dashboard"
-                description="Select a date range to export pipeline and SLA data."
-              />
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
               <ThemeToggle />
             </div>
           </div>

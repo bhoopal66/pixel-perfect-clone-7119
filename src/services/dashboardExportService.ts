@@ -6,11 +6,6 @@ import type {
   AgentProductivity 
 } from '@/types/dashboard.types';
 
-export interface DateRange {
-  from: Date | undefined;
-  to: Date | undefined;
-}
-
 interface GlobalMetrics {
   totalApplications: number;
   approved: number;
@@ -60,25 +55,20 @@ export class DashboardExportService {
     supervisorPipelines: SupervisorPipeline[];
     trendData: TrendDataPoint[];
     period: string;
-    dateRange?: DateRange;
   }): Promise<void> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Dashboard Export';
     workbook.created = new Date();
 
     // Create sheets
-    this.createGlobalMetricsSheet(workbook, data.globalMetrics, data.dateRange);
+    this.createGlobalMetricsSheet(workbook, data.globalMetrics);
     this.createLenderPerformanceSheet(workbook, data.lenderPerformance);
     this.createSupervisorPipelinesSheet(workbook, data.supervisorPipelines);
-    this.createTrendDataSheet(workbook, data.trendData, data.period, data.dateRange);
+    this.createTrendDataSheet(workbook, data.trendData, data.period);
 
-    // Generate filename with date range
-    const dateRangeSuffix = this.getDateRangeSuffix(data.dateRange);
-    const filename = `admin_dashboard_${dateRangeSuffix}.xlsx`;
-    
     // Download
     const buffer = await workbook.xlsx.writeBuffer();
-    this.downloadFile(buffer, filename);
+    this.downloadFile(buffer, `admin_dashboard_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   /**
@@ -89,51 +79,25 @@ export class DashboardExportService {
     lenderTracking: any[];
     slaData: any[];
     supervisorName?: string;
-    dateRange?: DateRange;
   }): Promise<void> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Dashboard Export';
     workbook.created = new Date();
 
     // Summary sheet
-    this.createPipelineSummarySheet(workbook, data.pipelineMetrics, data.supervisorName, data.dateRange);
+    this.createPipelineSummarySheet(workbook, data.pipelineMetrics, data.supervisorName);
     this.createLenderTrackingSheet(workbook, data.lenderTracking);
     this.createSLAMonitoringSheet(workbook, data.slaData);
 
-    // Generate filename with date range
-    const dateRangeSuffix = this.getDateRangeSuffix(data.dateRange);
-    const namePrefix = data.supervisorName 
-      ? `supervisor_dashboard_${data.supervisorName.replace(/\s+/g, '_')}_`
-      : 'supervisor_dashboard_';
-    const filename = `${namePrefix}${dateRangeSuffix}.xlsx`;
-    
     // Download
     const buffer = await workbook.xlsx.writeBuffer();
+    const filename = data.supervisorName 
+      ? `supervisor_dashboard_${data.supervisorName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`
+      : `supervisor_dashboard_${new Date().toISOString().split('T')[0]}.xlsx`;
     this.downloadFile(buffer, filename);
   }
 
-  private static getDateRangeSuffix(dateRange?: DateRange): string {
-    if (!dateRange?.from && !dateRange?.to) {
-      return new Date().toISOString().split('T')[0];
-    }
-    
-    const fromStr = dateRange.from ? dateRange.from.toISOString().split('T')[0] : 'start';
-    const toStr = dateRange.to ? dateRange.to.toISOString().split('T')[0] : 'now';
-    return `${fromStr}_to_${toStr}`;
-  }
-
-  private static formatDateRangeLabel(dateRange?: DateRange): string {
-    if (!dateRange?.from && !dateRange?.to) {
-      return 'All Data';
-    }
-    
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-    const fromStr = dateRange.from ? dateRange.from.toLocaleDateString('en-US', options) : 'Start';
-    const toStr = dateRange.to ? dateRange.to.toLocaleDateString('en-US', options) : 'Present';
-    return `${fromStr} - ${toStr}`;
-  }
-
-  private static createGlobalMetricsSheet(workbook: ExcelJS.Workbook, metrics: GlobalMetrics, dateRange?: DateRange) {
+  private static createGlobalMetricsSheet(workbook: ExcelJS.Workbook, metrics: GlobalMetrics) {
     const sheet = workbook.addWorksheet('Global Metrics');
     
     sheet.getColumn(1).width = 25;
@@ -156,13 +120,8 @@ export class DashboardExportService {
     sheet.getCell('B2').value = new Date().toLocaleString();
     sheet.getCell('A2').font = { italic: true };
 
-    // Date range
-    sheet.getCell('A3').value = 'Date Range:';
-    sheet.getCell('B3').value = this.formatDateRangeLabel(dateRange);
-    sheet.getCell('A3').font = { italic: true };
-
     // Metrics
-    let row = 5;
+    let row = 4;
     const metricsData = [
       ['Total Applications', metrics.totalApplications],
       ['Approved', metrics.approved],
@@ -291,13 +250,12 @@ export class DashboardExportService {
     });
   }
 
-  private static createTrendDataSheet(workbook: ExcelJS.Workbook, trends: TrendDataPoint[], period: string, dateRange?: DateRange) {
+  private static createTrendDataSheet(workbook: ExcelJS.Workbook, trends: TrendDataPoint[], period: string) {
     const sheet = workbook.addWorksheet('Trend Data');
 
     // Title with period
     const titleCell = sheet.getCell('A1');
-    const dateRangeLabel = this.formatDateRangeLabel(dateRange);
-    titleCell.value = `APPLICATION TRENDS - ${period.toUpperCase()} (${dateRangeLabel})`;
+    titleCell.value = `APPLICATION TRENDS - ${period.toUpperCase()}`;
     titleCell.font = { bold: true, size: 14 };
     sheet.mergeCells('A1:E1');
 
@@ -328,7 +286,7 @@ export class DashboardExportService {
     }
   }
 
-  private static createPipelineSummarySheet(workbook: ExcelJS.Workbook, metrics: PipelineMetrics, supervisorName?: string, dateRange?: DateRange) {
+  private static createPipelineSummarySheet(workbook: ExcelJS.Workbook, metrics: PipelineMetrics, supervisorName?: string) {
     const sheet = workbook.addWorksheet('Pipeline Summary');
 
     sheet.getColumn(1).width = 25;
@@ -352,12 +310,8 @@ export class DashboardExportService {
     sheet.getCell('A2').value = 'Generated:';
     sheet.getCell('B2').value = new Date().toLocaleString();
 
-    // Date range
-    sheet.getCell('A3').value = 'Date Range:';
-    sheet.getCell('B3').value = this.formatDateRangeLabel(dateRange);
-
     // Pipeline data
-    let row = 5;
+    let row = 4;
     const pipelineData = [
       ['Draft', metrics.draft],
       ['In Process', metrics.in_process],
