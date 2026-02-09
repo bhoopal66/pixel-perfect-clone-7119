@@ -1,5 +1,7 @@
 import { PDFParser, ExtractedTransaction } from './pdfParser';
 import { TransactionAnalyzer } from './transactionAnalyzer';
+import { CurrencyService, type CurrencyCode } from './currencyService';
+import { calculateDailyClosingBalances } from '../utils/balanceCalculator';
 import type { 
   AnalysisReport, 
   Transaction, 
@@ -23,7 +25,9 @@ export class ReportBuilder {
       accountNumber: '',
       iban: '',
       bank: 'Bank',
-      period: ''
+      period: '',
+      currency: 'AED' as CurrencyCode,
+      currencies: [] as CurrencyCode[]
     };
 
     let firstStartDate: string | undefined;
@@ -43,21 +47,43 @@ export class ReportBuilder {
       if (info.endDate && (!lastEndDate || new Date(info.endDate) > new Date(lastEndDate))) {
         lastEndDate = info.endDate;
       }
+
+      // Detect currency from statement
+      const detectedCurrency = CurrencyService.detectCurrency(parsed.text);
+      accountInfo.currency = detectedCurrency;
     }
 
     accountInfo.period = firstStartDate && lastEndDate 
       ? `${firstStartDate} to ${lastEndDate}`
       : '6 Month Analysis';
 
-    // Categorize transactions
-    const transactions: Transaction[] = allTransactionsRaw.map(txn => ({
-      ...txn,
-      category: TransactionAnalyzer.categorizeTransaction(
-        txn.description,
-        txn.debit,
-        txn.credit
-      )
-    }));
+    const baseCurrency = accountInfo.currency;
+    const currenciesFound = new Set<CurrencyCode>([baseCurrency]);
+
+    // Categorize transactions and detect individual transaction currencies
+    const transactions: Transaction[] = allTransactionsRaw.map(txn => {
+      const txnCurrency = CurrencyService.detectTransactionCurrency(txn.description, baseCurrency);
+      if (txnCurrency !== baseCurrency) {
+        currenciesFound.add(txnCurrency);
+      }
+
+      return {
+        ...txn,
+        category: TransactionAnalyzer.categorizeTransaction(
+          txn.description,
+          txn.debit,
+          txn.credit
+        ),
+        currency: baseCurrency,
+        originalCurrency: txnCurrency !== baseCurrency ? txnCurrency : undefined,
+        originalAmount: txnCurrency !== baseCurrency ? (txn.debit || txn.credit) : undefined,
+        exchangeRate: txnCurrency !== baseCurrency 
+          ? CurrencyService.getRate(txnCurrency, baseCurrency) 
+          : undefined
+      };
+    });
+
+    accountInfo.currencies = Array.from(currenciesFound);
 
     // Sort by date
     transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -75,7 +101,7 @@ export class ReportBuilder {
     const monthlyBalances = this.calculateMonthlyBalances(monthlyData);
     const monthWiseSummary = this.calculateMonthWiseSummary(monthlyData);
 
-    // Calculate daily balances (use 6 months range)
+    // Calculate daily closing balances (use 6 months range)
     const startDate = transactions[0]?.date 
       ? new Date(transactions[0].date) 
       : new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
@@ -83,10 +109,17 @@ export class ReportBuilder {
       ? new Date(transactions[transactions.length - 1].date)
       : new Date();
     
-    const dailyBalances = TransactionAnalyzer.calculateDailyBalances(
+    // Calculate opening balance for first day (use the balance before first transaction)
+    const firstTxn = transactions[0];
+    const dailyOpeningBalance = firstTxn 
+      ? firstTxn.balance - firstTxn.credit + firstTxn.debit 
+      : 0;
+    
+    const dailyBalances = calculateDailyClosingBalances(
+      transactions,
       startDate,
       endDate,
-      transactions
+      dailyOpeningBalance
     );
 
     // Calculate average monthly balance
@@ -111,7 +144,9 @@ export class ReportBuilder {
         totalDebits,
         creditCount,
         debitCount,
-        averageMonthlyBalance
+        averageMonthlyBalance,
+        currency: baseCurrency,
+        currencyBreakdown: this.buildCurrencyBreakdown(transactions, baseCurrency)
       },
       monthlyBalances,
       dailyBalances,
@@ -235,6 +270,41 @@ export class ReportBuilder {
     };
   }
 
+  private static buildCurrencyBreakdown(
+    transactions: Transaction[], 
+    baseCurrency: CurrencyCode
+  ): { currency: CurrencyCode; totalCredits: number; totalDebits: number; convertedCredits: number; convertedDebits: number; }[] {
+    const currencyMap = new Map<CurrencyCode, { credits: number; debits: number; convertedCredits: number; convertedDebits: number }>();
+    
+    transactions.forEach(txn => {
+      const currency = txn.originalCurrency || txn.currency;
+      if (!currencyMap.has(currency)) {
+        currencyMap.set(currency, { credits: 0, debits: 0, convertedCredits: 0, convertedDebits: 0 });
+      }
+      
+      const data = currencyMap.get(currency)!;
+      data.credits += txn.credit;
+      data.debits += txn.debit;
+      
+      // Convert to base currency
+      if (currency !== baseCurrency) {
+        data.convertedCredits += CurrencyService.convert(txn.credit, currency, baseCurrency);
+        data.convertedDebits += CurrencyService.convert(txn.debit, currency, baseCurrency);
+      } else {
+        data.convertedCredits += txn.credit;
+        data.convertedDebits += txn.debit;
+      }
+    });
+
+    return Array.from(currencyMap.entries()).map(([currency, data]) => ({
+      currency,
+      totalCredits: data.credits,
+      totalDebits: data.debits,
+      convertedCredits: data.convertedCredits,
+      convertedDebits: data.convertedDebits
+    }));
+  }
+
   // Generate demo data for testing without actual PDF files
   static generateDemoReport(): AnalysisReport {
     const months = ['January 2024', 'February 2024', 'March 2024', 'April 2024', 'May 2024', 'June 2024'];
@@ -272,7 +342,8 @@ export class ReportBuilder {
           debit: isCredit ? 0 : amount,
           credit: isCredit ? amount : 0,
           balance: balance,
-          category: categories[Math.floor(Math.random() * categories.length)] as TransactionCategory
+          category: categories[Math.floor(Math.random() * categories.length)] as TransactionCategory,
+          currency: 'AED' as CurrencyCode
         });
       }
     });
@@ -286,7 +357,9 @@ export class ReportBuilder {
         accountNumber: '1234567890',
         iban: 'AE123456789012345678901',
         bank: 'Demo Bank',
-        period: 'January 2024 to June 2024'
+        period: 'January 2024 to June 2024',
+        currency: 'AED' as CurrencyCode,
+        currencies: ['AED'] as CurrencyCode[]
       },
       summary: {
         openingBalance: 150000,
@@ -296,7 +369,8 @@ export class ReportBuilder {
         totalDebits,
         creditCount: transactions.filter(t => t.credit > 0).length,
         debitCount: transactions.filter(t => t.debit > 0).length,
-        averageMonthlyBalance: (150000 + balance) / 2
+        averageMonthlyBalance: (150000 + balance) / 2,
+        currency: 'AED' as CurrencyCode
       },
       monthlyBalances: months.map((month, i) => ({
         month,
@@ -307,8 +381,9 @@ export class ReportBuilder {
       })),
       dailyBalances: transactions.map(t => ({
         date: t.date,
-        balance: t.balance,
-        month: new Date(t.date).toLocaleString('default', { month: 'long', year: 'numeric' })
+        closingBalance: t.balance,
+        month: new Date(t.date).toLocaleString('default', { month: 'long', year: 'numeric' }),
+        hasTransactions: true
       })),
       transactions,
       categoryAnalysis: categories.map(cat => ({

@@ -105,51 +105,6 @@ export class TransactionAnalyzer {
       .sort((a, b) => (b.totalDebit + b.totalCredit) - (a.totalDebit + a.totalCredit));
   }
 
-  static calculateDailyBalances(
-    startDate: Date,
-    endDate: Date,
-    transactions: Transaction[]
-  ): DailyBalance[] {
-    const dailyBalances: DailyBalance[] = [];
-    
-    // Sort transactions by date
-    const sortedTxns = [...transactions].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    
-    let currentBalance = sortedTxns[0]?.balance || 0;
-    let txnIndex = 0;
-    
-    const d = new Date(startDate);
-    while (d <= endDate) {
-      const dateStr = d.toISOString().split('T')[0];
-      const month = d.toLocaleString('default', { month: 'long', year: 'numeric' });
-      
-      // Find all transactions for this date
-      while (txnIndex < sortedTxns.length) {
-        const txnDate = new Date(sortedTxns[txnIndex].date);
-        if (txnDate.toDateString() === d.toDateString()) {
-          currentBalance = sortedTxns[txnIndex].balance;
-          txnIndex++;
-        } else if (txnDate > d) {
-          break;
-        } else {
-          txnIndex++;
-        }
-      }
-      
-      dailyBalances.push({
-        date: dateStr,
-        balance: currentBalance,
-        month
-      });
-      
-      d.setDate(d.getDate() + 1);
-    }
-    
-    return dailyBalances;
-  }
-
   static identifyChequeReturns(transactions: Transaction[]): ChequeReturns {
     const chequeReturns: ChequeReturns = {
       inward: 0,
@@ -174,7 +129,7 @@ export class TransactionAnalyzer {
 
   static calculateMonthlyAverage(dailyBalances: DailyBalance[]): number {
     if (dailyBalances.length === 0) return 0;
-    const sum = dailyBalances.reduce((acc, day) => acc + day.balance, 0);
+    const sum = dailyBalances.reduce((acc, day) => acc + day.closingBalance, 0);
     return sum / dailyBalances.length;
   }
 }
