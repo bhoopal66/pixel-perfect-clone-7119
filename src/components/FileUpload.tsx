@@ -72,7 +72,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           Upload Your Bank Statements
         </h2>
         <p className="text-muted-foreground text-lg">
-          Drop up to 6 monthly PDF statements for comprehensive analysis
+          Drop up to 12 monthly PDF statements for comprehensive analysis
         </p>
       </motion.div>
 
