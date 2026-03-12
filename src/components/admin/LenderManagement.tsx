@@ -52,7 +52,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
     min_loan_amount: 50000,
     pos_cap_percent: 40,
     abcd_fee_percent: 1,
-    reduced_multiplier: 1.33
+    reduced_multiplier: 1.33,
+    min_statement_months: 6,
+    max_bounce_count: 3,
+    max_cash_deposit_ratio: 50,
+    min_avg_daily_balance: 0,
+    max_negative_balance_days: 5,
+    max_variance_percent: 25,
   });
 
   const resetForm = () => {
@@ -66,7 +72,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
       min_loan_amount: 50000,
       pos_cap_percent: 40,
       abcd_fee_percent: 1,
-      reduced_multiplier: 1.33
+      reduced_multiplier: 1.33,
+      min_statement_months: 6,
+      max_bounce_count: 3,
+      max_cash_deposit_ratio: 50,
+      min_avg_daily_balance: 0,
+      max_negative_balance_days: 5,
+      max_variance_percent: 25,
     });
   };
 
@@ -91,7 +103,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
           pos_cap_percent: formData.pos_cap_percent / 100,
           abcd_fee_percent: formData.abcd_fee_percent / 100,
           reduced_multiplier: formData.reduced_multiplier,
-          variance_thresholds: { eligible: 10, reduced: 25 }
+          variance_thresholds: { eligible: 10, reduced: 25 },
+          min_statement_months: formData.min_statement_months,
+          max_bounce_count: formData.max_bounce_count,
+          max_cash_deposit_ratio: formData.max_cash_deposit_ratio / 100,
+          min_avg_daily_balance: formData.min_avg_daily_balance,
+          max_negative_balance_days: formData.max_negative_balance_days,
+          max_variance_percent: formData.max_variance_percent,
         }
       });
       toast.success('Lender created successfully');
@@ -118,7 +136,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
       min_loan_amount: lender.eligibility_rules.min_loan_amount,
       pos_cap_percent: (lender.eligibility_rules.pos_cap_percent || 0) * 100,
       abcd_fee_percent: (lender.eligibility_rules.abcd_fee_percent || 0) * 100,
-      reduced_multiplier: lender.eligibility_rules.reduced_multiplier
+      reduced_multiplier: lender.eligibility_rules.reduced_multiplier,
+      min_statement_months: lender.eligibility_rules.min_statement_months ?? 6,
+      max_bounce_count: lender.eligibility_rules.max_bounce_count ?? 3,
+      max_cash_deposit_ratio: (lender.eligibility_rules.max_cash_deposit_ratio ?? 0.5) * 100,
+      min_avg_daily_balance: lender.eligibility_rules.min_avg_daily_balance ?? 0,
+      max_negative_balance_days: lender.eligibility_rules.max_negative_balance_days ?? 5,
+      max_variance_percent: lender.eligibility_rules.max_variance_percent ?? 25,
     });
     setIsEditDialogOpen(true);
   };
@@ -140,7 +164,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
           min_loan_amount: formData.min_loan_amount,
           pos_cap_percent: formData.pos_cap_percent / 100,
           abcd_fee_percent: formData.abcd_fee_percent / 100,
-          reduced_multiplier: formData.reduced_multiplier
+          reduced_multiplier: formData.reduced_multiplier,
+          min_statement_months: formData.min_statement_months,
+          max_bounce_count: formData.max_bounce_count,
+          max_cash_deposit_ratio: formData.max_cash_deposit_ratio / 100,
+          min_avg_daily_balance: formData.min_avg_daily_balance,
+          max_negative_balance_days: formData.max_negative_balance_days,
+          max_variance_percent: formData.max_variance_percent,
         }
       });
       toast.success('Lender updated successfully');
@@ -169,7 +199,7 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
 
   const LenderDialog = ({ isOpen, onClose, isEdit }: { isOpen: boolean; onClose: () => void; isEdit: boolean }) => (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Lender' : 'Add New Lender'}</DialogTitle>
           <DialogDescription>
@@ -276,7 +306,7 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
                   onChange={(e) => setFormData({ ...formData, pos_cap_percent: parseFloat(e.target.value) || 0 })}
                 />
               </div>
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor="abcd_fee_percent">ABCD Fee %</Label>
                 <Input
                   id="abcd_fee_percent"
@@ -284,6 +314,73 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
                   step="0.1"
                   value={formData.abcd_fee_percent}
                   onChange={(e) => setFormData({ ...formData, abcd_fee_percent: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_variance_percent">Max Variance %</Label>
+                <Input
+                  id="max_variance_percent"
+                  type="number"
+                  value={formData.max_variance_percent}
+                  onChange={(e) => setFormData({ ...formData, max_variance_percent: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Risk Parameters</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="min_statement_months">Min Statement Months</Label>
+                <Input
+                  id="min_statement_months"
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={formData.min_statement_months}
+                  onChange={(e) => setFormData({ ...formData, min_statement_months: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_bounce_count">Max Bounce Count</Label>
+                <Input
+                  id="max_bounce_count"
+                  type="number"
+                  min="0"
+                  value={formData.max_bounce_count}
+                  onChange={(e) => setFormData({ ...formData, max_bounce_count: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_cash_deposit_ratio">Max Cash Deposit Ratio %</Label>
+                <Input
+                  id="max_cash_deposit_ratio"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.max_cash_deposit_ratio}
+                  onChange={(e) => setFormData({ ...formData, max_cash_deposit_ratio: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="min_avg_daily_balance">Min Avg Daily Balance (AED)</Label>
+                <Input
+                  id="min_avg_daily_balance"
+                  type="number"
+                  min="0"
+                  value={formData.min_avg_daily_balance}
+                  onChange={(e) => setFormData({ ...formData, min_avg_daily_balance: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="max_negative_balance_days">Max Negative Balance Days</Label>
+                <Input
+                  id="max_negative_balance_days"
+                  type="number"
+                  min="0"
+                  value={formData.max_negative_balance_days}
+                  onChange={(e) => setFormData({ ...formData, max_negative_balance_days: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -399,6 +496,32 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
                             <div>
                               <p className="text-muted-foreground">POS Cap</p>
                               <p className="font-medium">{(lender.eligibility_rules.pos_cap_percent * 100)}%</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4 pt-4 border-t">
+                            <div>
+                              <p className="text-muted-foreground">Min Statement Months</p>
+                              <p className="font-medium">{lender.eligibility_rules.min_statement_months ?? 6}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Bounces</p>
+                              <p className="font-medium">{lender.eligibility_rules.max_bounce_count ?? 3}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Cash Deposit Ratio</p>
+                              <p className="font-medium">{((lender.eligibility_rules.max_cash_deposit_ratio ?? 0.5) * 100)}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Min Avg Daily Balance</p>
+                              <p className="font-medium">AED {(lender.eligibility_rules.min_avg_daily_balance ?? 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Negative Bal Days</p>
+                              <p className="font-medium">{lender.eligibility_rules.max_negative_balance_days ?? 5}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Variance</p>
+                              <p className="font-medium">{lender.eligibility_rules.max_variance_percent ?? 25}%</p>
                             </div>
                           </div>
                           <div className="mt-4 pt-4 border-t">
