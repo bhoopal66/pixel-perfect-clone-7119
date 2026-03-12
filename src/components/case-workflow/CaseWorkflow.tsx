@@ -142,13 +142,19 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
     try {
       const updated = await CaseService.finalizeEligibility(caseData.id);
       setCaseData(updated);
-      toast.success('Eligibility finalized!');
-      onComplete?.(updated);
+      setCurrentStep(4);
+      toast.success('Eligibility finalized — proceed to lender testing');
     } catch (error) {
       console.error('Failed to finalize eligibility:', error);
       toast.error('Failed to finalize');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLenderComplete = () => {
+    if (caseData) {
+      onComplete?.(caseData);
     }
   };
 
