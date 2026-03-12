@@ -138,6 +138,16 @@ const Index = () => {
                 </TabsList>
               </Tabs>
               
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/eligibility-engine')}
+                className="gap-1.5 text-xs sm:text-sm"
+              >
+                <FlaskConical className="h-4 w-4" />
+                <span className="hidden sm:inline">Eligibility Engine</span>
+              </Button>
+              
               {/* Theme Toggle */}
               <ThemeToggle />
 
