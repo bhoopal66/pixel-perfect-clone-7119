@@ -103,7 +103,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
           pos_cap_percent: formData.pos_cap_percent / 100,
           abcd_fee_percent: formData.abcd_fee_percent / 100,
           reduced_multiplier: formData.reduced_multiplier,
-          variance_thresholds: { eligible: 10, reduced: 25 }
+          variance_thresholds: { eligible: 10, reduced: 25 },
+          min_statement_months: formData.min_statement_months,
+          max_bounce_count: formData.max_bounce_count,
+          max_cash_deposit_ratio: formData.max_cash_deposit_ratio / 100,
+          min_avg_daily_balance: formData.min_avg_daily_balance,
+          max_negative_balance_days: formData.max_negative_balance_days,
+          max_variance_percent: formData.max_variance_percent,
         }
       });
       toast.success('Lender created successfully');
