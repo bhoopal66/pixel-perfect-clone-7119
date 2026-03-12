@@ -498,6 +498,32 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
                               <p className="font-medium">{(lender.eligibility_rules.pos_cap_percent * 100)}%</p>
                             </div>
                           </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4 pt-4 border-t">
+                            <div>
+                              <p className="text-muted-foreground">Min Statement Months</p>
+                              <p className="font-medium">{lender.eligibility_rules.min_statement_months ?? 6}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Bounces</p>
+                              <p className="font-medium">{lender.eligibility_rules.max_bounce_count ?? 3}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Cash Deposit Ratio</p>
+                              <p className="font-medium">{((lender.eligibility_rules.max_cash_deposit_ratio ?? 0.5) * 100)}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Min Avg Daily Balance</p>
+                              <p className="font-medium">AED {(lender.eligibility_rules.min_avg_daily_balance ?? 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Negative Bal Days</p>
+                              <p className="font-medium">{lender.eligibility_rules.max_negative_balance_days ?? 5}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max Variance</p>
+                              <p className="font-medium">{lender.eligibility_rules.max_variance_percent ?? 25}%</p>
+                            </div>
+                          </div>
                           <div className="mt-4 pt-4 border-t">
                             <p className="text-sm font-medium mb-2">Required Documents</p>
                             <div className="flex flex-wrap gap-1">
