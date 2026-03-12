@@ -19,6 +19,7 @@ import ClientCaseDetail from "./pages/ClientCaseDetail";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
+import EligibilityEngine from "./pages/EligibilityEngine";
 
 const queryClient = new QueryClient();
 
@@ -188,6 +189,8 @@ const AppRoutes = () => (
     <Route path="/onboarding" element={<ProtectedRoute><BusinessOnboarding /></ProtectedRoute>} />
     <Route path="/client-cases" element={<ProtectedRoute><ClientCases /></ProtectedRoute>} />
     <Route path="/client-cases/:id" element={<ProtectedRoute><ClientCaseDetail /></ProtectedRoute>} />
+    {/* Eligibility Assessment Engine */}
+    <Route path="/eligibility-engine" element={<ProtectedRoute><EligibilityEngine /></ProtectedRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>

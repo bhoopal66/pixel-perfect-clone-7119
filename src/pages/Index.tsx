@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings, FlaskConical } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -137,6 +137,16 @@ const Index = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/eligibility-engine')}
+                className="gap-1.5 text-xs sm:text-sm"
+              >
+                <FlaskConical className="h-4 w-4" />
+                <span className="hidden sm:inline">Eligibility Engine</span>
+              </Button>
               
               {/* Theme Toggle */}
               <ThemeToggle />
