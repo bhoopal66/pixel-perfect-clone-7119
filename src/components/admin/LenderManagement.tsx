@@ -52,7 +52,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
     min_loan_amount: 50000,
     pos_cap_percent: 40,
     abcd_fee_percent: 1,
-    reduced_multiplier: 1.33
+    reduced_multiplier: 1.33,
+    min_statement_months: 6,
+    max_bounce_count: 3,
+    max_cash_deposit_ratio: 50,
+    min_avg_daily_balance: 0,
+    max_negative_balance_days: 5,
+    max_variance_percent: 25,
   });
 
   const resetForm = () => {

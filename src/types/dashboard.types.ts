@@ -81,6 +81,14 @@ export interface LenderEligibilityRules {
     eligible: number;
     reduced: number;
   };
+  // Configurable rule parameters
+  min_statement_months?: number;
+  max_bounce_count?: number;
+  max_cash_deposit_ratio?: number;
+  min_avg_daily_balance?: number;
+  max_negative_balance_days?: number;
+  max_variance_percent?: number;
+  excluded_industries?: string[];
 }
 
 export interface LenderDocRequirements {
