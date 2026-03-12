@@ -954,6 +954,509 @@ export type Database = {
           },
         ]
       }
+      lender_decision_matrix: {
+        Row: {
+          created_at: string
+          decision_status: string
+          id: string
+          max_major_failures: number
+          max_minor_failures: number
+          min_major_failures: number
+          min_minor_failures: number
+          remarks: string | null
+          rule_set_id: string
+          score_from: number | null
+          score_to: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision_status?: string
+          id?: string
+          max_major_failures?: number
+          max_minor_failures?: number
+          min_major_failures?: number
+          min_minor_failures?: number
+          remarks?: string | null
+          rule_set_id: string
+          score_from?: number | null
+          score_to?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision_status?: string
+          id?: string
+          max_major_failures?: number
+          max_minor_failures?: number
+          min_major_failures?: number
+          min_minor_failures?: number
+          remarks?: string | null
+          rule_set_id?: string
+          score_from?: number | null
+          score_to?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_decision_matrix_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_execution_results: {
+        Row: {
+          case_id: string
+          decision_summary: string | null
+          eligibility_status: string
+          executed_at: string
+          executed_by: string | null
+          failed_rules: Json | null
+          id: string
+          lender_id: string
+          major_fail_count: number | null
+          minor_fail_count: number | null
+          product_id: string
+          recommended_limit: number | null
+          recommended_tenure: number | null
+          risk_flags: Json | null
+          rule_set_id: string
+          score: number | null
+        }
+        Insert: {
+          case_id: string
+          decision_summary?: string | null
+          eligibility_status?: string
+          executed_at?: string
+          executed_by?: string | null
+          failed_rules?: Json | null
+          id?: string
+          lender_id: string
+          major_fail_count?: number | null
+          minor_fail_count?: number | null
+          product_id: string
+          recommended_limit?: number | null
+          recommended_tenure?: number | null
+          risk_flags?: Json | null
+          rule_set_id: string
+          score?: number | null
+        }
+        Update: {
+          case_id?: string
+          decision_summary?: string | null
+          eligibility_status?: string
+          executed_at?: string
+          executed_by?: string | null
+          failed_rules?: Json | null
+          id?: string
+          lender_id?: string
+          major_fail_count?: number | null
+          minor_fail_count?: number | null
+          product_id?: string
+          recommended_limit?: number | null
+          recommended_tenure?: number | null
+          risk_flags?: Json | null
+          rule_set_id?: string
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_execution_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_execution_results_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_execution_results_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_execution_results_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_formula_configs: {
+        Row: {
+          base_field: string
+          cap_value: number | null
+          created_at: string
+          floor_value: number | null
+          formula_expression: string | null
+          formula_name: string
+          formula_type: string
+          id: string
+          is_active: boolean
+          multiplier: number | null
+          rule_set_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_field: string
+          cap_value?: number | null
+          created_at?: string
+          floor_value?: number | null
+          formula_expression?: string | null
+          formula_name: string
+          formula_type?: string
+          id?: string
+          is_active?: boolean
+          multiplier?: number | null
+          rule_set_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_field?: string
+          cap_value?: number | null
+          created_at?: string
+          floor_value?: number | null
+          formula_expression?: string | null
+          formula_name?: string
+          formula_type?: string
+          id?: string
+          is_active?: boolean
+          multiplier?: number | null
+          rule_set_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_formula_configs_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_policy_audit_log: {
+        Row: {
+          action_done: string
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          lender_id: string | null
+          new_value: Json | null
+          old_value: Json | null
+          product_id: string | null
+          rule_set_id: string | null
+        }
+        Insert: {
+          action_done: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          lender_id?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          product_id?: string | null
+          rule_set_id?: string | null
+        }
+        Update: {
+          action_done?: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          lender_id?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          product_id?: string | null
+          rule_set_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_policy_audit_log_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_policy_audit_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_policy_audit_log_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_products: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          lender_id: string
+          max_limit: number | null
+          max_tenure: number | null
+          min_limit: number | null
+          min_tenure: number | null
+          product_code: string
+          product_name: string
+          product_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lender_id: string
+          max_limit?: number | null
+          max_tenure?: number | null
+          min_limit?: number | null
+          min_tenure?: number | null
+          product_code: string
+          product_name: string
+          product_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lender_id?: string
+          max_limit?: number | null
+          max_tenure?: number | null
+          min_limit?: number | null
+          min_tenure?: number | null
+          product_code?: string
+          product_name?: string
+          product_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_products_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_rule_result_details: {
+        Row: {
+          created_at: string
+          execution_id: string
+          field_name: string | null
+          id: string
+          impact_type: string | null
+          impact_value: string | null
+          message: string | null
+          observed_value: string | null
+          operator: string | null
+          pass_fail_status: string
+          rule_code: string | null
+          rule_id: string | null
+          threshold_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          execution_id: string
+          field_name?: string | null
+          id?: string
+          impact_type?: string | null
+          impact_value?: string | null
+          message?: string | null
+          observed_value?: string | null
+          operator?: string | null
+          pass_fail_status?: string
+          rule_code?: string | null
+          rule_id?: string | null
+          threshold_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          execution_id?: string
+          field_name?: string | null
+          id?: string
+          impact_type?: string | null
+          impact_value?: string | null
+          message?: string | null
+          observed_value?: string | null
+          operator?: string | null
+          pass_fail_status?: string
+          rule_code?: string | null
+          rule_id?: string | null
+          threshold_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_rule_result_details_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "lender_execution_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_rule_result_details_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_rule_sets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          is_active: boolean
+          lender_id: string
+          product_id: string
+          remarks: string | null
+          rule_set_name: string
+          updated_at: string
+          version_no: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          lender_id: string
+          product_id: string
+          remarks?: string | null
+          rule_set_name: string
+          updated_at?: string
+          version_no?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          lender_id?: string
+          product_id?: string
+          remarks?: string | null
+          rule_set_name?: string
+          updated_at?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_rule_sets_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_rule_sets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lender_rules: {
+        Row: {
+          action_type: string
+          action_value: string | null
+          created_at: string
+          failure_message: string | null
+          field_name: string
+          id: string
+          is_active: boolean
+          operator: string
+          priority_order: number
+          review_message: string | null
+          rule_category: string
+          rule_code: string
+          rule_name: string
+          rule_set_id: string
+          severity: string
+          threshold_type: string
+          threshold_value: string | null
+          threshold_value_secondary: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_type?: string
+          action_value?: string | null
+          created_at?: string
+          failure_message?: string | null
+          field_name: string
+          id?: string
+          is_active?: boolean
+          operator?: string
+          priority_order?: number
+          review_message?: string | null
+          rule_category?: string
+          rule_code: string
+          rule_name: string
+          rule_set_id: string
+          severity?: string
+          threshold_type?: string
+          threshold_value?: string | null
+          threshold_value_secondary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          action_value?: string | null
+          created_at?: string
+          failure_message?: string | null
+          field_name?: string
+          id?: string
+          is_active?: boolean
+          operator?: string
+          priority_order?: number
+          review_message?: string | null
+          rule_category?: string
+          rule_code?: string
+          rule_name?: string
+          rule_set_id?: string
+          severity?: string
+          threshold_type?: string
+          threshold_value?: string | null
+          threshold_value_secondary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_rules_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "lender_rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_cases: {
         Row: {
           abcd_fee_amount: number
@@ -1506,6 +2009,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           created_by: string | null
+          description: string | null
           document_requirements: Json
           eligibility_rules: Json
           id: string
@@ -1521,6 +2025,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           document_requirements?: Json
           eligibility_rules?: Json
           id?: string
@@ -1536,6 +2041,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           document_requirements?: Json
           eligibility_rules?: Json
           id?: string

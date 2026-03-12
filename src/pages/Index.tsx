@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings, FlaskConical } from 'lucide-react';
+import { FileSpreadsheet, Shield, Zap, BarChart3, Briefcase, Users, LogOut, User, FolderOpen, FileText, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings, FlaskConical, Cog } from 'lucide-react';
 import { LoanCaseManagement } from '../components/LoanCaseManagement';
 import { CaseList, CaseWorkflow } from '../components/case-workflow';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -211,12 +211,18 @@ const Index = () => {
                       </DropdownMenuItem>
                     </>
                   )}
-                  {hasAdminPrivileges && (
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
-                  )}
+                   {hasAdminPrivileges && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/lender-policy-admin')}>
+                        <Cog className="h-4 w-4 mr-2" />
+                        Lender Policy Admin
+                      </DropdownMenuItem>
+                    </>
+                   )}
                   {canManageUsers && (
                     <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                       <Shield className="h-4 w-4 mr-2" />
