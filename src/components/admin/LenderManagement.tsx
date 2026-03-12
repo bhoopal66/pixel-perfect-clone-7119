@@ -306,7 +306,7 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
                   onChange={(e) => setFormData({ ...formData, pos_cap_percent: parseFloat(e.target.value) || 0 })}
                 />
               </div>
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor="abcd_fee_percent">ABCD Fee %</Label>
                 <Input
                   id="abcd_fee_percent"
@@ -314,6 +314,73 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
                   step="0.1"
                   value={formData.abcd_fee_percent}
                   onChange={(e) => setFormData({ ...formData, abcd_fee_percent: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_variance_percent">Max Variance %</Label>
+                <Input
+                  id="max_variance_percent"
+                  type="number"
+                  value={formData.max_variance_percent}
+                  onChange={(e) => setFormData({ ...formData, max_variance_percent: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Risk Parameters</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="min_statement_months">Min Statement Months</Label>
+                <Input
+                  id="min_statement_months"
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={formData.min_statement_months}
+                  onChange={(e) => setFormData({ ...formData, min_statement_months: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_bounce_count">Max Bounce Count</Label>
+                <Input
+                  id="max_bounce_count"
+                  type="number"
+                  min="0"
+                  value={formData.max_bounce_count}
+                  onChange={(e) => setFormData({ ...formData, max_bounce_count: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_cash_deposit_ratio">Max Cash Deposit Ratio %</Label>
+                <Input
+                  id="max_cash_deposit_ratio"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.max_cash_deposit_ratio}
+                  onChange={(e) => setFormData({ ...formData, max_cash_deposit_ratio: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="min_avg_daily_balance">Min Avg Daily Balance (AED)</Label>
+                <Input
+                  id="min_avg_daily_balance"
+                  type="number"
+                  min="0"
+                  value={formData.min_avg_daily_balance}
+                  onChange={(e) => setFormData({ ...formData, min_avg_daily_balance: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="max_negative_balance_days">Max Negative Balance Days</Label>
+                <Input
+                  id="max_negative_balance_days"
+                  type="number"
+                  min="0"
+                  value={formData.max_negative_balance_days}
+                  onChange={(e) => setFormData({ ...formData, max_negative_balance_days: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </div>
