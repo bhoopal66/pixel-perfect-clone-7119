@@ -29,7 +29,8 @@ interface CaseWorkflowProps {
 const STEPS = [
   { id: 1, name: 'Create Case', icon: User },
   { id: 2, name: 'Statement Analysis', icon: FileText },
-  { id: 3, name: 'Eligibility Check', icon: Calculator }
+  { id: 3, name: 'Eligibility Check', icon: Calculator },
+  { id: 4, name: 'Lender Eligibility', icon: CheckCircle }
 ];
 
 export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
