@@ -46,7 +46,7 @@ export function useEligibilityAssessment() {
       const parsedTxns: ParsedTransaction[] = transactions.map(t => ({
         date: t.date,
         description: t.description,
-        chequeNo: t.chequeNo,
+        chequeNo: (t as any).chequeNo || undefined,
         debit: t.debit,
         credit: t.credit,
         balance: t.balance,
