@@ -20,6 +20,7 @@ import SupervisorDashboard from "./pages/SupervisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import EligibilityEngine from "./pages/EligibilityEngine";
+import LenderPolicyAdmin from "./pages/LenderPolicyAdmin";
 
 const queryClient = new QueryClient();
 
