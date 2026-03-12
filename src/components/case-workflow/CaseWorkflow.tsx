@@ -16,6 +16,7 @@ import { CaseService } from '@/services/caseService';
 import { Step1CreateCase } from './Step1CreateCase';
 import { Step2StatementAnalysis } from './Step2StatementAnalysis';
 import { Step3EligibilityCheck } from './Step3EligibilityCheck';
+import { Step4LenderEligibility } from './Step4LenderEligibility';
 import { STATUS_CONFIG } from '@/types/case.types';
 import type { Case, CaseCreateInput, CaseAnalysisInput, CaseEligibilityInput } from '@/types/case.types';
 
@@ -28,7 +29,8 @@ interface CaseWorkflowProps {
 const STEPS = [
   { id: 1, name: 'Create Case', icon: User },
   { id: 2, name: 'Statement Analysis', icon: FileText },
-  { id: 3, name: 'Eligibility Check', icon: Calculator }
+  { id: 3, name: 'Eligibility Check', icon: Calculator },
+  { id: 4, name: 'Lender Eligibility', icon: CheckCircle }
 ];
 
 export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
@@ -58,8 +60,10 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
           setCurrentStep(2); // Go to analysis
         } else if (data.status === 'Analysis Completed' || data.status === 'Statement Uploaded') {
           setCurrentStep(3); // Go to eligibility
+        } else if (data.status === 'Eligibility Completed') {
+          setCurrentStep(4); // Go to lender eligibility
         } else {
-          setCurrentStep(3); // Default to last step
+          setCurrentStep(4); // Default to last step
         }
       }
     } catch (error) {
@@ -140,13 +144,19 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
     try {
       const updated = await CaseService.finalizeEligibility(caseData.id);
       setCaseData(updated);
-      toast.success('Eligibility finalized!');
-      onComplete?.(updated);
+      setCurrentStep(4);
+      toast.success('Eligibility finalized — proceed to lender testing');
     } catch (error) {
       console.error('Failed to finalize eligibility:', error);
       toast.error('Failed to finalize');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLenderComplete = () => {
+    if (caseData) {
+      onComplete?.(caseData);
     }
   };
 
@@ -253,6 +263,15 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
           onUpdatePOS={handleUpdatePOS}
           onFinalize={handleFinalizeEligibility}
           onBack={() => setCurrentStep(2)}
+          isLoading={isLoading}
+        />
+      )}
+
+      {currentStep === 4 && caseData && (
+        <Step4LenderEligibility
+          caseData={caseData}
+          onBack={() => setCurrentStep(3)}
+          onComplete={handleLenderComplete}
           isLoading={isLoading}
         />
       )}
