@@ -199,7 +199,7 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
 
   const LenderDialog = ({ isOpen, onClose, isEdit }: { isOpen: boolean; onClose: () => void; isEdit: boolean }) => (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Lender' : 'Add New Lender'}</DialogTitle>
           <DialogDescription>
