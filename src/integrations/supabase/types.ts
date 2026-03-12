@@ -109,6 +109,510 @@ export type Database = {
           },
         ]
       }
+      assessment_analyst_adjustments: {
+        Row: {
+          adjusted_by: string | null
+          adjusted_value: string | null
+          adjustment_type: string
+          case_id: string
+          created_at: string
+          field_name: string | null
+          id: string
+          original_value: string | null
+          reason: string
+          target_entity: string | null
+          target_id: string | null
+        }
+        Insert: {
+          adjusted_by?: string | null
+          adjusted_value?: string | null
+          adjustment_type: string
+          case_id: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          original_value?: string | null
+          reason: string
+          target_entity?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          adjusted_by?: string | null
+          adjusted_value?: string | null
+          adjustment_type?: string
+          case_id?: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          original_value?: string | null
+          reason?: string
+          target_entity?: string | null
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_analyst_adjustments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_bank_summaries: {
+        Row: {
+          account_number: string | null
+          avg_daily_balance: number | null
+          bank_name: string | null
+          bounce_count: number | null
+          case_id: string
+          cash_deposit_total: number | null
+          closing_balance: number | null
+          created_at: string
+          credit_count: number | null
+          debit_count: number | null
+          highest_credit: number | null
+          id: string
+          lowest_balance: number | null
+          month: number
+          negative_balance_days: number | null
+          total_credits: number | null
+          total_debits: number | null
+          year: number
+        }
+        Insert: {
+          account_number?: string | null
+          avg_daily_balance?: number | null
+          bank_name?: string | null
+          bounce_count?: number | null
+          case_id: string
+          cash_deposit_total?: number | null
+          closing_balance?: number | null
+          created_at?: string
+          credit_count?: number | null
+          debit_count?: number | null
+          highest_credit?: number | null
+          id?: string
+          lowest_balance?: number | null
+          month: number
+          negative_balance_days?: number | null
+          total_credits?: number | null
+          total_debits?: number | null
+          year: number
+        }
+        Update: {
+          account_number?: string | null
+          avg_daily_balance?: number | null
+          bank_name?: string | null
+          bounce_count?: number | null
+          case_id?: string
+          cash_deposit_total?: number | null
+          closing_balance?: number | null
+          created_at?: string
+          credit_count?: number | null
+          debit_count?: number | null
+          highest_credit?: number | null
+          id?: string
+          lowest_balance?: number | null
+          month?: number
+          negative_balance_days?: number | null
+          total_credits?: number | null
+          total_debits?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_bank_summaries_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_bank_transactions: {
+        Row: {
+          account_name: string | null
+          balance: number | null
+          bank_name: string | null
+          case_id: string
+          category: string | null
+          cheque_no: string | null
+          created_at: string
+          credit: number | null
+          debit: number | null
+          description: string | null
+          document_id: string | null
+          exclusion_reason: string | null
+          id: string
+          is_excluded: boolean | null
+          is_recurring: boolean | null
+          is_related_party: boolean | null
+          month: number | null
+          txn_date: string | null
+          year: number | null
+        }
+        Insert: {
+          account_name?: string | null
+          balance?: number | null
+          bank_name?: string | null
+          case_id: string
+          category?: string | null
+          cheque_no?: string | null
+          created_at?: string
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          document_id?: string | null
+          exclusion_reason?: string | null
+          id?: string
+          is_excluded?: boolean | null
+          is_recurring?: boolean | null
+          is_related_party?: boolean | null
+          month?: number | null
+          txn_date?: string | null
+          year?: number | null
+        }
+        Update: {
+          account_name?: string | null
+          balance?: number | null
+          bank_name?: string | null
+          case_id?: string
+          category?: string | null
+          cheque_no?: string | null
+          created_at?: string
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          document_id?: string | null
+          exclusion_reason?: string | null
+          id?: string
+          is_excluded?: boolean | null
+          is_recurring?: boolean | null
+          is_related_party?: boolean | null
+          month?: number | null
+          txn_date?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_bank_transactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_bank_transactions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_cases: {
+        Row: {
+          analyst_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          avg_monthly_balance: number | null
+          avg_monthly_credit: number | null
+          avg_monthly_debit: number | null
+          bank_vat_variance_percent: number | null
+          case_number: string | null
+          company_name: string | null
+          created_at: string
+          declared_vat_turnover: number | null
+          estimated_annual_turnover: number | null
+          id: string
+          normalized_turnover: number | null
+          risk_flags: Json | null
+          statement_months_covered: number | null
+          status: string
+          total_bank_credits: number | null
+          total_bank_debits: number | null
+          updated_at: string
+          user_id: string | null
+          variance_tag: string | null
+          vat_periods_covered: number | null
+        }
+        Insert: {
+          analyst_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          avg_monthly_balance?: number | null
+          avg_monthly_credit?: number | null
+          avg_monthly_debit?: number | null
+          bank_vat_variance_percent?: number | null
+          case_number?: string | null
+          company_name?: string | null
+          created_at?: string
+          declared_vat_turnover?: number | null
+          estimated_annual_turnover?: number | null
+          id?: string
+          normalized_turnover?: number | null
+          risk_flags?: Json | null
+          statement_months_covered?: number | null
+          status?: string
+          total_bank_credits?: number | null
+          total_bank_debits?: number | null
+          updated_at?: string
+          user_id?: string | null
+          variance_tag?: string | null
+          vat_periods_covered?: number | null
+        }
+        Update: {
+          analyst_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          avg_monthly_balance?: number | null
+          avg_monthly_credit?: number | null
+          avg_monthly_debit?: number | null
+          bank_vat_variance_percent?: number | null
+          case_number?: string | null
+          company_name?: string | null
+          created_at?: string
+          declared_vat_turnover?: number | null
+          estimated_annual_turnover?: number | null
+          id?: string
+          normalized_turnover?: number | null
+          risk_flags?: Json | null
+          statement_months_covered?: number | null
+          status?: string
+          total_bank_credits?: number | null
+          total_bank_debits?: number | null
+          updated_at?: string
+          user_id?: string | null
+          variance_tag?: string | null
+          vat_periods_covered?: number | null
+        }
+        Relationships: []
+      }
+      assessment_documents: {
+        Row: {
+          account_holder: string | null
+          account_number: string | null
+          bank_name: string | null
+          case_id: string
+          created_at: string
+          document_type: string
+          file_name: string
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_duplicate: boolean | null
+          is_password_protected: boolean | null
+          period_from: string | null
+          period_to: string | null
+          uploaded_by: string | null
+          validation_message: string | null
+          validation_status: string | null
+        }
+        Insert: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          case_id: string
+          created_at?: string
+          document_type: string
+          file_name: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_duplicate?: boolean | null
+          is_password_protected?: boolean | null
+          period_from?: string | null
+          period_to?: string | null
+          uploaded_by?: string | null
+          validation_message?: string | null
+          validation_status?: string | null
+        }
+        Update: {
+          account_holder?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          case_id?: string
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_duplicate?: boolean | null
+          is_password_protected?: boolean | null
+          period_from?: string | null
+          period_to?: string | null
+          uploaded_by?: string | null
+          validation_message?: string | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_lender_results: {
+        Row: {
+          case_id: string
+          created_at: string
+          eligibility_status: string
+          failed_rules: Json | null
+          id: string
+          key_reasons: Json | null
+          lender_id: string
+          lender_name: string
+          limit_basis: string | null
+          passed_rules: Json | null
+          pricing_band: string | null
+          product_name: string | null
+          recommended_limit: number | null
+          required_deviations: Json | null
+          risk_flags: Json | null
+          rule_details: Json | null
+          tenure_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          eligibility_status?: string
+          failed_rules?: Json | null
+          id?: string
+          key_reasons?: Json | null
+          lender_id: string
+          lender_name: string
+          limit_basis?: string | null
+          passed_rules?: Json | null
+          pricing_band?: string | null
+          product_name?: string | null
+          recommended_limit?: number | null
+          required_deviations?: Json | null
+          risk_flags?: Json | null
+          rule_details?: Json | null
+          tenure_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          eligibility_status?: string
+          failed_rules?: Json | null
+          id?: string
+          key_reasons?: Json | null
+          lender_id?: string
+          lender_name?: string
+          limit_basis?: string | null
+          passed_rules?: Json | null
+          pricing_band?: string | null
+          product_name?: string | null
+          recommended_limit?: number | null
+          required_deviations?: Json | null
+          risk_flags?: Json | null
+          rule_details?: Json | null
+          tenure_months?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_lender_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_lender_results_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_vat_returns: {
+        Row: {
+          case_id: string
+          created_at: string
+          document_id: string | null
+          exempt_supplies: number | null
+          filing_date: string | null
+          id: string
+          input_vat: number | null
+          is_edited: boolean | null
+          net_vat_payable: number | null
+          original_values: Json | null
+          output_vat: number | null
+          source_file: string | null
+          tax_period_from: string | null
+          tax_period_to: string | null
+          taxable_supplies: number | null
+          trn: string | null
+          vat_sales: number | null
+          zero_rated_supplies: number | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          document_id?: string | null
+          exempt_supplies?: number | null
+          filing_date?: string | null
+          id?: string
+          input_vat?: number | null
+          is_edited?: boolean | null
+          net_vat_payable?: number | null
+          original_values?: Json | null
+          output_vat?: number | null
+          source_file?: string | null
+          tax_period_from?: string | null
+          tax_period_to?: string | null
+          taxable_supplies?: number | null
+          trn?: string | null
+          vat_sales?: number | null
+          zero_rated_supplies?: number | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          document_id?: string | null
+          exempt_supplies?: number | null
+          filing_date?: string | null
+          id?: string
+          input_vat?: number | null
+          is_edited?: boolean | null
+          net_vat_payable?: number | null
+          original_values?: Json | null
+          output_vat?: number | null
+          source_file?: string | null
+          tax_period_from?: string | null
+          tax_period_to?: string | null
+          taxable_supplies?: number | null
+          trn?: string | null
+          vat_sales?: number | null
+          zero_rated_supplies?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_vat_returns_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_vat_returns_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_owners: {
         Row: {
           case_id: string
