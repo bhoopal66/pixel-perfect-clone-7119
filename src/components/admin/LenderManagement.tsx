@@ -164,7 +164,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
           min_loan_amount: formData.min_loan_amount,
           pos_cap_percent: formData.pos_cap_percent / 100,
           abcd_fee_percent: formData.abcd_fee_percent / 100,
-          reduced_multiplier: formData.reduced_multiplier
+          reduced_multiplier: formData.reduced_multiplier,
+          min_statement_months: formData.min_statement_months,
+          max_bounce_count: formData.max_bounce_count,
+          max_cash_deposit_ratio: formData.max_cash_deposit_ratio / 100,
+          min_avg_daily_balance: formData.min_avg_daily_balance,
+          max_negative_balance_days: formData.max_negative_balance_days,
+          max_variance_percent: formData.max_variance_percent,
         }
       });
       toast.success('Lender updated successfully');
