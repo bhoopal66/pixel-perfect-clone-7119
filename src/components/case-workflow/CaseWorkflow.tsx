@@ -60,8 +60,10 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
           setCurrentStep(2); // Go to analysis
         } else if (data.status === 'Analysis Completed' || data.status === 'Statement Uploaded') {
           setCurrentStep(3); // Go to eligibility
+        } else if (data.status === 'Eligibility Completed') {
+          setCurrentStep(4); // Go to lender eligibility
         } else {
-          setCurrentStep(3); // Default to last step
+          setCurrentStep(4); // Default to last step
         }
       }
     } catch (error) {
