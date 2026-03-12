@@ -192,6 +192,8 @@ const AppRoutes = () => (
     <Route path="/client-cases/:id" element={<ProtectedRoute><ClientCaseDetail /></ProtectedRoute>} />
     {/* Eligibility Assessment Engine */}
     <Route path="/eligibility-engine" element={<ProtectedRoute><EligibilityEngine /></ProtectedRoute>} />
+    {/* Lender Policy Administration */}
+    <Route path="/lender-policy-admin" element={<AdminRoute><LenderPolicyAdmin /></AdminRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>

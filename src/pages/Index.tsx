@@ -211,12 +211,18 @@ const Index = () => {
                       </DropdownMenuItem>
                     </>
                   )}
-                  {hasAdminPrivileges && (
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
-                  )}
+                   {hasAdminPrivileges && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/lender-policy-admin')}>
+                        <Cog className="h-4 w-4 mr-2" />
+                        Lender Policy Admin
+                      </DropdownMenuItem>
+                    </>
+                   )}
                   {canManageUsers && (
                     <DropdownMenuItem onClick={() => navigate('/admin/users')}>
                       <Shield className="h-4 w-4 mr-2" />
