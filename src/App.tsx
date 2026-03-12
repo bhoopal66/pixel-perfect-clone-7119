@@ -19,6 +19,7 @@ import ClientCaseDetail from "./pages/ClientCaseDetail";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
+import EligibilityEngine from "./pages/EligibilityEngine";
 
 const queryClient = new QueryClient();
 
