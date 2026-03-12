@@ -130,7 +130,13 @@ export function LenderManagement({ lenders, isLoading, onRefresh }: LenderManage
       min_loan_amount: lender.eligibility_rules.min_loan_amount,
       pos_cap_percent: (lender.eligibility_rules.pos_cap_percent || 0) * 100,
       abcd_fee_percent: (lender.eligibility_rules.abcd_fee_percent || 0) * 100,
-      reduced_multiplier: lender.eligibility_rules.reduced_multiplier
+      reduced_multiplier: lender.eligibility_rules.reduced_multiplier,
+      min_statement_months: lender.eligibility_rules.min_statement_months ?? 6,
+      max_bounce_count: lender.eligibility_rules.max_bounce_count ?? 3,
+      max_cash_deposit_ratio: (lender.eligibility_rules.max_cash_deposit_ratio ?? 0.5) * 100,
+      min_avg_daily_balance: lender.eligibility_rules.min_avg_daily_balance ?? 0,
+      max_negative_balance_days: lender.eligibility_rules.max_negative_balance_days ?? 5,
+      max_variance_percent: lender.eligibility_rules.max_variance_percent ?? 25,
     });
     setIsEditDialogOpen(true);
   };
