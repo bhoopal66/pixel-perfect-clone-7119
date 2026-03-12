@@ -16,6 +16,7 @@ import { CaseService } from '@/services/caseService';
 import { Step1CreateCase } from './Step1CreateCase';
 import { Step2StatementAnalysis } from './Step2StatementAnalysis';
 import { Step3EligibilityCheck } from './Step3EligibilityCheck';
+import { Step4LenderEligibility } from './Step4LenderEligibility';
 import { STATUS_CONFIG } from '@/types/case.types';
 import type { Case, CaseCreateInput, CaseAnalysisInput, CaseEligibilityInput } from '@/types/case.types';
 
