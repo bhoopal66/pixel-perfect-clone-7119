@@ -264,6 +264,15 @@ export const CaseWorkflow: React.FC<CaseWorkflowProps> = ({
           isLoading={isLoading}
         />
       )}
+
+      {currentStep === 4 && caseData && (
+        <Step4LenderEligibility
+          caseData={caseData}
+          onBack={() => setCurrentStep(3)}
+          onComplete={handleLenderComplete}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   );
 };
