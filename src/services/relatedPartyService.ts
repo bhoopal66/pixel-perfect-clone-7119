@@ -147,16 +147,13 @@ export class RelatedPartyService {
     if (activeParties.length === 0) {
       // Create empty summary
       const summary = await this.upsertSummary(caseId, {
-        total_related_inflows: 0,
-        total_related_outflows: 0,
-        total_bank_credits: 0,
-        total_bank_debits: 0,
-        inflow_ratio: 0,
-        outflow_ratio: 0,
-        overall_ratio: 0,
-        risk_level: 'low',
-        parties_detected: 0,
-        transactions_matched: 0,
+        total_related_credit: 0,
+        total_related_debit: 0,
+        related_party_ratio: 0,
+        number_of_related_entities: 0,
+        largest_related_entity: null,
+        largest_related_flow: 0,
+        risk_flag: 'low',
       });
       return { matched: 0, summary };
     }
