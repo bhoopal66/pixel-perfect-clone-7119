@@ -192,7 +192,52 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
   );
 };
 
-export const LenderResults: React.FC<LenderResultsProps> = ({ results }) => {
+export const LenderResults: React.FC<LenderResultsProps> = ({ results, caseId }) => {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportLenderResults = async () => {
+    if (!caseId || results.length === 0) return;
+    setIsExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Taamul Case Management';
+      const sheet = workbook.addWorksheet('Lender Results');
+      sheet.columns = [
+        { header: 'Lender', key: 'lender', width: 25 },
+        { header: 'Product', key: 'product', width: 20 },
+        { header: 'Status', key: 'status', width: 18 },
+        { header: 'Recommended Limit', key: 'limit', width: 20 },
+        { header: 'Pricing Band', key: 'pricing', width: 15 },
+        { header: 'Passed Rules', key: 'passed', width: 12 },
+        { header: 'Failed Rules', key: 'failed', width: 12 },
+      ];
+      results.forEach(r => {
+        sheet.addRow({
+          lender: r.lender_name,
+          product: r.product_name || 'N/A',
+          status: r.eligibility_status,
+          limit: r.recommended_limit || 0,
+          pricing: r.pricing_band || 'N/A',
+          passed: r.passed_rules?.length || 0,
+          failed: r.failed_rules?.length || 0,
+        });
+      });
+      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const fileName = `lender_results_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      await saveAndDownloadReport(caseId, 'lender_eligibility_report', 'Lender Eligibility Results', blob, fileName, 'xlsx');
+      toast.success('Lender results report saved & downloaded');
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export lender results');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   if (results.length === 0) {
     return (
       <Card>
