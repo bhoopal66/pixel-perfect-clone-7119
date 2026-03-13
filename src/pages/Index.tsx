@@ -188,36 +188,33 @@ const Index = () => {
               </Card>
             </motion.div>
 
-            {/* Step 2: Eligibility Engine */}
+            {/* Step 2: Eligibility (auto after onboarding) */}
             <motion.div
               whileHover={{ scale: 1.02, y: -4 }}
               className="relative"
             >
-              <div className="absolute -top-3 -left-3 z-10 w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold text-lg shadow-lg">
+              <div className="absolute -top-3 -left-3 z-10 w-10 h-10 rounded-full bg-accent/50 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 2
               </div>
-              <Card className="h-full bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-all cursor-pointer overflow-hidden group"
-                onClick={() => navigate('/eligibility-engine')}
-              >
+              <Card className="h-full bg-white/5 backdrop-blur-sm border-white/10 overflow-hidden">
                 <CardContent className="p-8 text-left">
-                  <div className="p-4 rounded-2xl bg-accent/20 w-fit mb-6">
-                    <FlaskConical className="h-8 w-8 text-accent" />
+                  <div className="p-4 rounded-2xl bg-accent/10 w-fit mb-6">
+                    <FlaskConical className="h-8 w-8 text-accent/60" />
                   </div>
-                  <h3 className="text-white font-bold text-xl mb-3">Eligibility Engine</h3>
-                  <p className="text-white/70 text-sm mb-6 leading-relaxed">
-                    Upload bank statements and VAT returns, extract financial data, and run eligibility checks across all configured lenders automatically.
+                  <h3 className="text-white/70 font-bold text-xl mb-3">Eligibility Engine</h3>
+                  <p className="text-white/50 text-sm mb-6 leading-relaxed">
+                    After onboarding, you'll be automatically redirected to run eligibility checks across all configured lenders.
                   </p>
                   <div className="space-y-2 mb-6">
                     {['Bank Statement & VAT Analysis', 'Multi-Lender Rule Engine', 'Best Match Recommendation'].map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 text-white/80 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
+                      <div key={i} className="flex items-center gap-2 text-white/50 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-accent/50 shrink-0" />
                         <span>{item}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 text-accent font-semibold group-hover:gap-3 transition-all">
-                    <span>Run Eligibility</span>
-                    <ArrowRight className="h-5 w-5" />
+                  <div className="flex items-center gap-2 text-white/40 font-medium text-sm">
+                    <span>Runs automatically after onboarding</span>
                   </div>
                 </CardContent>
               </Card>
