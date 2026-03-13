@@ -107,8 +107,9 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   });
 
   const resetForm = () => setForm({
-    entity_name: '', entity_type: 'sister_concern',
+    entity_name: '', relationship_type: 'sister_concern',
     trade_license_no: '', relationship_description: '', shareholder_link: '',
+    ownership_percentage: 0, shareholder_name: '', country: '', industry: '', remarks: '',
   });
 
   const openEdit = (p: RelatedParty) => {
