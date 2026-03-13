@@ -286,9 +286,9 @@ export class RelatedPartyService {
 
     const relatedPartyRatio = totalBankCredits > 0 ? totalCredits / totalBankCredits : 0;
 
-    let riskFlag = 'low';
-    if (relatedPartyRatio > 0.3) riskFlag = 'high';
-    else if (relatedPartyRatio > 0.15) riskFlag = 'medium';
+    let riskFlag = 'high';
+    if (relatedPartyRatio < 0.10) riskFlag = 'normal';
+    else if (relatedPartyRatio <= 0.25) riskFlag = 'moderate';
 
     // Find largest related entity by flow volume
     const flowByParty: Record<string, { name: string; total: number }> = {};
