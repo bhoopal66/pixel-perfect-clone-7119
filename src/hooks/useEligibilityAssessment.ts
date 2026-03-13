@@ -6,6 +6,7 @@ import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnP
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
 import { AssessmentRuleEngine } from '@/services/assessmentRuleEngine';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
+import { BankingRiskAnalysisEngine, type BankAnalysisResult, type ConsolidatedAnalysis, type AccountAnalysisInput } from '@/services/bankingRiskAnalysisEngine';
 import {
   ActivityLogService,
   ExtractionRunService,
@@ -42,6 +43,8 @@ export function useEligibilityAssessment() {
   const [lenderResults, setLenderResults] = useState<Omit<AssessmentLenderResult, 'id' | 'case_id' | 'created_at' | 'updated_at'>[]>([]);
   const [matchResults, setMatchResults] = useState<LenderMatchResult[]>([]);
   const [isMatchingRunning, setIsMatchingRunning] = useState(false);
+  const [bankRiskResults, setBankRiskResults] = useState<BankAnalysisResult[]>([]);
+  const [bankRiskConsolidated, setBankRiskConsolidated] = useState<ConsolidatedAnalysis | null>(null);
 
   // Parse bank statement PDF
   const parseBankStatement = useCallback(async (file: File): Promise<ParsedBankFile | null> => {
@@ -370,6 +373,29 @@ export function useEligibilityAssessment() {
         );
       }
 
+      // Run professional banking risk analysis (15 modules)
+      try {
+        const accountInputs: AccountAnalysisInput[] = bankFiles
+          .filter(f => f.isValid)
+          .map(bf => ({
+            accountNumber: bf.accountNumber,
+            bankName: bf.bankName,
+            transactions: bf.transactions,
+            periodFrom: bf.periodFrom,
+            periodTo: bf.periodTo,
+          }));
+
+        if (accountInputs.length > 0) {
+          const { accountResults: riskResults, consolidated: riskConsolidated } =
+            await BankingRiskAnalysisEngine.runAndPersist(caseData.id, accountInputs);
+          setBankRiskResults(riskResults);
+          setBankRiskConsolidated(riskConsolidated);
+          await ActivityLogService.log(caseData.id, 'bank_risk_analysis', `Banking risk analysis completed: ${riskResults.length} account(s), ${riskConsolidated.overall_risk_flags.length} risk flag(s)`);
+        }
+      } catch (riskError) {
+        console.error('Banking risk analysis error:', riskError);
+      }
+
       // Save combined financial summary (versioned, permanent)
       const periodDates = bankFiles.filter(f => f.periodFrom && f.periodTo);
       const periodFrom = periodDates.length > 0
@@ -516,6 +542,8 @@ export function useEligibilityAssessment() {
     setCombinedSummary(null);
     setLenderResults([]);
     setMatchResults([]);
+    setBankRiskResults([]);
+    setBankRiskConsolidated(null);
     setCurrentStep('upload');
   }, []);
 
@@ -535,6 +563,8 @@ export function useEligibilityAssessment() {
     lenderResults,
     matchResults,
     isMatchingRunning,
+    bankRiskResults,
+    bankRiskConsolidated,
     handleBankFiles,
     handleVatFiles,
     removeBankFile,
