@@ -319,19 +319,27 @@ export type Database = {
           avg_monthly_balance: number | null
           avg_monthly_credit: number | null
           avg_monthly_debit: number | null
+          b2b_revenue_pct: number | null
           bank_vat_variance_percent: number | null
           case_number: string | null
+          cash_collection_pct: number | null
           company_name: string | null
           created_at: string
           declared_vat_turnover: number | null
           estimated_annual_turnover: number | null
+          existing_debt_count: number | null
+          gross_margin_pct: number | null
           id: string
           normalized_turnover: number | null
+          past_breakeven: boolean | null
+          proceeds_for_cogs: boolean | null
+          receivable_days: number | null
           risk_flags: Json | null
           statement_months_covered: number | null
           status: string
           total_bank_credits: number | null
           total_bank_debits: number | null
+          uae_revenue_pct: number | null
           updated_at: string
           user_id: string | null
           variance_tag: string | null
@@ -344,19 +352,27 @@ export type Database = {
           avg_monthly_balance?: number | null
           avg_monthly_credit?: number | null
           avg_monthly_debit?: number | null
+          b2b_revenue_pct?: number | null
           bank_vat_variance_percent?: number | null
           case_number?: string | null
+          cash_collection_pct?: number | null
           company_name?: string | null
           created_at?: string
           declared_vat_turnover?: number | null
           estimated_annual_turnover?: number | null
+          existing_debt_count?: number | null
+          gross_margin_pct?: number | null
           id?: string
           normalized_turnover?: number | null
+          past_breakeven?: boolean | null
+          proceeds_for_cogs?: boolean | null
+          receivable_days?: number | null
           risk_flags?: Json | null
           statement_months_covered?: number | null
           status?: string
           total_bank_credits?: number | null
           total_bank_debits?: number | null
+          uae_revenue_pct?: number | null
           updated_at?: string
           user_id?: string | null
           variance_tag?: string | null
@@ -369,19 +385,27 @@ export type Database = {
           avg_monthly_balance?: number | null
           avg_monthly_credit?: number | null
           avg_monthly_debit?: number | null
+          b2b_revenue_pct?: number | null
           bank_vat_variance_percent?: number | null
           case_number?: string | null
+          cash_collection_pct?: number | null
           company_name?: string | null
           created_at?: string
           declared_vat_turnover?: number | null
           estimated_annual_turnover?: number | null
+          existing_debt_count?: number | null
+          gross_margin_pct?: number | null
           id?: string
           normalized_turnover?: number | null
+          past_breakeven?: boolean | null
+          proceeds_for_cogs?: boolean | null
+          receivable_days?: number | null
           risk_flags?: Json | null
           statement_months_covered?: number | null
           status?: string
           total_bank_credits?: number | null
           total_bank_debits?: number | null
+          uae_revenue_pct?: number | null
           updated_at?: string
           user_id?: string | null
           variance_tag?: string | null
