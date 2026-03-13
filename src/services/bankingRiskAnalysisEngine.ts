@@ -96,7 +96,7 @@ const RELATED_KW = ['group', 'holding', 'sister', 'related entity', 'intercompan
 
 export class BankingRiskAnalysisEngine {
 
-  static analyzeAccount(input: AccountAnalysisInput): BankAnalysisResult {
+  static analyzeAccount(input: AccountAnalysisInput, relatedPartyNames: string[] = []): BankAnalysisResult {
     const txns = input.transactions;
     const desc = (t: ParsedTransaction) => (t.description || '').toLowerCase();
 
