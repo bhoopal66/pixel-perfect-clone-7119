@@ -157,6 +157,7 @@ const EligibilityEngine: React.FC = () => {
                 <CombinedSummary
                   summary={assessment.combinedSummary}
                   caseNumber={assessment.caseNumber}
+                  caseId={assessment.caseId}
                 />
               </motion.div>
             </TabsContent>
