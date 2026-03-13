@@ -238,6 +238,7 @@ export class RuleEngineExecutor {
     let tenureAdjustment = 0;
     let hardReject = false;
     let limitCap: number | null = null;
+    let pricingBand: string | null = null;
 
     for (const rule of rules) {
       const observedValue = normalizedData[rule.field_name];
