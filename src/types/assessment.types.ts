@@ -24,6 +24,15 @@ export interface AssessmentCase {
   risk_flags: string[];
   statement_months_covered: number;
   vat_periods_covered: number;
+  // HFS manual-input fields
+  receivable_days: number;
+  gross_margin_pct: number;
+  existing_debt_count: number;
+  uae_revenue_pct: number;
+  b2b_revenue_pct: number;
+  cash_collection_pct: number;
+  proceeds_for_cogs: boolean;
+  past_breakeven: boolean;
 }
 
 export interface AssessmentDocument {

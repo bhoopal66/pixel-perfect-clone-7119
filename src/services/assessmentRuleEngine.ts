@@ -32,6 +32,16 @@ interface LenderConfig {
     pricing_tiers?: { min: number; max: number; rate: string }[];
     max_tenure_months?: number;
     industry_exclusions?: string[];
+    // HFS-specific rules
+    min_monthly_revenue?: number;
+    max_monthly_revenue?: number;
+    min_receivable_days?: number;
+    min_uae_revenue_pct?: number;
+    min_b2b_revenue_pct?: number;
+    min_gross_margin_pct?: number;
+    max_existing_debt?: number;
+    require_past_breakeven?: boolean;
+    require_proceeds_for_cogs?: boolean;
   };
 }
 
@@ -205,7 +215,100 @@ export class AssessmentRuleEngine {
       riskFlags.push(`${summary.negativeBalanceDays} negative balance days`);
     }
 
-    // Calculate recommended limit
+    // HFS-specific rules (Revenue Range)
+    if (rules.min_monthly_revenue) {
+      const monthlyCredit = summary.avgMonthlyCredit;
+      const minRev = rules.min_monthly_revenue;
+      const maxRev = rules.max_monthly_revenue || Infinity;
+      const revenueRangeRule: RuleResult = {
+        rule_name: 'Monthly Revenue Range',
+        rule_description: `Monthly revenue must be between AED ${minRev.toLocaleString()} and AED ${maxRev === Infinity ? '∞' : maxRev.toLocaleString()}`,
+        passed: monthlyCredit >= minRev && monthlyCredit <= maxRev,
+        value: monthlyCredit,
+        threshold: `${minRev}-${maxRev}`,
+        message: monthlyCredit >= minRev && monthlyCredit <= maxRev
+          ? `Monthly revenue AED ${monthlyCredit.toLocaleString()} within range`
+          : `Monthly revenue AED ${monthlyCredit.toLocaleString()} outside AED ${minRev.toLocaleString()}-${maxRev.toLocaleString()} range`,
+      };
+      ruleResults.push(revenueRangeRule);
+      if (revenueRangeRule.passed) passedRules.push(revenueRangeRule); else failedRules.push(revenueRangeRule);
+    }
+
+    // HFS: Receivable Days
+    if (rules.min_receivable_days) {
+      const recDaysRule: RuleResult = {
+        rule_name: 'Minimum Credit Terms',
+        rule_description: `Average credit terms must be at least ${rules.min_receivable_days} days (non-cash)`,
+        passed: false, // Requires analyst input - defaults to review
+        value: 'Requires verification',
+        threshold: rules.min_receivable_days,
+        message: 'Credit terms require analyst verification during manual review',
+      };
+      ruleResults.push(recDaysRule);
+      failedRules.push(recDaysRule);
+      requiredDeviations.push('Credit terms (receivable days) must be verified by analyst');
+    }
+
+    // HFS: B2B & UAE Revenue
+    if (rules.min_b2b_revenue_pct) {
+      const b2bRule: RuleResult = {
+        rule_name: 'B2B Revenue Requirement',
+        rule_description: `At least ${rules.min_b2b_revenue_pct}% of revenue must be B2B and ${rules.min_uae_revenue_pct || 80}% in UAE`,
+        passed: false,
+        value: 'Requires verification',
+        threshold: `${rules.min_b2b_revenue_pct}%`,
+        message: 'B2B and UAE revenue concentration requires analyst verification',
+      };
+      ruleResults.push(b2bRule);
+      failedRules.push(b2bRule);
+      requiredDeviations.push('B2B and UAE revenue percentages must be verified by analyst');
+    }
+
+    // HFS: Gross Margin & Breakeven
+    if (rules.min_gross_margin_pct) {
+      const marginRule: RuleResult = {
+        rule_name: 'Profitability Check',
+        rule_description: `Gross margin must be at least ${rules.min_gross_margin_pct}% and business must be past breakeven`,
+        passed: false,
+        value: 'Requires verification',
+        threshold: `${rules.min_gross_margin_pct}%`,
+        message: 'Profitability and breakeven status require analyst verification',
+      };
+      ruleResults.push(marginRule);
+      failedRules.push(marginRule);
+      requiredDeviations.push('Gross margin and breakeven status must be verified');
+    }
+
+    // HFS: No Existing Debt
+    if (rules.max_existing_debt !== undefined) {
+      const debtRule: RuleResult = {
+        rule_name: 'No Existing Debt',
+        rule_description: 'Business must have no existing debt obligations',
+        passed: false,
+        value: 'Requires verification',
+        threshold: 0,
+        message: 'Existing debt status requires analyst verification',
+      };
+      ruleResults.push(debtRule);
+      failedRules.push(debtRule);
+      requiredDeviations.push('Existing debt status must be verified by analyst');
+    }
+
+    // HFS: Use of Proceeds
+    if (rules.require_proceeds_for_cogs) {
+      const proceedsRule: RuleResult = {
+        rule_name: 'Use of Proceeds',
+        rule_description: 'Capital must be used for COGS in new orders generating immediate revenue uplift',
+        passed: false,
+        value: 'Requires verification',
+        threshold: 'COGS only',
+        message: 'Use of proceeds must be confirmed for COGS/new orders',
+      };
+      ruleResults.push(proceedsRule);
+      failedRules.push(proceedsRule);
+      requiredDeviations.push('Use of proceeds for COGS must be confirmed');
+    }
+
     const multiplier = rules.max_multiplier || 8;
     const creditEligiblePct = (rules.credit_eligible_percent || 100) / 100;
     const eligibleTurnover = summary.normalizedTurnover * creditEligiblePct;

@@ -53,6 +53,15 @@ export class RuleEngineExecutor {
       top_5_customer_concentration: 0,
       inventory_value: 0,
       inventory_turn_days: 0,
+      // HFS-specific fields (analyst-input via Manual Review)
+      receivable_days: Number((caseData as any).receivable_days) || 0,
+      gross_margin_pct: Number((caseData as any).gross_margin_pct) || 0,
+      existing_debt_count: Number((caseData as any).existing_debt_count) || 0,
+      uae_revenue_pct: Number((caseData as any).uae_revenue_pct) || 0,
+      b2b_revenue_pct: Number((caseData as any).b2b_revenue_pct) || 0,
+      cash_collection_pct: Number((caseData as any).cash_collection_pct) || 0,
+      proceeds_for_cogs: (caseData as any).proceeds_for_cogs || false,
+      past_breakeven: (caseData as any).past_breakeven || false,
     };
   }
 
