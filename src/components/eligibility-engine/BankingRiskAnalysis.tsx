@@ -318,15 +318,25 @@ export const BankingRiskAnalysis: React.FC<Props> = ({ accountResults, consolida
 
         {/* 12: Related Party */}
         <TabsContent value="related">
-          <RiskMetricCard
-            title="Related Party / Inter-Company Flows"
-            icon={<ArrowUpDown className="h-4 w-4" />}
-            results={accountResults}
-            getValue={r => r.related_party_flow_ratio}
-            getFlag={r => r.related_party_flag}
-            warnThreshold={0.1}
-            critThreshold={0.15}
-          />
+          <div className="space-y-4">
+            <RiskMetricCard
+              title="Related Party / Inter-Company Flows"
+              icon={<ArrowUpDown className="h-4 w-4" />}
+              results={accountResults}
+              getValue={r => r.related_party_flow_ratio}
+              getFlag={r => r.related_party_flag}
+              warnThreshold={0.1}
+              critThreshold={0.25}
+            />
+            <Card className="border-primary/20">
+              <CardContent className="pt-5 pb-4">
+                <p className="text-xs text-muted-foreground">
+                  Related party flows are cross-referenced against the case register. Credits exceeding 10% are flagged as Moderate, and above 25% as High Risk. 
+                  The RP-adjusted turnover (credits minus RP credits) is used for variance analysis against VAT returns and impacts lender eligibility scoring.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* 11: Round Tripping */}

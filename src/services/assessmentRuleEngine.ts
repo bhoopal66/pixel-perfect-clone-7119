@@ -309,6 +309,31 @@ export class AssessmentRuleEngine {
       requiredDeviations.push('Use of proceeds for COGS must be confirmed');
     }
 
+    // Rule: Related Party Ratio
+    if ((summary as any).relatedPartyRatio !== undefined) {
+      const rpRatio = (summary as any).relatedPartyRatio || 0;
+      const rpThreshold = 25; // >25% is high risk
+      const rpRule: RuleResult = {
+        rule_name: 'Related Party Exposure',
+        rule_description: 'Related party credits should not exceed 25% of total credits',
+        passed: rpRatio < rpThreshold,
+        value: `${(rpRatio * 100).toFixed(1)}%`,
+        threshold: `${rpThreshold}%`,
+        message: rpRatio < rpThreshold
+          ? `Related party ratio ${(rpRatio * 100).toFixed(1)}% within limits`
+          : `Related party ratio ${(rpRatio * 100).toFixed(1)}% exceeds ${rpThreshold}% threshold - turnover inflation risk`,
+      };
+      ruleResults.push(rpRule);
+      if (rpRule.passed) passedRules.push(rpRule);
+      else {
+        failedRules.push(rpRule);
+        riskFlags.push(`High related party exposure: ${(rpRatio * 100).toFixed(1)}%`);
+      }
+      if (rpRatio >= 0.10 && rpRatio < rpThreshold / 100) {
+        riskFlags.push(`Moderate related party exposure: ${(rpRatio * 100).toFixed(1)}%`);
+      }
+    }
+
     const multiplier = rules.max_multiplier || 8;
     const creditEligiblePct = (rules.credit_eligible_percent || 100) / 100;
     const eligibleTurnover = summary.normalizedTurnover * creditEligiblePct;

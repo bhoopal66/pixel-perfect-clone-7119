@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download } from 'lucide-react';
+import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download, ArrowUpDown } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
 import { saveAndDownloadReport } from '@/services/persistentReportService';
 import { toast } from 'sonner';
@@ -14,6 +14,14 @@ interface CombinedSummaryProps {
   summary: SummaryType | null;
   caseNumber: string | null;
   caseId?: string | null;
+  rpCrossRef?: {
+    relatedPartyCredits: number;
+    adjustedTurnover: number;
+    turnoverImpactPct: number;
+    adjustedVsVatVariance: number;
+    rpRatio: number;
+    riskFlag: string;
+  } | null;
 }
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
@@ -25,7 +33,7 @@ const varianceTagConfig = {
   manual_review: { label: 'Manual Review Needed', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 
-export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseNumber, caseId }) => {
+export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseNumber, caseId, rpCrossRef }) => {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportSummary = async () => {
@@ -55,6 +63,26 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
       ]);
       sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+
+      // Add Related Party Analysis sheet if data available
+      if (rpCrossRef && rpCrossRef.relatedPartyCredits > 0) {
+        const rpSheet = workbook.addWorksheet('Related Party Analysis');
+        rpSheet.columns = [
+          { header: 'Metric', key: 'metric', width: 35 },
+          { header: 'Value', key: 'value', width: 25 },
+        ];
+        rpSheet.addRows([
+          { metric: 'Total Bank Credits', value: rpCrossRef.adjustedTurnover + rpCrossRef.relatedPartyCredits },
+          { metric: 'Related Party Credits', value: rpCrossRef.relatedPartyCredits },
+          { metric: 'RP-Adjusted Turnover', value: rpCrossRef.adjustedTurnover },
+          { metric: 'Turnover Reduction %', value: `${rpCrossRef.turnoverImpactPct.toFixed(1)}%` },
+          { metric: 'RP Ratio (Credits)', value: `${(rpCrossRef.rpRatio * 100).toFixed(1)}%` },
+          { metric: 'Adjusted vs VAT Variance', value: `${rpCrossRef.adjustedVsVatVariance.toFixed(1)}%` },
+          { metric: 'Risk Flag', value: rpCrossRef.riskFlag.charAt(0).toUpperCase() + rpCrossRef.riskFlag.slice(1) },
+        ]);
+        rpSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        rpSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+      }
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -253,6 +281,47 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
           </CardContent>
         </Card>
       </div>
+
+      {/* Related Party Impact */}
+      {rpCrossRef && rpCrossRef.relatedPartyCredits > 0 && (
+        <Card className="border-warning/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ArrowUpDown className="h-5 w-5 text-warning" /> Related Party Impact
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">RP Credits (Excluded)</span>
+              <span className="font-mono text-sm font-medium text-destructive">{fmt(rpCrossRef.relatedPartyCredits)}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">RP-Adjusted Turnover</span>
+              <span className="font-mono text-sm font-medium">{fmt(rpCrossRef.adjustedTurnover)}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Turnover Reduction</span>
+              <span className="font-mono text-sm font-medium text-warning">{rpCrossRef.turnoverImpactPct.toFixed(1)}%</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Adjusted vs VAT Variance</span>
+              <Badge className={rpCrossRef.adjustedVsVatVariance > 25 ? 'bg-destructive/10 text-destructive border-destructive/30' : rpCrossRef.adjustedVsVatVariance > 10 ? 'bg-warning/10 text-warning border-warning/30' : 'bg-success/10 text-success border-success/30'}>
+                {rpCrossRef.adjustedVsVatVariance.toFixed(1)}%
+              </Badge>
+            </div>
+            <Separator />
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">RP Ratio</span>
+              <Badge className={rpCrossRef.riskFlag === 'high' ? 'bg-destructive/10 text-destructive border-destructive/30' : rpCrossRef.riskFlag === 'moderate' ? 'bg-warning/10 text-warning border-warning/30' : 'bg-success/10 text-success border-success/30'}>
+                {(rpCrossRef.rpRatio * 100).toFixed(1)}% — {rpCrossRef.riskFlag === 'high' ? 'High Risk' : rpCrossRef.riskFlag === 'moderate' ? 'Moderate' : 'Normal'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

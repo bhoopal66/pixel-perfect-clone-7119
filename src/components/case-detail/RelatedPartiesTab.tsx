@@ -18,8 +18,10 @@ import { toast } from 'sonner';
 import {
   RelatedPartyService, ENTITY_TYPES,
   type RelatedParty, type RelatedPartyTransaction, type RelatedPartyFlowSummary,
+  type RelatedPartyCrossRef,
 } from '@/services/relatedPartyService';
 import { CurrencyService } from '@/services/currencyService';
+import { Separator } from '@/components/ui/separator';
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
@@ -60,10 +62,17 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
     queryFn: () => RelatedPartyService.getDetectedTransactions(caseId),
   });
 
+  const { data: crossRef } = useQuery({
+    queryKey: ['related-party-crossref', caseId],
+    queryFn: () => RelatedPartyService.getCrossReference(caseId),
+    enabled: !!summary,
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['related-parties', caseId] });
     qc.invalidateQueries({ queryKey: ['related-party-summary', caseId] });
     qc.invalidateQueries({ queryKey: ['related-party-txns', caseId] });
+    qc.invalidateQueries({ queryKey: ['related-party-crossref', caseId] });
   };
 
   const addMutation = useMutation({
@@ -230,6 +239,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
         <TabsList className="bg-muted/50 p-1">
           <TabsTrigger value="register" className="text-xs gap-1"><Users className="h-3.5 w-3.5" /> Register</TabsTrigger>
           <TabsTrigger value="transactions" className="text-xs gap-1"><ArrowUpDown className="h-3.5 w-3.5" /> Detected Transactions</TabsTrigger>
+          <TabsTrigger value="impact" className="text-xs gap-1"><TrendingDown className="h-3.5 w-3.5" /> Financial Impact</TabsTrigger>
         </TabsList>
 
         {/* Register Tab */}
@@ -373,6 +383,85 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Financial Impact Tab */}
+        <TabsContent value="impact">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingDown className="h-5 w-5 text-primary" /> Financial Impact Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!crossRef ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No cross-reference data available.</p>
+                  <p className="text-xs mt-1">Run detection first to see financial impact.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Turnover Impact */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Original Turnover</p>
+                      <p className="text-lg font-bold text-foreground">{fmt(crossRef.originalTurnover)}</p>
+                      <p className="text-xs text-muted-foreground">Total bank credits</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">RP Credits (Excluded)</p>
+                      <p className="text-lg font-bold text-destructive">{fmt(crossRef.relatedPartyCredits)}</p>
+                      <p className="text-xs text-muted-foreground">{crossRef.turnoverImpactPct.toFixed(1)}% of total</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">RP-Adjusted Turnover</p>
+                      <p className="text-lg font-bold text-success">{fmt(crossRef.adjustedTurnover)}</p>
+                      <p className="text-xs text-muted-foreground">Credits minus RP</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Adjusted vs VAT Variance</p>
+                      <p className={`text-lg font-bold ${crossRef.adjustedVsVatVariance > 25 ? 'text-destructive' : crossRef.adjustedVsVatVariance > 10 ? 'text-warning' : 'text-success'}`}>
+                        {crossRef.adjustedVsVatVariance.toFixed(1)}%
+                      </p>
+                      <Badge variant="outline" className="text-xs">
+                        {crossRef.adjustedVsVatVariance <= 10 ? 'Strong Match' : crossRef.adjustedVsVatVariance <= 25 ? 'Moderate' : 'High Variance'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Entity Breakdown */}
+                  {crossRef.entityBreakdown.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-3">Entity-wise Flow Breakdown</h4>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Entity</TableHead>
+                            <TableHead className="text-right">Credits</TableHead>
+                            <TableHead className="text-right">Debits</TableHead>
+                            <TableHead className="text-right">% of Total Credits</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {crossRef.entityBreakdown.map((e, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="font-medium text-sm">{e.entity}</TableCell>
+                              <TableCell className="text-right font-mono text-sm text-success">{fmt(e.credit)}</TableCell>
+                              <TableCell className="text-right font-mono text-sm text-destructive">{fmt(e.debit)}</TableCell>
+                              <TableCell className="text-right font-mono text-sm">{(e.ratio * 100).toFixed(1)}%</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
