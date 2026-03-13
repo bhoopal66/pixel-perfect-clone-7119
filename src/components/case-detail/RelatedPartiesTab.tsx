@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Plus, Search, Trash2, Edit, RefreshCw, Users, ArrowUpDown,
-  AlertTriangle, TrendingUp, TrendingDown, Building2,
+  AlertTriangle, TrendingUp, TrendingDown, Building2, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
