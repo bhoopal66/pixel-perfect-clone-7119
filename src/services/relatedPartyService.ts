@@ -336,7 +336,7 @@ export class RelatedPartyService {
     return data || [];
   }
 
-  private static async upsertSummary(caseId: string, values: Omit<RelatedPartyFlowSummary, 'id' | 'case_id' | 'created_at' | 'updated_at'>): Promise<RelatedPartyFlowSummary> {
+  private static async upsertSummary(caseId: string, values: Omit<RelatedPartyFlowSummary, 'id' | 'case_id' | 'created_at'>): Promise<RelatedPartyFlowSummary> {
     // Delete existing then insert (upsert workaround)
     await (supabase.from('related_party_flow_summary') as any)
       .delete()
