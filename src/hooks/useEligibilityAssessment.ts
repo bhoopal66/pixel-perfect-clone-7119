@@ -5,6 +5,7 @@ import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
 import { AssessmentRuleEngine } from '@/services/assessmentRuleEngine';
+import { RelatedPartyService } from '@/services/relatedPartyService';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
 import { BankingRiskAnalysisEngine, type BankAnalysisResult, type ConsolidatedAnalysis, type AccountAnalysisInput } from '@/services/bankingRiskAnalysisEngine';
 import {
