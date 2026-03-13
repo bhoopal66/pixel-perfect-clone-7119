@@ -6,6 +6,11 @@ import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnP
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
 import { AssessmentRuleEngine } from '@/services/assessmentRuleEngine';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
+import {
+  ActivityLogService,
+  ExtractionRunService,
+  FinancialSummaryService,
+} from '@/services/permanentStorageService';
 import { toast } from 'sonner';
 import type {
   AssessmentCase,
@@ -59,7 +64,6 @@ export function useEligibilityAssessment() {
       const totalCredits = parsedTxns.reduce((s, t) => s + t.credit, 0);
       const totalDebits = parsedTxns.reduce((s, t) => s + t.debit, 0);
 
-      // Check for duplicates
       const isDuplicate = bankFiles.some(
         existing => existing.fileName === file.name && existing.totalCredits === totalCredits
       );
@@ -223,6 +227,108 @@ export function useEligibilityAssessment() {
       setCaseId(caseData.id);
       setCaseNumber(caseData.case_number);
 
+      // Log case creation
+      await ActivityLogService.log(caseData.id, 'case_status_changed', `Assessment case created: ${caseData.case_number || caseData.id}`);
+
+      // Save documents & create extraction runs for bank files
+      for (const bf of bankFiles.filter(f => f.isValid)) {
+        // Save document record
+        const { data: docRecord } = await supabase
+          .from('assessment_documents')
+          .insert({
+            case_id: caseData.id,
+            document_type: 'bank_statement',
+            file_name: bf.fileName,
+            original_file_name: bf.fileName,
+            bank_name: bf.bankName,
+            account_holder: bf.accountHolder,
+            account_number: bf.accountNumber,
+            period_from: bf.periodFrom,
+            period_to: bf.periodTo,
+            is_duplicate: bf.isDuplicate,
+            validation_status: bf.isValid ? 'valid' : 'invalid',
+            validation_message: bf.validationMessage,
+            uploaded_by: user?.id || null,
+          } as any)
+          .select()
+          .single();
+
+        if (docRecord) {
+          await ActivityLogService.log(caseData.id, 'document_uploaded', `Bank statement uploaded: ${bf.fileName}`, 'assessment_documents', docRecord.id);
+
+          // Create extraction run
+          const run = await ExtractionRunService.create(caseData.id, docRecord.id, 'bank_statement');
+
+          // Save bank transactions linked to extraction run
+          if (bf.transactions.length > 0) {
+            await supabase.from('assessment_bank_transactions').insert(
+              bf.transactions.map(t => ({
+                case_id: caseData.id,
+                document_id: docRecord.id,
+                extraction_run_id: run.id,
+                txn_date: t.date,
+                description: t.description,
+                cheque_no: t.chequeNo || null,
+                debit: t.debit,
+                credit: t.credit,
+                balance: t.balance,
+                bank_name: bf.bankName,
+                account_name: bf.accountHolder,
+                category: t.category || null,
+                month: t.date ? new Date(t.date).getMonth() + 1 : null,
+                year: t.date ? new Date(t.date).getFullYear() : null,
+              } as any))
+            );
+          }
+
+          // Complete extraction run
+          const confidence = bf.transactions.length > 0 ? 0.85 : 0;
+          await ExtractionRunService.complete(run.id, caseData.id, confidence, 'pdfjs-regex');
+        }
+      }
+
+      // Save VAT documents & extraction runs
+      for (const vf of vatFiles.filter(f => f.isValid)) {
+        const { data: vatDocRecord } = await supabase
+          .from('assessment_documents')
+          .insert({
+            case_id: caseData.id,
+            document_type: 'vat_return',
+            file_name: vf.fileName,
+            original_file_name: vf.fileName,
+            validation_status: vf.isValid ? 'valid' : 'invalid',
+            validation_message: vf.validationMessage,
+            uploaded_by: user?.id || null,
+          } as any)
+          .select()
+          .single();
+
+        if (vatDocRecord) {
+          await ActivityLogService.log(caseData.id, 'document_uploaded', `VAT return uploaded: ${vf.fileName}`, 'assessment_documents', vatDocRecord.id);
+
+          const vatRun = await ExtractionRunService.create(caseData.id, vatDocRecord.id, 'vat_return');
+
+          await supabase.from('assessment_vat_returns').insert({
+            case_id: caseData.id,
+            document_id: vatDocRecord.id,
+            extraction_run_id: vatRun.id,
+            tax_period_from: vf.taxPeriodFrom,
+            tax_period_to: vf.taxPeriodTo,
+            vat_sales: vf.vatSales,
+            taxable_supplies: vf.taxableSupplies,
+            zero_rated_supplies: vf.zeroRatedSupplies,
+            exempt_supplies: vf.exemptSupplies,
+            output_vat: vf.outputVat,
+            input_vat: vf.inputVat,
+            net_vat_payable: vf.netVatPayable,
+            source_file: vf.fileName,
+          } as any);
+
+          const vatConfidence = vf.confidence === 'high' ? 0.95 : vf.confidence === 'medium' ? 0.7 : 0.4;
+          await ExtractionRunService.complete(vatRun.id, caseData.id, vatConfidence, 'pdfjs-regex');
+        }
+      }
+
       // Calculate bank monthly summaries
       const allTransactions = bankFiles
         .filter(f => f.isValid)
@@ -264,24 +370,29 @@ export function useEligibilityAssessment() {
         );
       }
 
-      // Save VAT returns to DB
-      if (vatFiles.length > 0) {
-        await supabase.from('assessment_vat_returns').insert(
-          vatFiles.filter(f => f.isValid).map(f => ({
-            case_id: caseData.id,
-            tax_period_from: f.taxPeriodFrom,
-            tax_period_to: f.taxPeriodTo,
-            vat_sales: f.vatSales,
-            taxable_supplies: f.taxableSupplies,
-            zero_rated_supplies: f.zeroRatedSupplies,
-            exempt_supplies: f.exemptSupplies,
-            output_vat: f.outputVat,
-            input_vat: f.inputVat,
-            net_vat_payable: f.netVatPayable,
-            source_file: f.fileName,
-          }))
-        );
-      }
+      // Save combined financial summary (versioned, permanent)
+      const periodDates = bankFiles.filter(f => f.periodFrom && f.periodTo);
+      const periodFrom = periodDates.length > 0
+        ? periodDates.reduce((min, f) => !min || (f.periodFrom && f.periodFrom < min) ? f.periodFrom! : min, '')
+        : null;
+      const periodTo = periodDates.length > 0
+        ? periodDates.reduce((max, f) => !max || (f.periodTo && f.periodTo > max) ? f.periodTo! : max, '')
+        : null;
+
+      await FinancialSummaryService.create(caseData.id, {
+        period_from: periodFrom,
+        period_to: periodTo,
+        avg_monthly_bank_credit: combined.avgMonthlyCredit,
+        avg_monthly_debit: combined.avgMonthlyDebit,
+        avg_monthly_balance: combined.avgMonthlyBalance,
+        adjusted_annual_turnover: combined.estimatedAnnualTurnover,
+        vat_monthly_sales: combined.declaredVatTurnover / Math.max(combined.vatPeriodsCovered * 3, 1),
+        bank_vat_variance: combined.variancePercent,
+        negative_balance_days: combined.negativeBalanceDays,
+        returned_cheque_count: combined.totalBounces,
+        cash_deposit_ratio: combined.cashDepositRatio,
+        risk_flags_json: combined.riskFlags as any,
+      } as any);
 
       // Fetch lenders and run rule engine
       const { data: lenders } = await supabase
@@ -324,9 +435,11 @@ export function useEligibilityAssessment() {
             rule_details: r.rule_details as any,
           }))
         );
+
+        await ActivityLogService.log(caseData.id, 'lender_engine_run', `Lender rules evaluated against ${lenders.length} lenders`);
       }
 
-      // Update case summary
+      // Update case summary + mark analysis completed
       await supabase.from('assessment_cases').update({
         status: 'review',
         total_bank_credits: combined.avgMonthlyCredit * combined.statementMonthsCovered,
@@ -342,13 +455,21 @@ export function useEligibilityAssessment() {
         risk_flags: combined.riskFlags as any,
         statement_months_covered: combined.statementMonthsCovered,
         vat_periods_covered: combined.vatPeriodsCovered,
-      }).eq('id', caseData.id);
+        analysis_completed: true,
+        lenders_run_completed: !!(lenders && lenders.length > 0),
+      } as any).eq('id', caseData.id);
 
       // Auto-run matching engine after analysis
       try {
         setIsMatchingRunning(true);
         const matches = await LenderMatchingEngine.runMatchingEngine(caseData.id);
         setMatchResults(matches);
+
+        await supabase.from('assessment_cases').update({
+          ai_matching_completed: true,
+        } as any).eq('id', caseData.id);
+
+        await ActivityLogService.log(caseData.id, 'ai_matching_run', `AI matching completed with ${matches.length} results`);
       } catch (matchError) {
         console.error('Matching engine error:', matchError);
       } finally {
@@ -365,7 +486,6 @@ export function useEligibilityAssessment() {
     }
   }, [bankFiles, vatFiles, companyName]);
 
-  // Reset entire workflow
   // Run matching engine on demand
   const runMatchingEngine = useCallback(async () => {
     if (!caseId) return;
@@ -373,6 +493,8 @@ export function useEligibilityAssessment() {
     try {
       const matches = await LenderMatchingEngine.runMatchingEngine(caseId);
       setMatchResults(matches);
+
+      await ActivityLogService.log(caseId, 'ai_matching_run', `Funding options updated with ${matches.length} results`);
       toast.success('Funding options updated');
     } catch (error) {
       console.error('Matching engine error:', error);
@@ -382,6 +504,7 @@ export function useEligibilityAssessment() {
     }
   }, [caseId]);
 
+  // Reset entire workflow
   const resetAssessment = useCallback(() => {
     setCaseId(null);
     setCaseNumber(null);
