@@ -6,6 +6,7 @@ import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnP
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
 import { AssessmentRuleEngine } from '@/services/assessmentRuleEngine';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
+import { BankingRiskAnalysisEngine, type BankAnalysisResult, type ConsolidatedAnalysis, type AccountAnalysisInput } from '@/services/bankingRiskAnalysisEngine';
 import {
   ActivityLogService,
   ExtractionRunService,
