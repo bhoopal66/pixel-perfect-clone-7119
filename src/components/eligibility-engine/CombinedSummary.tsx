@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download, ArrowUpDown } from 'lucide-react';
+import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download, ArrowUpDown, ShieldAlert } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
 import { saveAndDownloadReport } from '@/services/persistentReportService';
+import { FraudDetectionEngine } from '@/services/fraudDetectionEngine';
 import { toast } from 'sonner';
 import ExcelJS from 'exceljs';
 import type { CombinedFinancialSummary as SummaryType } from '@/types/assessment.types';
@@ -82,6 +83,40 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
         ]);
         rpSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
         rpSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+      }
+
+      // Add Fraud Risk Assessment sheet
+      if (caseId) {
+        try {
+          const fraudResult = await FraudDetectionEngine.getResults(caseId);
+          if (fraudResult) {
+            const fraudSheet = workbook.addWorksheet('Fraud Risk Assessment');
+            fraudSheet.columns = [
+              { header: 'Metric', key: 'metric', width: 40 },
+              { header: 'Value', key: 'value', width: 30 },
+            ];
+            fraudSheet.addRows([
+              { metric: 'Fraud Risk Score', value: fraudResult.fraud_risk_score },
+              { metric: 'Risk Category', value: fraudResult.fraud_risk_category.charAt(0).toUpperCase() + fraudResult.fraud_risk_category.slice(1) },
+              { metric: '', value: '' },
+              { metric: 'Circular Transactions', value: fraudResult.circular_transaction_count > 0 ? `${fraudResult.circular_transaction_count} detected (${fmt(fraudResult.circular_transaction_value)})` : 'None' },
+              { metric: 'Round Tripping', value: fraudResult.round_tripping_flag ? `Detected (${fraudResult.round_tripping_count} patterns)` : 'None' },
+              { metric: 'Artificial Turnover', value: fraudResult.artificial_turnover_flag ? `Detected (${fmt(fraudResult.artificial_turnover_value)})` : 'None' },
+              { metric: 'Cash Rotation', value: fraudResult.cash_rotation_flag ? `Flagged (${fraudResult.cash_deposit_ratio}%)` : 'Normal' },
+              { metric: 'Window Dressing', value: fraudResult.window_dressing_flag ? `${fraudResult.window_dressing_count} patterns` : 'None' },
+              { metric: 'Structured Transactions', value: fraudResult.structured_transaction_flag ? `${fraudResult.structured_transaction_count} detected` : 'None' },
+              { metric: 'Rapid In-Out Flows', value: fraudResult.rapid_outflow_flag ? `${fraudResult.rapid_outflow_count} detected` : 'None' },
+              { metric: 'Related Party Rotation', value: fraudResult.related_party_rotation_flag ? 'Detected' : 'None' },
+              { metric: 'Suspicious Counterparties', value: fraudResult.suspicious_counterparty_flag ? `${fraudResult.suspicious_counterparty_count} detected` : 'None' },
+              { metric: 'Revenue Mismatch', value: fraudResult.revenue_mismatch_flag ? `${fraudResult.revenue_mismatch_percent}%` : 'Within threshold' },
+            ]);
+            fraudSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            fraudSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF991B1B' } };
+            // Color-code the score row
+            const scoreRow = fraudSheet.getRow(2);
+            scoreRow.font = { bold: true };
+          }
+        } catch { /* fraud data optional */ }
       }
 
       const buffer = await workbook.xlsx.writeBuffer();

@@ -130,7 +130,8 @@ export type CaseActivityType =
   | 'case_approved'
   | 'case_status_changed'
   | 'document_archived'
-  | 'bank_risk_analysis';
+  | 'bank_risk_analysis'
+  | 'fraud_detection_run';
 
 export type CaseDocumentType =
   | 'bank_statement'

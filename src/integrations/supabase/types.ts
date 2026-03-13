@@ -1755,6 +1755,182 @@ export type Database = {
           },
         ]
       }
+      fraud_detection_config: {
+        Row: {
+          artificial_turnover_deduction: number
+          cash_ratio_threshold: number
+          cash_rotation_deduction: number
+          circular_deduction: number
+          circular_transaction_time_window: number
+          config_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          rapid_outflow_deduction: number
+          rapid_outflow_hours: number
+          related_party_rotation_deduction: number
+          revenue_mismatch_deduction: number
+          revenue_mismatch_threshold: number
+          round_tripping_deduction: number
+          structured_transaction_count: number
+          structured_txn_deduction: number
+          suspicious_counterparty_deduction: number
+          updated_at: string
+          window_dressing_deduction: number
+          window_dressing_period: number
+        }
+        Insert: {
+          artificial_turnover_deduction?: number
+          cash_ratio_threshold?: number
+          cash_rotation_deduction?: number
+          circular_deduction?: number
+          circular_transaction_time_window?: number
+          config_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          rapid_outflow_deduction?: number
+          rapid_outflow_hours?: number
+          related_party_rotation_deduction?: number
+          revenue_mismatch_deduction?: number
+          revenue_mismatch_threshold?: number
+          round_tripping_deduction?: number
+          structured_transaction_count?: number
+          structured_txn_deduction?: number
+          suspicious_counterparty_deduction?: number
+          updated_at?: string
+          window_dressing_deduction?: number
+          window_dressing_period?: number
+        }
+        Update: {
+          artificial_turnover_deduction?: number
+          cash_ratio_threshold?: number
+          cash_rotation_deduction?: number
+          circular_deduction?: number
+          circular_transaction_time_window?: number
+          config_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          rapid_outflow_deduction?: number
+          rapid_outflow_hours?: number
+          related_party_rotation_deduction?: number
+          revenue_mismatch_deduction?: number
+          revenue_mismatch_threshold?: number
+          round_tripping_deduction?: number
+          structured_transaction_count?: number
+          structured_txn_deduction?: number
+          suspicious_counterparty_deduction?: number
+          updated_at?: string
+          window_dressing_deduction?: number
+          window_dressing_period?: number
+        }
+        Relationships: []
+      }
+      fraud_detection_results: {
+        Row: {
+          analyst_remarks: string | null
+          artificial_turnover_flag: boolean | null
+          artificial_turnover_value: number | null
+          case_id: string
+          cash_deposit_ratio: number | null
+          cash_rotation_flag: boolean | null
+          circular_transaction_count: number | null
+          circular_transaction_value: number | null
+          created_at: string
+          flagged_transactions_json: Json | null
+          fraud_risk_category: string
+          fraud_risk_score: number
+          id: string
+          rapid_outflow_count: number | null
+          rapid_outflow_flag: boolean | null
+          related_party_rotation_flag: boolean | null
+          revenue_mismatch_flag: boolean | null
+          revenue_mismatch_percent: number | null
+          risk_flags_json: Json | null
+          round_tripping_count: number | null
+          round_tripping_flag: boolean | null
+          structured_transaction_count: number | null
+          structured_transaction_flag: boolean | null
+          suspicious_counterparty_count: number | null
+          suspicious_counterparty_flag: boolean | null
+          updated_at: string
+          window_dressing_count: number | null
+          window_dressing_flag: boolean | null
+        }
+        Insert: {
+          analyst_remarks?: string | null
+          artificial_turnover_flag?: boolean | null
+          artificial_turnover_value?: number | null
+          case_id: string
+          cash_deposit_ratio?: number | null
+          cash_rotation_flag?: boolean | null
+          circular_transaction_count?: number | null
+          circular_transaction_value?: number | null
+          created_at?: string
+          flagged_transactions_json?: Json | null
+          fraud_risk_category?: string
+          fraud_risk_score?: number
+          id?: string
+          rapid_outflow_count?: number | null
+          rapid_outflow_flag?: boolean | null
+          related_party_rotation_flag?: boolean | null
+          revenue_mismatch_flag?: boolean | null
+          revenue_mismatch_percent?: number | null
+          risk_flags_json?: Json | null
+          round_tripping_count?: number | null
+          round_tripping_flag?: boolean | null
+          structured_transaction_count?: number | null
+          structured_transaction_flag?: boolean | null
+          suspicious_counterparty_count?: number | null
+          suspicious_counterparty_flag?: boolean | null
+          updated_at?: string
+          window_dressing_count?: number | null
+          window_dressing_flag?: boolean | null
+        }
+        Update: {
+          analyst_remarks?: string | null
+          artificial_turnover_flag?: boolean | null
+          artificial_turnover_value?: number | null
+          case_id?: string
+          cash_deposit_ratio?: number | null
+          cash_rotation_flag?: boolean | null
+          circular_transaction_count?: number | null
+          circular_transaction_value?: number | null
+          created_at?: string
+          flagged_transactions_json?: Json | null
+          fraud_risk_category?: string
+          fraud_risk_score?: number
+          id?: string
+          rapid_outflow_count?: number | null
+          rapid_outflow_flag?: boolean | null
+          related_party_rotation_flag?: boolean | null
+          revenue_mismatch_flag?: boolean | null
+          revenue_mismatch_percent?: number | null
+          risk_flags_json?: Json | null
+          round_tripping_count?: number | null
+          round_tripping_flag?: boolean | null
+          structured_transaction_count?: number | null
+          structured_transaction_flag?: boolean | null
+          suspicious_counterparty_count?: number | null
+          suspicious_counterparty_flag?: boolean | null
+          updated_at?: string
+          window_dressing_count?: number | null
+          window_dressing_flag?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_detection_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lender_decision_matrix: {
         Row: {
           created_at: string
