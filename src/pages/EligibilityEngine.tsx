@@ -23,7 +23,7 @@ import { BankingRiskAnalysis } from '@/components/eligibility-engine/BankingRisk
 import { useEligibilityAssessment } from '@/hooks/useEligibilityAssessment';
 import type { AssessmentStep } from '@/types/assessment.types';
 
-type ExtendedStep = AssessmentStep | 'funding';
+type ExtendedStep = AssessmentStep | 'funding' | 'bank_risk';
 
 const STEPS: { key: ExtendedStep; label: string; icon: React.ReactNode; requiresAnalysis: boolean }[] = [
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" />, requiresAnalysis: false },
