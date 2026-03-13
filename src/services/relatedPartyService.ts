@@ -248,7 +248,7 @@ export class RelatedPartyService {
             credit: txn.credit || 0,
             bank_name: txn.bank_name,
             account_number: txn.account_number_masked,
-            detected_by: 'full_name_match',
+            detected_by: `full_name_match (${party.source})`,
             mapping_confidence: 0.95,
           });
           partiesDetected.add(party.id);
