@@ -354,36 +354,42 @@ export function useEligibilityAssessment() {
 
       // Save bank summaries to DB - associate each summary with the correct bank
       if (summaries.length > 0) {
-        // Determine bank name per month from source files
-        const monthToBankMap = new Map<string, string>();
+        // Determine bank name and account number per month from source files
+        const monthToBankMap = new Map<string, { bankName: string | null; accountNumber: string | null }>();
         bankFiles.filter(f => f.isValid).forEach(bf => {
           bf.transactions.forEach(t => {
             const d = new Date(t.date);
             if (!isNaN(d.getTime())) {
               const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-              if (bf.bankName) monthToBankMap.set(key, bf.bankName);
+              if (bf.bankName || bf.accountNumber) {
+                monthToBankMap.set(key, { bankName: bf.bankName, accountNumber: bf.accountNumber });
+              }
             }
           });
         });
 
         await supabase.from('assessment_bank_summaries').insert(
-          summaries.map(s => ({
-            case_id: caseData.id,
-            bank_name: monthToBankMap.get(`${s.year}-${s.month}`) || bankFiles[0]?.bankName || null,
-            month: s.month,
-            year: s.year,
-            total_credits: s.totalCredits,
-            total_debits: s.totalDebits,
-            credit_count: s.creditCount,
-            debit_count: s.debitCount,
-            highest_credit: s.highestCredit,
-            lowest_balance: s.lowestBalance,
-            avg_daily_balance: s.avgDailyBalance,
-            closing_balance: s.closingBalance,
-            cash_deposit_total: s.cashDepositTotal,
-            negative_balance_days: s.negativeBalanceDays,
-            bounce_count: s.bounceCount,
-          }))
+          summaries.map(s => {
+            const info = monthToBankMap.get(`${s.year}-${s.month}`);
+            return {
+              case_id: caseData.id,
+              bank_name: info?.bankName || bankFiles[0]?.bankName || null,
+              account_number: info?.accountNumber || bankFiles[0]?.accountNumber || null,
+              month: s.month,
+              year: s.year,
+              total_credits: s.totalCredits,
+              total_debits: s.totalDebits,
+              credit_count: s.creditCount,
+              debit_count: s.debitCount,
+              highest_credit: s.highestCredit,
+              lowest_balance: s.lowestBalance,
+              avg_daily_balance: s.avgDailyBalance,
+              closing_balance: s.closingBalance,
+              cash_deposit_total: s.cashDepositTotal,
+              negative_balance_days: s.negativeBalanceDays,
+              bounce_count: s.bounceCount,
+            };
+          })
         );
       }
 
