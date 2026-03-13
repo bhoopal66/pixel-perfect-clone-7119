@@ -97,7 +97,7 @@ export function OwnerCard({ owner, index, onUpdate, onRemove, canRemove }: Owner
             />
           </FormField>
 
-          <FormField label="Passport Number" required>
+          <FormField label="Passport Number">
             <Input
               placeholder="Passport number"
               value={owner.passportNumber}
