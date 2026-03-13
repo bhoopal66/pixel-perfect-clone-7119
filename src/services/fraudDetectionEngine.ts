@@ -272,12 +272,14 @@ export class FraudDetectionEngine {
     else if (frs < 60) category = 'high';
     else if (frs < 80) category = 'moderate';
 
-    // Upsert results — mark previous as inactive, then insert new
-    await from('fraud_detection_results')
-      .update({ analyst_remarks: (await from('fraud_detection_results').select('analyst_remarks').eq('case_id', caseId).order('created_at', { ascending: false }).limit(1).single())?.data?.analyst_remarks || null })
-      .eq('case_id', caseId); // preserve remarks
-    
-    // Soft-archive: we keep old rows for audit trail by not deleting
+    // Preserve analyst remarks from previous run
+    const { data: prevResult } = await from('fraud_detection_results')
+      .select('analyst_remarks').eq('case_id', caseId)
+      .order('created_at', { ascending: false }).limit(1).single();
+    const prevRemarks = prevResult?.analyst_remarks || null;
+
+    // Delete old results then insert new (fraud results are re-computable, no audit trail needed)
+    await from('fraud_detection_results').delete().eq('case_id', caseId);
     const { data: result, error } = await from('fraud_detection_results')
       .insert({
         case_id: caseId,
@@ -304,6 +306,7 @@ export class FraudDetectionEngine {
         fraud_risk_category: category,
         risk_flags_json: JSON.stringify(riskFlags),
         flagged_transactions_json: JSON.stringify(flaggedTxns),
+        analyst_remarks: prevRemarks,
       })
       .select().single();
 
