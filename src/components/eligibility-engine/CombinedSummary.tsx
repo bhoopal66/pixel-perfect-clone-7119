@@ -261,6 +261,47 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
           </CardContent>
         </Card>
       </div>
+
+      {/* Related Party Impact */}
+      {rpCrossRef && rpCrossRef.relatedPartyCredits > 0 && (
+        <Card className="border-warning/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ArrowUpDown className="h-5 w-5 text-warning" /> Related Party Impact
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">RP Credits (Excluded)</span>
+              <span className="font-mono text-sm font-medium text-destructive">{fmt(rpCrossRef.relatedPartyCredits)}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">RP-Adjusted Turnover</span>
+              <span className="font-mono text-sm font-medium">{fmt(rpCrossRef.adjustedTurnover)}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Turnover Reduction</span>
+              <span className="font-mono text-sm font-medium text-warning">{rpCrossRef.turnoverImpactPct.toFixed(1)}%</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Adjusted vs VAT Variance</span>
+              <Badge className={rpCrossRef.adjustedVsVatVariance > 25 ? 'bg-destructive/10 text-destructive border-destructive/30' : rpCrossRef.adjustedVsVatVariance > 10 ? 'bg-warning/10 text-warning border-warning/30' : 'bg-success/10 text-success border-success/30'}>
+                {rpCrossRef.adjustedVsVatVariance.toFixed(1)}%
+              </Badge>
+            </div>
+            <Separator />
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">RP Ratio</span>
+              <Badge className={rpCrossRef.riskFlag === 'high' ? 'bg-destructive/10 text-destructive border-destructive/30' : rpCrossRef.riskFlag === 'moderate' ? 'bg-warning/10 text-warning border-warning/30' : 'bg-success/10 text-success border-success/30'}>
+                {(rpCrossRef.rpRatio * 100).toFixed(1)}% — {rpCrossRef.riskFlag === 'high' ? 'High Risk' : rpCrossRef.riskFlag === 'moderate' ? 'Moderate' : 'Normal'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
