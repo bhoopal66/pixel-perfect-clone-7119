@@ -112,7 +112,7 @@ export default function AssessmentCaseDetail() {
       {/* Tabbed Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="documents" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-9 h-auto p-1">
             {TABS.map((tab) => (
               <TabsTrigger
                 key={tab.key}
@@ -136,6 +136,9 @@ export default function AssessmentCaseDetail() {
           </TabsContent>
           <TabsContent value="related_parties">
             <RelatedPartiesTab caseId={id!} />
+          </TabsContent>
+          <TabsContent value="fraud">
+            <FraudDetectionTab caseId={id!} />
           </TabsContent>
           <TabsContent value="lenders">
             <LenderResultsTab caseId={id!} />
