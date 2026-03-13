@@ -33,6 +33,7 @@ export interface AssessmentCase {
   cash_collection_pct: number;
   proceeds_for_cogs: boolean;
   past_breakeven: boolean;
+}
 
 export interface AssessmentDocument {
   id: string;
