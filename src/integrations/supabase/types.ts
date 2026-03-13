@@ -3444,6 +3444,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "related_party_transactions_party_id_fkey"
+            columns: ["related_party_id"]
+            isOneToOne: false
+            referencedRelation: "case_related_parties"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "related_party_transactions_related_party_id_fkey"
             columns: ["related_party_id"]
             isOneToOne: false
