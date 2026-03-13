@@ -130,14 +130,14 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
 
   const riskColor = (level: string) => {
     if (level === 'high') return 'text-destructive';
-    if (level === 'medium') return 'text-warning';
+    if (level === 'moderate') return 'text-warning';
     return 'text-success';
   };
 
   const riskBadge = (level: string) => {
     if (level === 'high') return <Badge variant="destructive" className="text-xs">High Risk</Badge>;
-    if (level === 'medium') return <Badge className="bg-warning/10 text-warning border-warning/30 text-xs" variant="outline">Moderate</Badge>;
-    return <Badge className="bg-success/10 text-success border-success/30 text-xs" variant="outline">Low</Badge>;
+    if (level === 'moderate') return <Badge className="bg-warning/10 text-warning border-warning/30 text-xs" variant="outline">Moderate</Badge>;
+    return <Badge className="bg-success/10 text-success border-success/30 text-xs" variant="outline">Normal</Badge>;
   };
 
   const PartyForm = (
