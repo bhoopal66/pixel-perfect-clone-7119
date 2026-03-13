@@ -145,6 +145,15 @@ const EligibilityEngine: React.FC = () => {
               </motion.div>
             </TabsContent>
 
+            <TabsContent value="bank_risk">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <BankingRiskAnalysis
+                  accountResults={assessment.bankRiskResults}
+                  consolidated={assessment.bankRiskConsolidated}
+                />
+              </motion.div>
+            </TabsContent>
+
             <TabsContent value="vat_analysis">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <VATAnalysis
