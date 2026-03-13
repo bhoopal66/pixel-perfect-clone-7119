@@ -344,6 +344,17 @@ export function useEligibilityAssessment() {
         vat_periods_covered: combined.vatPeriodsCovered,
       }).eq('id', caseData.id);
 
+      // Auto-run matching engine after analysis
+      try {
+        setIsMatchingRunning(true);
+        const matches = await LenderMatchingEngine.runMatchingEngine(caseData.id);
+        setMatchResults(matches);
+      } catch (matchError) {
+        console.error('Matching engine error:', matchError);
+      } finally {
+        setIsMatchingRunning(false);
+      }
+
       toast.success('Analysis completed successfully');
       setCurrentStep('extraction');
     } catch (error) {
