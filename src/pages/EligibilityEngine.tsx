@@ -18,6 +18,7 @@ import {
   LenderResults,
   ManualReview,
 } from '@/components/eligibility-engine';
+import { FundingRecommendation } from '@/components/eligibility-engine/FundingRecommendation';
 import { useEligibilityAssessment } from '@/hooks/useEligibilityAssessment';
 import type { AssessmentStep } from '@/types/assessment.types';
 
