@@ -230,6 +230,10 @@ export const NORMALIZED_FIELDS: NormalizedFieldDef[] = [
   { key: 'top_5_customer_concentration', label: 'Top 5 Customer Concentration %', type: 'percentage', source: 'receivables', description: 'Revenue from top 5 customers as %' },
   { key: 'inventory_value', label: 'Inventory Value', type: 'currency', source: 'inventory', description: 'Total inventory value' },
   { key: 'inventory_turn_days', label: 'Inventory Turn Days', type: 'days', source: 'inventory', description: 'Average days to turn inventory' },
+  // Related Party fields
+  { key: 'related_party_ratio', label: 'Related Party Ratio %', type: 'percentage', source: 'related_party', description: 'Related party credits as % of total bank credits' },
+  { key: 'related_party_adjusted_turnover', label: 'RP-Adjusted Turnover', type: 'currency', source: 'related_party', description: 'Total credits minus related party credits' },
+  { key: 'related_party_count', label: 'Related Party Count', type: 'number', source: 'related_party', description: 'Number of related entities detected' },
 ];
 
 export const FORMULA_TYPES = [
