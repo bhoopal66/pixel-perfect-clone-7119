@@ -33,7 +33,7 @@ const varianceTagConfig = {
   manual_review: { label: 'Manual Review Needed', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 
-export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseNumber, caseId }) => {
+export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseNumber, caseId, rpCrossRef }) => {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportSummary = async () => {
