@@ -109,7 +109,15 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
                 )}
               </div>
             </div>
-            <Badge className={tagConfig.color}>{tagConfig.label}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={tagConfig.color}>{tagConfig.label}</Badge>
+              {caseId && (
+                <Button variant="outline" size="sm" onClick={handleExportSummary} disabled={isExporting} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" />
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
