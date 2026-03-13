@@ -62,6 +62,7 @@ export const ENTITY_TYPES = [
   { value: 'parent_entity', label: 'Parent Entity' },
   { value: 'subsidiary', label: 'Subsidiary' },
   { value: 'shareholder_linked', label: 'Shareholder Linked' },
+  { value: 'joint_venture', label: 'Joint Venture' },
   { value: 'other', label: 'Other Related Entity' },
 ] as const;
 
