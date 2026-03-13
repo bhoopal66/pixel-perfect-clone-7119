@@ -13,15 +13,23 @@ export class RuleEngineExecutor {
       .from('assessment_cases').select('*').eq('id', caseId).single();
     if (error || !caseData) throw new Error('Case not found or incomplete');
 
-    // Get bank summaries for additional metrics
-    const { data: summaries } = await supabase
-      .from('assessment_bank_summaries').select('*').eq('case_id', caseId);
+    // Get bank summaries and related party data in parallel
+    const [{ data: summaries }, rpSummary] = await Promise.all([
+      supabase.from('assessment_bank_summaries').select('*').eq('case_id', caseId),
+      RelatedPartyService.getFlowSummary(caseId),
+    ]);
 
     const totalBounces = (summaries || []).reduce((sum, s) => sum + (s.bounce_count || 0), 0);
     const totalCash = (summaries || []).reduce((sum, s) => sum + (s.cash_deposit_total || 0), 0);
     const totalNegDays = (summaries || []).reduce((sum, s) => sum + (s.negative_balance_days || 0), 0);
     const cashRatio = caseData.total_bank_credits && caseData.total_bank_credits > 0
       ? (totalCash / Number(caseData.total_bank_credits)) * 100 : 0;
+
+    // Related party metrics
+    const rpRatio = rpSummary ? Number(rpSummary.related_party_ratio) || 0 : 0;
+    const rpCredits = rpSummary ? Number(rpSummary.total_related_credit) || 0 : 0;
+    const totalCredits = Number(caseData.total_bank_credits) || 0;
+    const rpAdjustedTurnover = totalCredits - rpCredits;
 
     return {
       avg_monthly_bank_credit: Number(caseData.avg_monthly_credit) || 0,
@@ -41,7 +49,7 @@ export class RuleEngineExecutor {
       normalized_annual_turnover: Number(caseData.normalized_turnover) || 0,
       estimated_annual_turnover: Number(caseData.estimated_annual_turnover) || 0,
       declared_vat_turnover: Number(caseData.declared_vat_turnover) || 0,
-      total_bank_credits: Number(caseData.total_bank_credits) || 0,
+      total_bank_credits: totalCredits,
       total_bank_debits: Number(caseData.total_bank_debits) || 0,
       pos_monthly_settlement: 0,
       ecommerce_monthly_settlement: 0,
@@ -55,6 +63,11 @@ export class RuleEngineExecutor {
       top_5_customer_concentration: 0,
       inventory_value: 0,
       inventory_turn_days: 0,
+      // Related Party fields
+      related_party_ratio: Math.round(rpRatio * 10000) / 100, // as percentage (e.g. 18.5)
+      related_party_adjusted_turnover: Math.max(0, rpAdjustedTurnover),
+      related_party_count: rpSummary ? rpSummary.number_of_related_entities || 0 : 0,
+      related_party_flow_ratio: rpRatio, // raw ratio for BBRS score
       // HFS-specific fields (analyst-input via Manual Review)
       receivable_days: Number((caseData as any).receivable_days) || 0,
       gross_margin_pct: Number((caseData as any).gross_margin_pct) || 0,
