@@ -116,6 +116,7 @@ const LenderPolicyAdmin = () => {
             <TabsTrigger value="formulas" disabled={!selectedRuleSetId} className="gap-1.5 text-sm"><Calculator className="h-4 w-4" />Formulas</TabsTrigger>
             <TabsTrigger value="decisions" disabled={!selectedRuleSetId} className="gap-1.5 text-sm"><Grid3X3 className="h-4 w-4" />Decisions</TabsTrigger>
             <TabsTrigger value="test" className="gap-1.5 text-sm"><Play className="h-4 w-4" />Test Engine</TabsTrigger>
+            <TabsTrigger value="match-config" className="gap-1.5 text-sm"><Settings2 className="h-4 w-4" />Match Config</TabsTrigger>
             <TabsTrigger value="audit" className="gap-1.5 text-sm"><History className="h-4 w-4" />Audit Log</TabsTrigger>
           </TabsList>
 
