@@ -366,6 +366,22 @@ export function useEligibilityAssessment() {
   }, [bankFiles, vatFiles, companyName]);
 
   // Reset entire workflow
+  // Run matching engine on demand
+  const runMatchingEngine = useCallback(async () => {
+    if (!caseId) return;
+    setIsMatchingRunning(true);
+    try {
+      const matches = await LenderMatchingEngine.runMatchingEngine(caseId);
+      setMatchResults(matches);
+      toast.success('Funding options updated');
+    } catch (error) {
+      console.error('Matching engine error:', error);
+      toast.error('Failed to run matching engine');
+    } finally {
+      setIsMatchingRunning(false);
+    }
+  }, [caseId]);
+
   const resetAssessment = useCallback(() => {
     setCaseId(null);
     setCaseNumber(null);
@@ -376,6 +392,7 @@ export function useEligibilityAssessment() {
     setVatAnalysis([]);
     setCombinedSummary(null);
     setLenderResults([]);
+    setMatchResults([]);
     setCurrentStep('upload');
   }, []);
 
