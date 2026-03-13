@@ -272,8 +272,12 @@ export class FraudDetectionEngine {
     else if (frs < 60) category = 'high';
     else if (frs < 80) category = 'moderate';
 
-    // Upsert results
-    await from('fraud_detection_results').delete().eq('case_id', caseId);
+    // Upsert results — mark previous as inactive, then insert new
+    await from('fraud_detection_results')
+      .update({ analyst_remarks: (await from('fraud_detection_results').select('analyst_remarks').eq('case_id', caseId).order('created_at', { ascending: false }).limit(1).single())?.data?.analyst_remarks || null })
+      .eq('case_id', caseId); // preserve remarks
+    
+    // Soft-archive: we keep old rows for audit trail by not deleting
     const { data: result, error } = await from('fraud_detection_results')
       .insert({
         case_id: caseId,

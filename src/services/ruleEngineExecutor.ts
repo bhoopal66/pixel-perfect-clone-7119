@@ -367,8 +367,8 @@ export class RuleEngineExecutor {
     const { data: lenders } = await supabase.from('onboarding_lenders').select('*').eq('is_active', true);
     if (!lenders?.length) return [];
 
-    // Clear previous results
-    await from('lender_execution_results').delete().eq('case_id', caseId);
+    // Mark previous results as inactive (preserve audit trail)
+    await from('lender_execution_results').update({ is_active: false }).eq('case_id', caseId).eq('is_active', true);
 
     const results: LenderExecutionResult[] = [];
     for (const lender of lenders) {

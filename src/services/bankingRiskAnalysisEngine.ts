@@ -362,7 +362,8 @@ export class BankingRiskAnalysisEngine {
     const accountResults = accounts.map(a => this.analyzeAccount(a, relatedPartyNames));
     const consolidated = this.consolidate(accountResults);
 
-    // Delete old results for this case, then insert new
+    // Upsert approach: delete then insert (bank_analysis_results has no is_active flag and no audit trail requirement)
+    // These are re-computable from source transactions, so delete-insert is acceptable here
     await supabase.from('bank_analysis_results').delete().eq('case_id', caseId);
     
     for (const r of accountResults) {
@@ -373,7 +374,7 @@ export class BankingRiskAnalysisEngine {
       });
     }
 
-    // Upsert consolidated
+    // Upsert consolidated (also re-computable, no audit trail needed)
     await supabase.from('bank_analysis_consolidated').delete().eq('case_id', caseId);
     await (supabase.from('bank_analysis_consolidated') as any).insert({
       case_id: caseId,
