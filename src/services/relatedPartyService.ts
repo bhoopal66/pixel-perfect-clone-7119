@@ -279,31 +279,38 @@ export class RelatedPartyService {
     }
 
     // 6. Calculate summary
-    const totalInflows = matches.reduce((s, m) => s + (m.credit || 0), 0);
-    const totalOutflows = matches.reduce((s, m) => s + (m.debit || 0), 0);
+    const totalCredits = matches.reduce((s, m) => s + (m.credit || 0), 0);
+    const totalDebits = matches.reduce((s, m) => s + (m.debit || 0), 0);
     const totalBankCredits = txns.reduce((s, t) => s + (t.credit || 0), 0);
     const totalBankDebits = txns.reduce((s, t) => s + (t.debit || 0), 0);
 
-    const inflowRatio = totalBankCredits > 0 ? totalInflows / totalBankCredits : 0;
-    const outflowRatio = totalBankDebits > 0 ? totalOutflows / totalBankDebits : 0;
     const totalActivity = totalBankCredits + totalBankDebits;
-    const overallRatio = totalActivity > 0 ? (totalInflows + totalOutflows) / totalActivity : 0;
+    const relatedPartyRatio = totalActivity > 0 ? (totalCredits + totalDebits) / totalActivity : 0;
 
-    let riskLevel = 'low';
-    if (overallRatio > 0.3) riskLevel = 'high';
-    else if (overallRatio > 0.15) riskLevel = 'medium';
+    let riskFlag = 'low';
+    if (relatedPartyRatio > 0.3) riskFlag = 'high';
+    else if (relatedPartyRatio > 0.15) riskFlag = 'medium';
+
+    // Find largest related entity by flow volume
+    const flowByParty: Record<string, { name: string; total: number }> = {};
+    for (const m of matches) {
+      const pid = m.related_party_id;
+      if (!flowByParty[pid]) {
+        const party = activeParties.find(p => p.id === pid);
+        flowByParty[pid] = { name: party?.entity_name || 'Unknown', total: 0 };
+      }
+      flowByParty[pid].total += (m.credit || 0) + (m.debit || 0);
+    }
+    const largest = Object.values(flowByParty).sort((a, b) => b.total - a.total)[0];
 
     const summary = await this.upsertSummary(caseId, {
-      total_related_inflows: Math.round(totalInflows * 100) / 100,
-      total_related_outflows: Math.round(totalOutflows * 100) / 100,
-      total_bank_credits: Math.round(totalBankCredits * 100) / 100,
-      total_bank_debits: Math.round(totalBankDebits * 100) / 100,
-      inflow_ratio: Math.round(inflowRatio * 10000) / 10000,
-      outflow_ratio: Math.round(outflowRatio * 10000) / 10000,
-      overall_ratio: Math.round(overallRatio * 10000) / 10000,
-      risk_level: riskLevel,
-      parties_detected: partiesDetected.size,
-      transactions_matched: matches.length,
+      total_related_credit: Math.round(totalCredits * 100) / 100,
+      total_related_debit: Math.round(totalDebits * 100) / 100,
+      related_party_ratio: Math.round(relatedPartyRatio * 10000) / 10000,
+      number_of_related_entities: partiesDetected.size,
+      largest_related_entity: largest?.name || null,
+      largest_related_flow: Math.round((largest?.total || 0) * 100) / 100,
+      risk_flag: riskFlag,
     });
 
     return { matched: matches.length, summary };
