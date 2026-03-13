@@ -349,6 +349,72 @@ export class RelatedPartyService {
     return data || [];
   }
 
+  /**
+   * Cross-reference RP flows against financial statements.
+   * Computes RP-adjusted turnover and VAT variance impact.
+   */
+  static async getCrossReference(caseId: string, declaredVatTurnover?: number): Promise<RelatedPartyCrossRef | null> {
+    // Fetch summary and transactions
+    const [summary, txns] = await Promise.all([
+      this.getFlowSummary(caseId),
+      this.getDetectedTransactions(caseId),
+    ]);
+
+    if (!summary) return null;
+
+    // Get total bank credits for the case
+    const { data: bankTxns } = await supabase
+      .from('assessment_bank_transactions')
+      .select('credit, debit')
+      .eq('case_id', caseId);
+
+    const totalCredits = (bankTxns || []).reduce((s, t) => s + (t.credit || 0), 0);
+    const rpCredits = summary.total_related_credit;
+    const rpDebits = summary.total_related_debit;
+    const rpRatio = totalCredits > 0 ? rpCredits / totalCredits : 0;
+
+    // RP-adjusted turnover = total credits minus RP credits (annualized)
+    const adjustedTurnover = totalCredits - rpCredits;
+    const turnoverImpactPct = totalCredits > 0 ? (rpCredits / totalCredits) * 100 : 0;
+
+    // Compute adjusted vs VAT variance
+    const vatTurnover = declaredVatTurnover || 0;
+    const maxVal = Math.max(adjustedTurnover, vatTurnover);
+    const adjustedVsVatVariance = maxVal > 0 ? Math.abs(adjustedTurnover - vatTurnover) / maxVal * 100 : 0;
+
+    // Entity breakdown
+    const entityMap: Record<string, { entity: string; credit: number; debit: number }> = {};
+    const parties = await this.getParties(caseId);
+    for (const t of txns) {
+      const party = parties.find(p => p.id === t.related_party_id);
+      const name = party?.entity_name || 'Unknown';
+      if (!entityMap[t.related_party_id]) {
+        entityMap[t.related_party_id] = { entity: name, credit: 0, debit: 0 };
+      }
+      entityMap[t.related_party_id].credit += t.credit || 0;
+      entityMap[t.related_party_id].debit += t.debit || 0;
+    }
+    const entityBreakdown = Object.values(entityMap)
+      .map(e => ({
+        ...e,
+        ratio: totalCredits > 0 ? e.credit / totalCredits : 0,
+      }))
+      .sort((a, b) => b.credit - a.credit);
+
+    return {
+      totalCredits,
+      relatedPartyCredits: rpCredits,
+      relatedPartyDebits: rpDebits,
+      rpRatio,
+      adjustedTurnover,
+      originalTurnover: totalCredits,
+      turnoverImpactPct: Math.round(turnoverImpactPct * 100) / 100,
+      adjustedVsVatVariance: Math.round(adjustedVsVatVariance * 100) / 100,
+      riskFlag: summary.risk_flag,
+      entityBreakdown,
+    };
+  }
+
   private static async upsertSummary(caseId: string, values: Omit<RelatedPartyFlowSummary, 'id' | 'case_id' | 'created_at'>): Promise<RelatedPartyFlowSummary> {
     // Delete existing then insert (upsert workaround)
     await (supabase.from('related_party_flow_summary') as any)
