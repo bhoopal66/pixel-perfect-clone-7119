@@ -47,7 +47,7 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
         { metric: 'Avg Monthly Debit', value: summary.avgMonthlyDebit },
         { metric: 'Avg Monthly Balance', value: summary.avgMonthlyBalance },
         { metric: 'Declared VAT Turnover', value: summary.declaredVatTurnover },
-        { metric: 'Bank-VAT Variance %', value: `${summary.bankVatVariance.toFixed(2)}%` },
+        { metric: 'Bank-VAT Variance %', value: `${summary.variancePercent.toFixed(2)}%` },
         { metric: 'Normalized Turnover', value: summary.normalizedTurnover },
         { metric: 'Variance Tag', value: summary.varianceTag },
         { metric: 'Statement Months', value: summary.statementMonthsCovered },
