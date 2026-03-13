@@ -39,6 +39,7 @@ const EligibilityEngine: React.FC = () => {
   const navigate = useNavigate();
   const assessment = useEligibilityAssessment();
   const hasAnalysis = assessment.monthlySummaries.length > 0 || assessment.caseId !== null;
+  const [activeTab, setActiveTab] = React.useState<string>(assessment.currentStep);
 
   return (
     <div className="min-h-screen bg-background">
