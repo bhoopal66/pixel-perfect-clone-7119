@@ -236,6 +236,24 @@ const Index = () => {
             <ArrowRight className="h-4 w-4" />
             <span>Lender Match</span>
           </motion.div>
+
+          {/* My Cases Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+            className="mt-10"
+          >
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate('/client-cases')}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white gap-2"
+            >
+              <FileText className="h-5 w-5" />
+              View Existing Cases
+            </Button>
+          </motion.div>
         </div>
       </section>
 
