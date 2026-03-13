@@ -201,53 +201,61 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* Related Party Analysis Summary */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Total Related Party Inflow</p>
-              <p className="text-lg font-bold text-success">{fmt(summary.total_related_credit)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Credits from related entities</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Total Related Party Outflow</p>
-              <p className="text-lg font-bold text-destructive">{fmt(summary.total_related_debit)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Debits to related entities</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">% of Banking Activity</p>
-              <p className={`text-lg font-bold ${riskColor(summary.risk_flag)}`}>{pct(summary.related_party_ratio)}</p>
-              <div className="mt-1">{riskBadge(summary.risk_flag)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Related Entities</p>
-              <p className="text-lg font-bold text-foreground">{summary.number_of_related_entities}</p>
-              {summary.largest_related_entity && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">Largest: {summary.largest_related_entity}</p>
-              )}
-              {parties.length > 0 && (
-                <div className="mt-2 space-y-0.5">
-                  {parties.filter(p => p.active_status).slice(0, 5).map(p => (
-                    <p key={p.id} className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block flex-shrink-0" />
-                      {p.entity_name}
-                    </p>
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Related Party Analysis
+              <div className="ml-auto">{riskBadge(summary.risk_flag)}</div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Related Entities Identified */}
+            {parties.filter(p => p.active_status).length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-2">Related Entities Identified</h4>
+                <div className="space-y-1.5 pl-1">
+                  {parties.filter(p => p.active_status).map((p, idx) => (
+                    <div key={p.id} className="flex items-center gap-2 text-sm">
+                      <span className="font-mono text-xs text-muted-foreground w-5 text-right flex-shrink-0">{idx + 1}.</span>
+                      <span className="font-medium text-foreground">{p.entity_name}</span>
+                      <span className="text-muted-foreground">–</span>
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {ENTITY_TYPES.find(t => t.value === p.relationship_type)?.label || p.relationship_type}
+                      </Badge>
+                    </div>
                   ))}
-                  {parties.filter(p => p.active_status).length > 5 && (
-                    <p className="text-xs text-muted-foreground">+{parties.filter(p => p.active_status).length - 5} more</p>
-                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Key Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Total Related Inflows</p>
+                <p className="text-lg font-bold text-success">{fmt(summary.total_related_credit)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Total Related Outflows</p>
+                <p className="text-lg font-bold text-destructive">{fmt(summary.total_related_debit)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Related Party Ratio</p>
+                <p className={`text-lg font-bold ${riskColor(summary.risk_flag)}`}>{pct(summary.related_party_ratio)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Risk Classification</p>
+                <p className={`text-lg font-bold ${riskColor(summary.risk_flag)}`}>
+                  {summary.risk_flag === 'high' ? 'High' : summary.risk_flag === 'moderate' ? 'Moderate' : 'Normal'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Tabs defaultValue="register">
