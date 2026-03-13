@@ -141,19 +141,39 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   };
 
   const PartyForm = (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
       <div>
         <label className="text-sm font-medium text-foreground">Entity Name *</label>
         <Input value={form.entity_name} onChange={e => setForm(f => ({ ...f, entity_name: e.target.value }))} placeholder="Company name" />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground">Entity Type</label>
-        <Select value={form.entity_type} onValueChange={v => setForm(f => ({ ...f, entity_type: v }))}>
+        <label className="text-sm font-medium text-foreground">Relationship Type</label>
+        <Select value={form.relationship_type} onValueChange={v => setForm(f => ({ ...f, relationship_type: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {ENTITY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium text-foreground">Ownership %</label>
+          <Input type="number" min={0} max={100} value={form.ownership_percentage} onChange={e => setForm(f => ({ ...f, ownership_percentage: parseFloat(e.target.value) || 0 }))} />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-foreground">Shareholder Name</label>
+          <Input value={form.shareholder_name} onChange={e => setForm(f => ({ ...f, shareholder_name: e.target.value }))} placeholder="Optional" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium text-foreground">Country</label>
+          <Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} placeholder="e.g. UAE" />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-foreground">Industry</label>
+          <Input value={form.industry} onChange={e => setForm(f => ({ ...f, industry: e.target.value }))} placeholder="e.g. Trading" />
+        </div>
       </div>
       <div>
         <label className="text-sm font-medium text-foreground">Trade License No.</label>
@@ -164,8 +184,8 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
         <Input value={form.relationship_description} onChange={e => setForm(f => ({ ...f, relationship_description: e.target.value }))} placeholder="e.g. Same shareholder" />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground">Shareholder Link</label>
-        <Input value={form.shareholder_link} onChange={e => setForm(f => ({ ...f, shareholder_link: e.target.value }))} placeholder="Optional" />
+        <label className="text-sm font-medium text-foreground">Remarks</label>
+        <Input value={form.remarks} onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} placeholder="Optional notes" />
       </div>
     </div>
   );
