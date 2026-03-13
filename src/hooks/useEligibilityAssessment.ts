@@ -397,7 +397,7 @@ export function useEligibilityAssessment() {
           try {
             const rpResult = await RelatedPartyService.detectTransactions(caseData.id);
             if (rpResult.matched > 0) {
-              await ActivityLogService.log(caseData.id, 'related_party_detection' as any, `Related party detection: ${rpResult.matched} transactions matched, risk: ${rpResult.summary.risk_level}`);
+              await ActivityLogService.log(caseData.id, 'related_party_detection' as any, `Related party detection: ${rpResult.matched} transactions matched, risk: ${rpResult.summary.risk_flag}`);
             }
           } catch (rpError) {
             console.error('Related party detection error:', rpError);

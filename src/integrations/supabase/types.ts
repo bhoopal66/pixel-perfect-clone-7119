@@ -3171,49 +3171,37 @@ export type Database = {
           case_id: string
           created_at: string
           id: string
-          inflow_ratio: number | null
-          outflow_ratio: number | null
-          overall_ratio: number | null
-          parties_detected: number | null
-          risk_level: string | null
-          total_bank_credits: number | null
-          total_bank_debits: number | null
-          total_related_inflows: number | null
-          total_related_outflows: number | null
-          transactions_matched: number | null
-          updated_at: string
+          largest_related_entity: string | null
+          largest_related_flow: number | null
+          number_of_related_entities: number | null
+          related_party_ratio: number | null
+          risk_flag: string | null
+          total_related_credit: number | null
+          total_related_debit: number | null
         }
         Insert: {
           case_id: string
           created_at?: string
           id?: string
-          inflow_ratio?: number | null
-          outflow_ratio?: number | null
-          overall_ratio?: number | null
-          parties_detected?: number | null
-          risk_level?: string | null
-          total_bank_credits?: number | null
-          total_bank_debits?: number | null
-          total_related_inflows?: number | null
-          total_related_outflows?: number | null
-          transactions_matched?: number | null
-          updated_at?: string
+          largest_related_entity?: string | null
+          largest_related_flow?: number | null
+          number_of_related_entities?: number | null
+          related_party_ratio?: number | null
+          risk_flag?: string | null
+          total_related_credit?: number | null
+          total_related_debit?: number | null
         }
         Update: {
           case_id?: string
           created_at?: string
           id?: string
-          inflow_ratio?: number | null
-          outflow_ratio?: number | null
-          overall_ratio?: number | null
-          parties_detected?: number | null
-          risk_level?: string | null
-          total_bank_credits?: number | null
-          total_bank_debits?: number | null
-          total_related_inflows?: number | null
-          total_related_outflows?: number | null
-          transactions_matched?: number | null
-          updated_at?: string
+          largest_related_entity?: string | null
+          largest_related_flow?: number | null
+          number_of_related_entities?: number | null
+          related_party_ratio?: number | null
+          risk_flag?: string | null
+          total_related_credit?: number | null
+          total_related_debit?: number | null
         }
         Relationships: [
           {

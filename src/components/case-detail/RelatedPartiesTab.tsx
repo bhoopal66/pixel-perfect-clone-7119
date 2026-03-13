@@ -197,30 +197,30 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Related Inflows</p>
-              <p className="text-lg font-bold text-foreground">{fmt(summary.total_related_inflows)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{pct(summary.inflow_ratio)} of credits</p>
+              <p className="text-xs font-medium text-muted-foreground">Related Credits</p>
+              <p className="text-lg font-bold text-foreground">{fmt(summary.total_related_credit)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Related Outflows</p>
-              <p className="text-lg font-bold text-foreground">{fmt(summary.total_related_outflows)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{pct(summary.outflow_ratio)} of debits</p>
+              <p className="text-xs font-medium text-muted-foreground">Related Debits</p>
+              <p className="text-lg font-bold text-foreground">{fmt(summary.total_related_debit)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Overall Ratio</p>
-              <p className={`text-lg font-bold ${riskColor(summary.risk_level)}`}>{pct(summary.overall_ratio)}</p>
-              <div className="mt-1">{riskBadge(summary.risk_level)}</div>
+              <p className="text-xs font-medium text-muted-foreground">RP Ratio</p>
+              <p className={`text-lg font-bold ${riskColor(summary.risk_flag)}`}>{pct(summary.related_party_ratio)}</p>
+              <div className="mt-1">{riskBadge(summary.risk_flag)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Matches</p>
-              <p className="text-lg font-bold text-foreground">{summary.transactions_matched}</p>
-              <p className="text-xs text-muted-foreground mt-1">{summary.parties_detected} parties detected</p>
+              <p className="text-xs font-medium text-muted-foreground">Entities</p>
+              <p className="text-lg font-bold text-foreground">{summary.number_of_related_entities}</p>
+              {summary.largest_related_entity && (
+                <p className="text-xs text-muted-foreground mt-1 truncate">Largest: {summary.largest_related_entity}</p>
+              )}
             </CardContent>
           </Card>
         </div>
