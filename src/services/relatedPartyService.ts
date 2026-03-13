@@ -58,10 +58,12 @@ export interface RelatedPartyFlowSummary {
 
 export const ENTITY_TYPES = [
   { value: 'sister_concern', label: 'Sister Concern' },
-  { value: 'group_company', label: 'Group Company' },
-  { value: 'parent_entity', label: 'Parent Entity' },
+  { value: 'parent_company', label: 'Parent Company' },
   { value: 'subsidiary', label: 'Subsidiary' },
-  { value: 'shareholder_linked', label: 'Shareholder Linked' },
+  { value: 'common_shareholder', label: 'Common Shareholder' },
+  { value: 'director_related', label: 'Director Related Entity' },
+  { value: 'group_company', label: 'Group Company' },
+  { value: 'affiliate', label: 'Affiliate' },
   { value: 'joint_venture', label: 'Joint Venture' },
   { value: 'other', label: 'Other Related Entity' },
 ] as const;
