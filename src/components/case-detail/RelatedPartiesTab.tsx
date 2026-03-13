@@ -62,10 +62,17 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
     queryFn: () => RelatedPartyService.getDetectedTransactions(caseId),
   });
 
+  const { data: crossRef } = useQuery({
+    queryKey: ['related-party-crossref', caseId],
+    queryFn: () => RelatedPartyService.getCrossReference(caseId),
+    enabled: !!summary,
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['related-parties', caseId] });
     qc.invalidateQueries({ queryKey: ['related-party-summary', caseId] });
     qc.invalidateQueries({ queryKey: ['related-party-txns', caseId] });
+    qc.invalidateQueries({ queryKey: ['related-party-crossref', caseId] });
   };
 
   const addMutation = useMutation({
