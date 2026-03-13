@@ -389,7 +389,7 @@ export class RelatedPartyService {
       rangeFrom += pageSize;
     }
 
-    const totalCredits = (bankTxns || []).reduce((s, t) => s + (t.credit || 0), 0);
+    const totalCredits = bankTxns.reduce((s: number, t: any) => s + (t.credit || 0), 0);
     const rpCredits = summary.total_related_credit;
     const rpDebits = summary.total_related_debit;
     const rpRatio = totalCredits > 0 ? rpCredits / totalCredits : 0;
