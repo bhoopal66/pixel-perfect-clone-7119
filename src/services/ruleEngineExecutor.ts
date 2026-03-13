@@ -187,10 +187,11 @@ export class RuleEngineExecutor {
 
     const parseTerm = (): number => {
       let left = parseFactor();
-      while (pos < input.length && (peek() === '*' || peek() === '/')) {
+      while (pos < input.length && (peek() === '*' || peek() === '/' || peek() === '%')) {
         const op = advance();
         const right = parseFactor();
         if (op === '*') left *= right;
+        else if (op === '%') left = right !== 0 ? left % right : 0;
         else left = right !== 0 ? left / right : 0;
       }
       return left;
