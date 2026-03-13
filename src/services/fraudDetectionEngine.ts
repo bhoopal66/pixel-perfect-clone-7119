@@ -594,10 +594,21 @@ export class FraudDetectionEngine {
   // ─── Helpers ────────────────────────────────
 
   private static async getTransactions(caseId: string): Promise<BankTxn[]> {
-    const { data } = await supabase
-      .from('assessment_bank_transactions')
-      .select('*').eq('case_id', caseId);
-    return (data || []) as BankTxn[];
+    // Paginate to avoid Supabase 1000-row default limit
+    let allData: BankTxn[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('assessment_bank_transactions')
+        .select('*').eq('case_id', caseId)
+        .range(from, from + pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      allData = allData.concat(data as BankTxn[]);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    return allData;
   }
 
   private static async getCaseData(caseId: string) {
