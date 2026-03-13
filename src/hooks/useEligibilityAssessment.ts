@@ -35,6 +35,8 @@ export function useEligibilityAssessment() {
   const [vatAnalysis, setVatAnalysis] = useState<VatPeriodAnalysis[]>([]);
   const [combinedSummary, setCombinedSummary] = useState<CombinedFinancialSummary | null>(null);
   const [lenderResults, setLenderResults] = useState<Omit<AssessmentLenderResult, 'id' | 'case_id' | 'created_at' | 'updated_at'>[]>([]);
+  const [matchResults, setMatchResults] = useState<LenderMatchResult[]>([]);
+  const [isMatchingRunning, setIsMatchingRunning] = useState(false);
 
   // Parse bank statement PDF
   const parseBankStatement = useCallback(async (file: File): Promise<ParsedBankFile | null> => {
