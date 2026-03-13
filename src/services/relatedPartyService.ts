@@ -196,12 +196,40 @@ export class RelatedPartyService {
     const matches: any[] = [];
     const partiesDetected = new Set<string>();
 
-    // Build search terms from party names (split into tokens >= 3 chars)
-    const partyTerms = activeParties.map(p => ({
-      id: p.id,
-      name: p.entity_name,
-      tokens: p.entity_name.toLowerCase().split(/\s+/).filter(t => t.length >= 3),
-    }));
+    // Build search terms from entity names, shareholder names, and group company names
+    const partyTerms = activeParties.flatMap(p => {
+      const names: { id: string; name: string; tokens: string[]; source: string }[] = [];
+      
+      // Entity name (primary)
+      names.push({
+        id: p.id,
+        name: p.entity_name,
+        tokens: p.entity_name.toLowerCase().split(/\s+/).filter(t => t.length >= 3),
+        source: 'entity_name',
+      });
+
+      // Shareholder name
+      if (p.shareholder_name) {
+        names.push({
+          id: p.id,
+          name: p.shareholder_name,
+          tokens: p.shareholder_name.toLowerCase().split(/\s+/).filter(t => t.length >= 3),
+          source: 'shareholder_name',
+        });
+      }
+
+      // Group company / relationship description (may contain company names)
+      if (p.relationship_description) {
+        names.push({
+          id: p.id,
+          name: p.relationship_description,
+          tokens: p.relationship_description.toLowerCase().split(/\s+/).filter(t => t.length >= 3),
+          source: 'group_company',
+        });
+      }
+
+      return names;
+    });
 
     for (const txn of txns) {
       const desc = (txn.description || '').toLowerCase();
