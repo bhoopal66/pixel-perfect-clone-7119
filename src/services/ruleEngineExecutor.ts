@@ -148,7 +148,7 @@ export class RuleEngineExecutor {
       return String(Math.max(...values));
     });
     try {
-      // Validate: only allow digits, operators, parens, dots, spaces
+      // Validate: only allow digits, operators, parens, dots, spaces, modulo
       if (/^[0-9+\-*/().%\s,]+$/.test(processed)) {
         return this.safeEvaluateMath(processed);
       }
