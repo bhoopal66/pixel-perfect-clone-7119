@@ -58,9 +58,9 @@ function OnboardingContent() {
     // Simulate submission
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    toast.success('Application submitted successfully!');
+    toast.success('Application submitted successfully! Redirecting to Eligibility Engine…');
     resetForm();
-    navigate('/client-cases');
+    navigate('/eligibility-engine');
     
     setIsSubmitting(false);
   };
