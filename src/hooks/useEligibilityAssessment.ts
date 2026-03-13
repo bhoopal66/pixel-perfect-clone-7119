@@ -373,6 +373,29 @@ export function useEligibilityAssessment() {
         );
       }
 
+      // Run professional banking risk analysis (15 modules)
+      try {
+        const accountInputs: AccountAnalysisInput[] = bankFiles
+          .filter(f => f.isValid)
+          .map(bf => ({
+            accountNumber: bf.accountNumber,
+            bankName: bf.bankName,
+            transactions: bf.transactions,
+            periodFrom: bf.periodFrom,
+            periodTo: bf.periodTo,
+          }));
+
+        if (accountInputs.length > 0) {
+          const { accountResults: riskResults, consolidated: riskConsolidated } =
+            await BankingRiskAnalysisEngine.runAndPersist(caseData.id, accountInputs);
+          setBankRiskResults(riskResults);
+          setBankRiskConsolidated(riskConsolidated);
+          await ActivityLogService.log(caseData.id, 'bank_risk_analysis', `Banking risk analysis completed: ${riskResults.length} account(s), ${riskConsolidated.overall_risk_flags.length} risk flag(s)`);
+        }
+      } catch (riskError) {
+        console.error('Banking risk analysis error:', riskError);
+      }
+
       // Save combined financial summary (versioned, permanent)
       const periodDates = bankFiles.filter(f => f.periodFrom && f.periodTo);
       const periodFrom = periodDates.length > 0
