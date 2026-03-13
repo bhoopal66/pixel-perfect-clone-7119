@@ -116,10 +116,15 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
     setEditParty(p);
     setForm({
       entity_name: p.entity_name,
-      entity_type: p.entity_type,
+      relationship_type: p.relationship_type,
       trade_license_no: p.trade_license_no || '',
       relationship_description: p.relationship_description || '',
       shareholder_link: p.shareholder_link || '',
+      ownership_percentage: p.ownership_percentage || 0,
+      shareholder_name: p.shareholder_name || '',
+      country: p.country || '',
+      industry: p.industry || '',
+      remarks: p.remarks || '',
     });
   };
 
