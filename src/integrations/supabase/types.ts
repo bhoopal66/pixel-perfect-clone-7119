@@ -50,6 +50,89 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_credit_decision_results: {
+        Row: {
+          approval_probability: number | null
+          case_id: string
+          created_at: string
+          created_by: string | null
+          credit_rating: string | null
+          decision_notes: string | null
+          id: string
+          key_strengths_json: Json | null
+          model_version: string | null
+          recommended_lender_id: string | null
+          recommended_limit: number | null
+          recommended_product_id: string | null
+          risk_flags_json: Json | null
+          summary_id: string | null
+          taamul_credit_score: number | null
+        }
+        Insert: {
+          approval_probability?: number | null
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          credit_rating?: string | null
+          decision_notes?: string | null
+          id?: string
+          key_strengths_json?: Json | null
+          model_version?: string | null
+          recommended_lender_id?: string | null
+          recommended_limit?: number | null
+          recommended_product_id?: string | null
+          risk_flags_json?: Json | null
+          summary_id?: string | null
+          taamul_credit_score?: number | null
+        }
+        Update: {
+          approval_probability?: number | null
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          credit_rating?: string | null
+          decision_notes?: string | null
+          id?: string
+          key_strengths_json?: Json | null
+          model_version?: string | null
+          recommended_lender_id?: string | null
+          recommended_limit?: number | null
+          recommended_product_id?: string | null
+          risk_flags_json?: Json | null
+          summary_id?: string | null
+          taamul_credit_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_decision_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_decision_results_recommended_lender_id_fkey"
+            columns: ["recommended_lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_decision_results_recommended_product_id_fkey"
+            columns: ["recommended_product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_credit_decision_results_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "combined_financial_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applicant_businesses: {
         Row: {
           business_activity: string
@@ -233,6 +316,7 @@ export type Database = {
       assessment_bank_transactions: {
         Row: {
           account_name: string | null
+          account_number_masked: string | null
           balance: number | null
           bank_name: string | null
           case_id: string
@@ -244,16 +328,20 @@ export type Database = {
           description: string | null
           document_id: string | null
           exclusion_reason: string | null
+          extraction_run_id: string | null
           id: string
           is_excluded: boolean | null
           is_recurring: boolean | null
           is_related_party: boolean | null
           month: number | null
+          raw_text_reference: string | null
+          source_page: number | null
           txn_date: string | null
           year: number | null
         }
         Insert: {
           account_name?: string | null
+          account_number_masked?: string | null
           balance?: number | null
           bank_name?: string | null
           case_id: string
@@ -265,16 +353,20 @@ export type Database = {
           description?: string | null
           document_id?: string | null
           exclusion_reason?: string | null
+          extraction_run_id?: string | null
           id?: string
           is_excluded?: boolean | null
           is_recurring?: boolean | null
           is_related_party?: boolean | null
           month?: number | null
+          raw_text_reference?: string | null
+          source_page?: number | null
           txn_date?: string | null
           year?: number | null
         }
         Update: {
           account_name?: string | null
+          account_number_masked?: string | null
           balance?: number | null
           bank_name?: string | null
           case_id?: string
@@ -286,11 +378,14 @@ export type Database = {
           description?: string | null
           document_id?: string | null
           exclusion_reason?: string | null
+          extraction_run_id?: string | null
           id?: string
           is_excluded?: boolean | null
           is_recurring?: boolean | null
           is_related_party?: boolean | null
           month?: number | null
+          raw_text_reference?: string | null
+          source_page?: number | null
           txn_date?: string | null
           year?: number | null
         }
@@ -309,10 +404,19 @@ export type Database = {
             referencedRelation: "assessment_documents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_bank_txn_extraction_run"
+            columns: ["extraction_run_id"]
+            isOneToOne: false
+            referencedRelation: "extraction_runs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       assessment_cases: {
         Row: {
+          ai_matching_completed: boolean
+          analysis_completed: boolean
           analyst_notes: string | null
           approved_at: string | null
           approved_by: string | null
@@ -324,12 +428,21 @@ export type Database = {
           case_number: string | null
           cash_collection_pct: number | null
           company_name: string | null
+          contact_person: string | null
           created_at: string
+          created_by: string | null
           declared_vat_turnover: number | null
+          email: string | null
+          emirate: string | null
           estimated_annual_turnover: number | null
           existing_debt_count: number | null
           gross_margin_pct: number | null
           id: string
+          industry: string | null
+          latest_report_version: number | null
+          legal_form: string | null
+          lenders_run_completed: boolean
+          mobile_number: string | null
           normalized_turnover: number | null
           past_breakeven: boolean | null
           proceeds_for_cogs: boolean | null
@@ -339,6 +452,8 @@ export type Database = {
           status: string
           total_bank_credits: number | null
           total_bank_debits: number | null
+          trade_license_number: string | null
+          trn: string | null
           uae_revenue_pct: number | null
           updated_at: string
           user_id: string | null
@@ -346,6 +461,8 @@ export type Database = {
           vat_periods_covered: number | null
         }
         Insert: {
+          ai_matching_completed?: boolean
+          analysis_completed?: boolean
           analyst_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
@@ -357,12 +474,21 @@ export type Database = {
           case_number?: string | null
           cash_collection_pct?: number | null
           company_name?: string | null
+          contact_person?: string | null
           created_at?: string
+          created_by?: string | null
           declared_vat_turnover?: number | null
+          email?: string | null
+          emirate?: string | null
           estimated_annual_turnover?: number | null
           existing_debt_count?: number | null
           gross_margin_pct?: number | null
           id?: string
+          industry?: string | null
+          latest_report_version?: number | null
+          legal_form?: string | null
+          lenders_run_completed?: boolean
+          mobile_number?: string | null
           normalized_turnover?: number | null
           past_breakeven?: boolean | null
           proceeds_for_cogs?: boolean | null
@@ -372,6 +498,8 @@ export type Database = {
           status?: string
           total_bank_credits?: number | null
           total_bank_debits?: number | null
+          trade_license_number?: string | null
+          trn?: string | null
           uae_revenue_pct?: number | null
           updated_at?: string
           user_id?: string | null
@@ -379,6 +507,8 @@ export type Database = {
           vat_periods_covered?: number | null
         }
         Update: {
+          ai_matching_completed?: boolean
+          analysis_completed?: boolean
           analyst_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
@@ -390,12 +520,21 @@ export type Database = {
           case_number?: string | null
           cash_collection_pct?: number | null
           company_name?: string | null
+          contact_person?: string | null
           created_at?: string
+          created_by?: string | null
           declared_vat_turnover?: number | null
+          email?: string | null
+          emirate?: string | null
           estimated_annual_turnover?: number | null
           existing_debt_count?: number | null
           gross_margin_pct?: number | null
           id?: string
+          industry?: string | null
+          latest_report_version?: number | null
+          legal_form?: string | null
+          lenders_run_completed?: boolean
+          mobile_number?: string | null
           normalized_turnover?: number | null
           past_breakeven?: boolean | null
           proceeds_for_cogs?: boolean | null
@@ -405,6 +544,8 @@ export type Database = {
           status?: string
           total_bank_credits?: number | null
           total_bank_debits?: number | null
+          trade_license_number?: string | null
+          trn?: string | null
           uae_revenue_pct?: number | null
           updated_at?: string
           user_id?: string | null
@@ -419,16 +560,23 @@ export type Database = {
           account_number: string | null
           bank_name: string | null
           case_id: string
+          checksum_hash: string | null
           created_at: string
           document_type: string
+          duplicate_flag: boolean
           file_name: string
           file_path: string | null
           file_size: number | null
+          file_url: string | null
           id: string
+          is_active: boolean
           is_duplicate: boolean | null
           is_password_protected: boolean | null
+          mime_type: string | null
+          original_file_name: string | null
           period_from: string | null
           period_to: string | null
+          upload_source: string | null
           uploaded_by: string | null
           validation_message: string | null
           validation_status: string | null
@@ -438,16 +586,23 @@ export type Database = {
           account_number?: string | null
           bank_name?: string | null
           case_id: string
+          checksum_hash?: string | null
           created_at?: string
           document_type: string
+          duplicate_flag?: boolean
           file_name: string
           file_path?: string | null
           file_size?: number | null
+          file_url?: string | null
           id?: string
+          is_active?: boolean
           is_duplicate?: boolean | null
           is_password_protected?: boolean | null
+          mime_type?: string | null
+          original_file_name?: string | null
           period_from?: string | null
           period_to?: string | null
+          upload_source?: string | null
           uploaded_by?: string | null
           validation_message?: string | null
           validation_status?: string | null
@@ -457,16 +612,23 @@ export type Database = {
           account_number?: string | null
           bank_name?: string | null
           case_id?: string
+          checksum_hash?: string | null
           created_at?: string
           document_type?: string
+          duplicate_flag?: boolean
           file_name?: string
           file_path?: string | null
           file_size?: number | null
+          file_url?: string | null
           id?: string
+          is_active?: boolean
           is_duplicate?: boolean | null
           is_password_protected?: boolean | null
+          mime_type?: string | null
+          original_file_name?: string | null
           period_from?: string | null
           period_to?: string | null
+          upload_source?: string | null
           uploaded_by?: string | null
           validation_message?: string | null
           validation_status?: string | null
@@ -565,6 +727,7 @@ export type Database = {
           created_at: string
           document_id: string | null
           exempt_supplies: number | null
+          extraction_run_id: string | null
           filing_date: string | null
           id: string
           input_vat: number | null
@@ -573,6 +736,7 @@ export type Database = {
           original_values: Json | null
           output_vat: number | null
           source_file: string | null
+          source_page: number | null
           tax_period_from: string | null
           tax_period_to: string | null
           taxable_supplies: number | null
@@ -585,6 +749,7 @@ export type Database = {
           created_at?: string
           document_id?: string | null
           exempt_supplies?: number | null
+          extraction_run_id?: string | null
           filing_date?: string | null
           id?: string
           input_vat?: number | null
@@ -593,6 +758,7 @@ export type Database = {
           original_values?: Json | null
           output_vat?: number | null
           source_file?: string | null
+          source_page?: number | null
           tax_period_from?: string | null
           tax_period_to?: string | null
           taxable_supplies?: number | null
@@ -605,6 +771,7 @@ export type Database = {
           created_at?: string
           document_id?: string | null
           exempt_supplies?: number | null
+          extraction_run_id?: string | null
           filing_date?: string | null
           id?: string
           input_vat?: number | null
@@ -613,6 +780,7 @@ export type Database = {
           original_values?: Json | null
           output_vat?: number | null
           source_file?: string | null
+          source_page?: number | null
           tax_period_from?: string | null
           tax_period_to?: string | null
           taxable_supplies?: number | null
@@ -633,6 +801,13 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "assessment_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_vat_extraction_run"
+            columns: ["extraction_run_id"]
+            isOneToOne: false
+            referencedRelation: "extraction_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -689,6 +864,47 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "onboarding_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_activity_log: {
+        Row: {
+          activity_description: string | null
+          activity_type: string
+          case_id: string
+          done_at: string
+          done_by: string | null
+          id: string
+          reference_id: string | null
+          reference_table: string | null
+        }
+        Insert: {
+          activity_description?: string | null
+          activity_type: string
+          case_id: string
+          done_at?: string
+          done_by?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_table?: string | null
+        }
+        Update: {
+          activity_description?: string | null
+          activity_type?: string
+          case_id?: string
+          done_at?: string
+          done_by?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_activity_log_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
             referencedColumns: ["id"]
           },
         ]
@@ -789,6 +1005,82 @@ export type Database = {
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "onboarding_lender_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_reports: {
+        Row: {
+          based_on_execution_id: string | null
+          based_on_summary_id: string | null
+          case_id: string
+          file_name: string
+          file_path: string | null
+          file_url: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          is_latest: boolean
+          remarks: string | null
+          report_format: string
+          report_name: string
+          report_type: string
+          report_version: number
+        }
+        Insert: {
+          based_on_execution_id?: string | null
+          based_on_summary_id?: string | null
+          case_id: string
+          file_name: string
+          file_path?: string | null
+          file_url?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          is_latest?: boolean
+          remarks?: string | null
+          report_format?: string
+          report_name: string
+          report_type: string
+          report_version?: number
+        }
+        Update: {
+          based_on_execution_id?: string | null
+          based_on_summary_id?: string | null
+          case_id?: string
+          file_name?: string
+          file_path?: string | null
+          file_url?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          is_latest?: boolean
+          remarks?: string | null
+          report_format?: string
+          report_name?: string
+          report_type?: string
+          report_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_reports_based_on_execution_id_fkey"
+            columns: ["based_on_execution_id"]
+            isOneToOne: false
+            referencedRelation: "lender_execution_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_reports_based_on_summary_id_fkey"
+            columns: ["based_on_summary_id"]
+            isOneToOne: false
+            referencedRelation: "combined_financial_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_reports_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
             referencedColumns: ["id"]
           },
         ]
@@ -906,6 +1198,203 @@ export type Database = {
           vat_turnover?: number
         }
         Relationships: []
+      }
+      combined_financial_summary: {
+        Row: {
+          adjusted_annual_turnover: number | null
+          adjusted_monthly_turnover: number | null
+          aecb_score: number | null
+          approved_at: string | null
+          approved_by: string | null
+          average_client_credit_days: number | null
+          avg_monthly_balance: number | null
+          avg_monthly_bank_credit: number | null
+          avg_monthly_debit: number | null
+          bank_vat_variance: number | null
+          break_even_status: boolean | null
+          business_vintage_months: number | null
+          case_id: string
+          cash_deposit_ratio: number | null
+          client_type: string | null
+          created_at: string
+          created_by: string | null
+          ecommerce_monthly_settlement: number | null
+          existing_debt: number | null
+          gross_margin_percentage: number | null
+          id: string
+          internal_transfer_percentage: number | null
+          inventory_turn_days: number | null
+          inventory_value: number | null
+          is_active: boolean
+          negative_balance_days: number | null
+          one_off_credit_percentage: number | null
+          period_from: string | null
+          period_to: string | null
+          pos_monthly_settlement: number | null
+          profitability_last_12_months: number | null
+          receivable_days: number | null
+          receivable_overdue_percent: number | null
+          repeat_buyer_ratio: number | null
+          returned_cheque_count: number | null
+          risk_flags_json: Json | null
+          shareholder_management_tenure_months: number | null
+          summary_version: number
+          top_5_customer_concentration: number | null
+          uae_client_percentage: number | null
+          use_of_proceeds: string | null
+          vat_monthly_sales: number | null
+        }
+        Insert: {
+          adjusted_annual_turnover?: number | null
+          adjusted_monthly_turnover?: number | null
+          aecb_score?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          average_client_credit_days?: number | null
+          avg_monthly_balance?: number | null
+          avg_monthly_bank_credit?: number | null
+          avg_monthly_debit?: number | null
+          bank_vat_variance?: number | null
+          break_even_status?: boolean | null
+          business_vintage_months?: number | null
+          case_id: string
+          cash_deposit_ratio?: number | null
+          client_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          ecommerce_monthly_settlement?: number | null
+          existing_debt?: number | null
+          gross_margin_percentage?: number | null
+          id?: string
+          internal_transfer_percentage?: number | null
+          inventory_turn_days?: number | null
+          inventory_value?: number | null
+          is_active?: boolean
+          negative_balance_days?: number | null
+          one_off_credit_percentage?: number | null
+          period_from?: string | null
+          period_to?: string | null
+          pos_monthly_settlement?: number | null
+          profitability_last_12_months?: number | null
+          receivable_days?: number | null
+          receivable_overdue_percent?: number | null
+          repeat_buyer_ratio?: number | null
+          returned_cheque_count?: number | null
+          risk_flags_json?: Json | null
+          shareholder_management_tenure_months?: number | null
+          summary_version?: number
+          top_5_customer_concentration?: number | null
+          uae_client_percentage?: number | null
+          use_of_proceeds?: string | null
+          vat_monthly_sales?: number | null
+        }
+        Update: {
+          adjusted_annual_turnover?: number | null
+          adjusted_monthly_turnover?: number | null
+          aecb_score?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          average_client_credit_days?: number | null
+          avg_monthly_balance?: number | null
+          avg_monthly_bank_credit?: number | null
+          avg_monthly_debit?: number | null
+          bank_vat_variance?: number | null
+          break_even_status?: boolean | null
+          business_vintage_months?: number | null
+          case_id?: string
+          cash_deposit_ratio?: number | null
+          client_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          ecommerce_monthly_settlement?: number | null
+          existing_debt?: number | null
+          gross_margin_percentage?: number | null
+          id?: string
+          internal_transfer_percentage?: number | null
+          inventory_turn_days?: number | null
+          inventory_value?: number | null
+          is_active?: boolean
+          negative_balance_days?: number | null
+          one_off_credit_percentage?: number | null
+          period_from?: string | null
+          period_to?: string | null
+          pos_monthly_settlement?: number | null
+          profitability_last_12_months?: number | null
+          receivable_days?: number | null
+          receivable_overdue_percent?: number | null
+          repeat_buyer_ratio?: number | null
+          returned_cheque_count?: number | null
+          risk_flags_json?: Json | null
+          shareholder_management_tenure_months?: number | null
+          summary_version?: number
+          top_5_customer_concentration?: number | null
+          uae_client_percentage?: number | null
+          use_of_proceeds?: string | null
+          vat_monthly_sales?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combined_financial_summary_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extraction_runs: {
+        Row: {
+          case_id: string
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string
+          document_id: string | null
+          extracted_by_engine: string | null
+          extraction_status: string
+          extraction_type: string
+          id: string
+          started_at: string | null
+        }
+        Insert: {
+          case_id: string
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string | null
+          extracted_by_engine?: string | null
+          extraction_status?: string
+          extraction_type?: string
+          id?: string
+          started_at?: string | null
+        }
+        Update: {
+          case_id?: string
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string | null
+          extracted_by_engine?: string | null
+          extraction_status?: string
+          extraction_type?: string
+          id?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extraction_runs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_runs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_inputs: {
         Row: {
@@ -1040,15 +1529,18 @@ export type Database = {
           executed_by: string | null
           failed_rules: Json | null
           id: string
+          is_active: boolean
           lender_id: string
           major_fail_count: number | null
           minor_fail_count: number | null
+          pricing_band: string | null
           product_id: string
           recommended_limit: number | null
           recommended_tenure: number | null
           risk_flags: Json | null
           rule_set_id: string
           score: number | null
+          summary_id: string | null
         }
         Insert: {
           case_id: string
@@ -1058,15 +1550,18 @@ export type Database = {
           executed_by?: string | null
           failed_rules?: Json | null
           id?: string
+          is_active?: boolean
           lender_id: string
           major_fail_count?: number | null
           minor_fail_count?: number | null
+          pricing_band?: string | null
           product_id: string
           recommended_limit?: number | null
           recommended_tenure?: number | null
           risk_flags?: Json | null
           rule_set_id: string
           score?: number | null
+          summary_id?: string | null
         }
         Update: {
           case_id?: string
@@ -1076,17 +1571,27 @@ export type Database = {
           executed_by?: string | null
           failed_rules?: Json | null
           id?: string
+          is_active?: boolean
           lender_id?: string
           major_fail_count?: number | null
           minor_fail_count?: number | null
+          pricing_band?: string | null
           product_id?: string
           recommended_limit?: number | null
           recommended_tenure?: number | null
           risk_flags?: Json | null
           rule_set_id?: string
           score?: number | null
+          summary_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_execution_summary"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "combined_financial_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lender_execution_results_case_id_fkey"
             columns: ["case_id"]
@@ -1229,6 +1734,7 @@ export type Database = {
           approval_probability: number
           case_id: string
           created_at: string
+          created_by: string | null
           decision_status: string
           eligibility_score: number
           execution_result_id: string | null
@@ -1253,6 +1759,7 @@ export type Database = {
           approval_probability?: number
           case_id: string
           created_at?: string
+          created_by?: string | null
           decision_status?: string
           eligibility_score?: number
           execution_result_id?: string | null
@@ -1277,6 +1784,7 @@ export type Database = {
           approval_probability?: number
           case_id?: string
           created_at?: string
+          created_by?: string | null
           decision_status?: string
           eligibility_score?: number
           execution_result_id?: string | null
@@ -1456,7 +1964,9 @@ export type Database = {
           pass_fail_status: string
           rule_code: string | null
           rule_id: string | null
+          rule_name: string | null
           threshold_value: string | null
+          threshold_value_secondary: string | null
         }
         Insert: {
           created_at?: string
@@ -1471,7 +1981,9 @@ export type Database = {
           pass_fail_status?: string
           rule_code?: string | null
           rule_id?: string | null
+          rule_name?: string | null
           threshold_value?: string | null
+          threshold_value_secondary?: string | null
         }
         Update: {
           created_at?: string
@@ -1486,7 +1998,9 @@ export type Database = {
           pass_fail_status?: string
           rule_code?: string | null
           rule_id?: string | null
+          rule_name?: string | null
           threshold_value?: string | null
+          threshold_value_secondary?: string | null
         }
         Relationships: [
           {
