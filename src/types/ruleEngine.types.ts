@@ -110,6 +110,7 @@ export interface LenderExecutionResult {
   risk_flags: string[];
   failed_rules: any[];
   decision_summary: string | null;
+  pricing_band: string | null;
   executed_at: string;
   executed_by: string | null;
 }

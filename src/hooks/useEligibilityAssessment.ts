@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
-import { AssessmentRuleEngine } from '@/services/assessmentRuleEngine';
+// AssessmentRuleEngine is deprecated in favor of the unified RuleEngineExecutor
 import { RelatedPartyService } from '@/services/relatedPartyService';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
 import { BankingRiskAnalysisEngine, type BankAnalysisResult, type ConsolidatedAnalysis, type AccountAnalysisInput } from '@/services/bankingRiskAnalysisEngine';
