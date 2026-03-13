@@ -143,9 +143,9 @@ export default function ClientCases() {
   });
 
   const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.open;
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
+      <Badge variant="outline" className={`flex items-center gap-1 w-fit ${config.className || ''}`}>
         {config.icon}
         {config.label}
       </Badge>
