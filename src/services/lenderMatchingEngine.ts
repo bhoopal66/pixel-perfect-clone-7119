@@ -275,7 +275,7 @@ export class LenderMatchingEngine {
       r.is_best_match = i === 0;
     });
 
-    // Step 5: Save results
+    // Step 5: Save results (match results are re-computable ranking data, delete-insert is acceptable)
     await from('lender_match_results').delete().eq('case_id', caseId);
     
     const toInsert = matchResults.map(({ id, ...rest }) => rest);

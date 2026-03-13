@@ -160,25 +160,26 @@ export class RuleEngineExecutor {
 
   /** Evaluate a simple math expression safely without Function()/eval using a recursive descent parser */
   private static safeEvaluateMath(expr: string): number {
-    const tokens = expr.replace(/\s+/g, '').split('');
+    const input = expr.replace(/\s+/g, '');
     let pos = 0;
 
-    const peek = () => tokens[pos];
-    const consume = () => tokens[pos++];
+    const peek = (): string => input[pos] || '';
+    const advance = (): string => input[pos++] || '';
 
     const parseNumber = (): number => {
       let numStr = '';
-      if (peek() === '-') numStr += consume();
-      while (pos < tokens.length && (/[0-9.]/.test(peek()))) numStr += consume();
+      // Handle negative numbers only at start or after operator/paren
+      if (peek() === '-') numStr += advance();
+      while (pos < input.length && /[0-9.]/.test(peek())) numStr += advance();
       if (numStr === '' || numStr === '-') return 0;
       return parseFloat(numStr) || 0;
     };
 
     const parseFactor = (): number => {
       if (peek() === '(') {
-        consume(); // '('
+        advance(); // '('
         const val = parseExpr();
-        if (peek() === ')') consume(); // ')'
+        if (peek() === ')') advance(); // ')'
         return val;
       }
       return parseNumber();
@@ -186,8 +187,8 @@ export class RuleEngineExecutor {
 
     const parseTerm = (): number => {
       let left = parseFactor();
-      while (pos < tokens.length && (peek() === '*' || peek() === '/')) {
-        const op = consume();
+      while (pos < input.length && (peek() === '*' || peek() === '/')) {
+        const op = advance();
         const right = parseFactor();
         if (op === '*') left *= right;
         else left = right !== 0 ? left / right : 0;
@@ -197,8 +198,8 @@ export class RuleEngineExecutor {
 
     const parseExpr = (): number => {
       let left = parseTerm();
-      while (pos < tokens.length && (peek() === '+' || peek() === '-') && tokens[pos - 1] !== '(') {
-        const op = consume();
+      while (pos < input.length && (peek() === '+' || peek() === '-')) {
+        const op = advance();
         const right = parseTerm();
         if (op === '+') left += right;
         else left -= right;

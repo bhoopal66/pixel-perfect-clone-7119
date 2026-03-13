@@ -172,13 +172,24 @@ export class RelatedPartyService {
       return { matched: 0, summary };
     }
 
-    // 2. Get all bank transactions for case
-    const { data: txns, error } = await supabase
-      .from('assessment_bank_transactions')
-      .select('*')
-      .eq('case_id', caseId);
-    if (error) throw error;
-    if (!txns || txns.length === 0) {
+    // 2. Get all bank transactions for case (with pagination to avoid 1000-row limit)
+    let allTxns: any[] = [];
+    let rangeFrom = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error } = await supabase
+        .from('assessment_bank_transactions')
+        .select('*')
+        .eq('case_id', caseId)
+        .range(rangeFrom, rangeFrom + pageSize - 1);
+      if (error) throw error;
+      if (!page || page.length === 0) break;
+      allTxns = allTxns.concat(page);
+      if (page.length < pageSize) break;
+      rangeFrom += pageSize;
+    }
+    const txns = allTxns;
+    if (txns.length === 0) {
       const summary = await this.upsertSummary(caseId, {
         total_related_credit: 0,
         total_related_debit: 0,

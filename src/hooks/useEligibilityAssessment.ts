@@ -352,12 +352,24 @@ export function useEligibilityAssessment() {
       );
       setCombinedSummary(combined);
 
-      // Save bank summaries to DB
+      // Save bank summaries to DB - associate each summary with the correct bank
       if (summaries.length > 0) {
+        // Determine bank name per month from source files
+        const monthToBankMap = new Map<string, string>();
+        bankFiles.filter(f => f.isValid).forEach(bf => {
+          bf.transactions.forEach(t => {
+            const d = new Date(t.date);
+            if (!isNaN(d.getTime())) {
+              const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+              if (bf.bankName) monthToBankMap.set(key, bf.bankName);
+            }
+          });
+        });
+
         await supabase.from('assessment_bank_summaries').insert(
           summaries.map(s => ({
             case_id: caseData.id,
-            bank_name: bankFiles[0]?.bankName || null,
+            bank_name: monthToBankMap.get(`${s.year}-${s.month}`) || bankFiles[0]?.bankName || null,
             month: s.month,
             year: s.year,
             total_credits: s.totalCredits,
