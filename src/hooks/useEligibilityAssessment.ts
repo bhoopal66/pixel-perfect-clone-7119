@@ -563,6 +563,8 @@ export function useEligibilityAssessment() {
     lenderResults,
     matchResults,
     isMatchingRunning,
+    bankRiskResults,
+    bankRiskConsolidated,
     handleBankFiles,
     handleVatFiles,
     removeBankFile,
