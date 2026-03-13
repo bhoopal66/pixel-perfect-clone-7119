@@ -88,7 +88,8 @@ export class AssessmentAnalysisEngine {
     return vatFiles
       .filter(f => f.isValid)
       .map(f => {
-        const totalSales = f.vatSales || f.taxableSupplies + f.zeroRatedSupplies + f.exemptSupplies;
+        // Use vatSales if explicitly set; otherwise compute from components
+        const totalSales = f.vatSales > 0 ? f.vatSales : (f.taxableSupplies + f.zeroRatedSupplies + f.exemptSupplies);
         const effectiveVatRate = totalSales > 0 ? (f.outputVat / totalSales) * 100 : 0;
 
         // Estimate months in period

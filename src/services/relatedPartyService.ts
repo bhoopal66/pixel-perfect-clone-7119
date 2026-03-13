@@ -172,13 +172,24 @@ export class RelatedPartyService {
       return { matched: 0, summary };
     }
 
-    // 2. Get all bank transactions for case
-    const { data: txns, error } = await supabase
-      .from('assessment_bank_transactions')
-      .select('*')
-      .eq('case_id', caseId);
-    if (error) throw error;
-    if (!txns || txns.length === 0) {
+    // 2. Get all bank transactions for case (with pagination to avoid 1000-row limit)
+    let allTxns: any[] = [];
+    let rangeFrom = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error } = await supabase
+        .from('assessment_bank_transactions')
+        .select('*')
+        .eq('case_id', caseId)
+        .range(rangeFrom, rangeFrom + pageSize - 1);
+      if (error) throw error;
+      if (!page || page.length === 0) break;
+      allTxns = allTxns.concat(page);
+      if (page.length < pageSize) break;
+      rangeFrom += pageSize;
+    }
+    const txns = allTxns;
+    if (txns.length === 0) {
       const summary = await this.upsertSummary(caseId, {
         total_related_credit: 0,
         total_related_debit: 0,
@@ -362,13 +373,23 @@ export class RelatedPartyService {
 
     if (!summary) return null;
 
-    // Get total bank credits for the case
-    const { data: bankTxns } = await supabase
-      .from('assessment_bank_transactions')
-      .select('credit, debit')
-      .eq('case_id', caseId);
+    // Get total bank credits for the case (with pagination)
+    let bankTxns: any[] = [];
+    let rangeFrom = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page } = await supabase
+        .from('assessment_bank_transactions')
+        .select('credit, debit')
+        .eq('case_id', caseId)
+        .range(rangeFrom, rangeFrom + pageSize - 1);
+      if (!page || page.length === 0) break;
+      bankTxns = bankTxns.concat(page);
+      if (page.length < pageSize) break;
+      rangeFrom += pageSize;
+    }
 
-    const totalCredits = (bankTxns || []).reduce((s, t) => s + (t.credit || 0), 0);
+    const totalCredits = bankTxns.reduce((s: number, t: any) => s + (t.credit || 0), 0);
     const rpCredits = summary.total_related_credit;
     const rpDebits = summary.total_related_debit;
     const rpRatio = totalCredits > 0 ? rpCredits / totalCredits : 0;
