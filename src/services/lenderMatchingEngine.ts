@@ -133,10 +133,14 @@ export class LenderMatchingEngine {
     return Math.max(0, score);
   }
 
-  /** Calculate related party score standalone (for display) */
+  /** Calculate related party score standalone (for display) 
+   *  @param rpRatio - decimal ratio (e.g. 0.185 for 18.5%)
+   */
   static calcRelatedPartyScore(rpRatio: number): { score: number; flag: boolean } {
-    if (rpRatio < 0.10) return { score: 5, flag: false };
-    if (rpRatio <= 0.25) return { score: 3, flag: false };
+    // Detect if passed as percentage and convert
+    const ratio = rpRatio > 1 ? rpRatio / 100 : rpRatio;
+    if (ratio < 0.10) return { score: 5, flag: false };
+    if (ratio <= 0.25) return { score: 3, flag: false };
     return { score: 0, flag: true };
   }
 
