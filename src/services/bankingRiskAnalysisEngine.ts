@@ -166,7 +166,7 @@ export class BankingRiskAnalysisEngine {
       salaryByMonth.set(k, (salaryByMonth.get(k) || 0) + t.debit);
     });
     const salaryValues = Array.from(salaryByMonth.values());
-    const salaryFlag = this.checkConsistency(salaryValues);
+    const salaryFlag = this.classifyConsistency(salaryValues);
 
     // 8. Cash deposit ratio
     const cashCredits = txns.filter(t => t.credit > 0 && matchAny(desc(t), CASH_KW));
