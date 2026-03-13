@@ -132,6 +132,9 @@ export default function AssessmentCaseDetail() {
           <TabsContent value="summary">
             <FinancialSummaryTab caseId={id!} />
           </TabsContent>
+          <TabsContent value="related_parties">
+            <RelatedPartiesTab caseId={id!} />
+          </TabsContent>
           <TabsContent value="lenders">
             <LenderResultsTab caseId={id!} />
           </TabsContent>
