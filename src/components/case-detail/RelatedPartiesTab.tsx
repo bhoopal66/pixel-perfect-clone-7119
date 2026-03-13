@@ -491,6 +491,107 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Document Cross-Reference Tab */}
+        <TabsContent value="crossref">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" /> Document Cross-Reference
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Cross-reference related party declarations against supporting documents to verify legitimacy.
+              </p>
+              <div className="space-y-4">
+                {parties.filter(p => p.active_status).length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Add related parties first to enable document cross-referencing.</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Trade License</TableHead>
+                        <TableHead>Shareholder Registry</TableHead>
+                        <TableHead>MOA / AOA</TableHead>
+                        <TableHead>Bank Txn Match</TableHead>
+                        <TableHead>Verification</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parties.filter(p => p.active_status).map(p => {
+                        const hasTxns = detectedTxns.some(t => t.related_party_id === p.id);
+                        const hasTL = !!p.trade_license_no;
+                        const hasShareholder = !!p.shareholder_name || !!p.shareholder_link;
+                        const hasDescription = !!p.relationship_description;
+                        const verifiedCount = [hasTL, hasShareholder, hasDescription, hasTxns].filter(Boolean).length;
+                        const verificationStatus = verifiedCount >= 3 ? 'verified' : verifiedCount >= 2 ? 'partial' : 'unverified';
+
+                        return (
+                          <TableRow key={p.id}>
+                            <TableCell className="font-medium text-sm">{p.entity_name}</TableCell>
+                            <TableCell>
+                              {hasTL ? (
+                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                                  {p.trade_license_no}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">Missing</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {hasShareholder ? (
+                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                                  {p.shareholder_name || p.shareholder_link || 'Linked'}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">Missing</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {hasDescription ? (
+                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                                  Documented
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">Missing</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {hasTxns ? (
+                                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                                  Detected
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">None</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={verificationStatus === 'verified' ? 'default' : 'outline'}
+                                className={`text-xs ${
+                                  verificationStatus === 'verified' ? 'bg-success text-success-foreground' :
+                                  verificationStatus === 'partial' ? 'bg-warning/10 text-warning border-warning/30' :
+                                  'text-destructive border-destructive/30'
+                                }`}
+                              >
+                                {verificationStatus === 'verified' ? 'Verified' : verificationStatus === 'partial' ? 'Partial' : 'Unverified'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Edit Dialog */}
