@@ -273,8 +273,10 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                     <TableRow>
                       <TableHead>Entity Name</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Trade License</TableHead>
-                      <TableHead>Relationship</TableHead>
+                      <TableHead>Ownership %</TableHead>
+                      <TableHead>Shareholder</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Industry</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
@@ -285,14 +287,16 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                         <TableCell className="font-medium">{p.entity_name}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
-                            {ENTITY_TYPES.find(t => t.value === p.entity_type)?.label || p.entity_type}
+                            {ENTITY_TYPES.find(t => t.value === p.relationship_type)?.label || p.relationship_type}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.trade_license_no || '—'}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.relationship_description || '—'}</TableCell>
+                        <TableCell className="text-sm font-mono">{p.ownership_percentage > 0 ? `${p.ownership_percentage}%` : '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.shareholder_name || '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.country || '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.industry || '—'}</TableCell>
                         <TableCell>
-                          <Badge variant={p.is_active ? 'default' : 'secondary'} className="text-xs">
-                            {p.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant={p.active_status ? 'default' : 'secondary'} className="text-xs">
+                            {p.active_status ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell>

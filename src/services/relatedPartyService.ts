@@ -145,7 +145,7 @@ export class RelatedPartyService {
   }> {
     // 1. Get related parties
     const parties = await this.getParties(caseId);
-    const activeParties = parties.filter(p => p.is_active);
+    const activeParties = parties.filter(p => p.active_status);
     if (activeParties.length === 0) {
       // Create empty summary
       const summary = await this.upsertSummary(caseId, {
