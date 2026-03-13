@@ -115,7 +115,14 @@ export class LenderMatchingEngine {
       score -= config.customer_concentration_deduction;
 
     // Related Party Score: <10% → +5, 10–25% → +3, >25% → 0 + flag
-    const rpRatio = normalizedData.related_party_ratio || normalizedData.related_party_flow_ratio || 0;
+    // NOTE: related_party_ratio is stored as percentage (e.g. 18.5), 
+    // related_party_flow_ratio is stored as decimal (e.g. 0.185)
+    // Normalize to decimal for comparison
+    let rpRatio = normalizedData.related_party_flow_ratio || 0;
+    // If only percentage form is available, convert
+    if (rpRatio === 0 && normalizedData.related_party_ratio > 0) {
+      rpRatio = normalizedData.related_party_ratio / 100;
+    }
     if (rpRatio < 0.10) {
       score += 5;
     } else if (rpRatio <= 0.25) {
