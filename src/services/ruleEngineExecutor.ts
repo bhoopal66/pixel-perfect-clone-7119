@@ -341,10 +341,13 @@ export class RuleEngineExecutor {
         }
       }
     } else {
+      // Fallback when no decision matrix is configured — log warning for admin awareness
+      console.warn(`No decision matrix configured for rule set ${ruleSetId}. Using default fallback logic.`);
       if (majorFails === 0 && minorFails === 0) eligibilityStatus = 'eligible';
       else if (majorFails === 0 && minorFails <= 2) eligibilityStatus = 'conditionally_eligible';
       else if (majorFails <= 1) eligibilityStatus = 'review_required';
       else eligibilityStatus = 'not_eligible';
+      decisionSummary = 'Determined via default fallback (no decision matrix configured)';
     }
     if (recommendedLimit <= 0) eligibilityStatus = 'not_eligible';
 

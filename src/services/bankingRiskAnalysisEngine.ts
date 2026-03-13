@@ -86,7 +86,7 @@ const matchAny = (desc: string, keywords: string[]) =>
 const BOUNCE_KW = ['returned', 'bounce', 'rchq', 'returned cheque', 'return chq', 'dishono'];
 const EMI_KW = ['loan', 'emi', 'installment', 'finance', 'credit facility', 'nbf loan', 'rakbank loan'];
 const SALARY_KW = ['wps', 'salary', 'payroll', 'mohre', 'salary transfer'];
-const CASH_KW = ['cash deposit', 'cdm', 'atm cash', 'cash'];
+const CASH_KW = ['cash deposit', 'cash dep', 'cdm', 'atm cash', 'atm deposit', 'cash credit'];
 const OD_KW = ['od ', 'cc ', 'overdraft', 'limit', 'facility'];
 const FX_KW = ['usd', 'eur', 'gbp', 'swift', 'international transfer', 'foreign', 'fx'];
 const GOVT_KW = ['government', 'ministry', 'municipality', 'authority', 'gov', 'semi-gov'];

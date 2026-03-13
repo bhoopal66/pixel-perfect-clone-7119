@@ -626,8 +626,9 @@ export class FraudDetectionEngine {
 
   private static isCashDeposit(desc: string): boolean {
     const d = desc.toLowerCase();
+    // Use specific phrases to avoid false positives with 'cash' substring (e.g., 'cashback', 'cashier')
     return d.includes('cash deposit') || d.includes('cash dep') || d.includes('cdm') ||
-      d.includes('atm deposit') || d.includes('cash credit');
+      d.includes('atm deposit') || d.includes('cash credit') || d.includes('atm cash');
   }
 
   private static fmtCurrency(v: number): string {

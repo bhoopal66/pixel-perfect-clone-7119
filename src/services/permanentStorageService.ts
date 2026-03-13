@@ -60,7 +60,7 @@ export const ExtractionRunService = {
       .single();
     if (error) throw error;
 
-    await ActivityLogService.log(caseId, 'extraction_completed', `Extraction started for ${extractionType}`, 'extraction_runs', data.id);
+    await ActivityLogService.log(caseId, 'extraction_started' as CaseActivityType, `Extraction started for ${extractionType}`, 'extraction_runs', data.id);
     return data as unknown as ExtractionRun;
   },
 
