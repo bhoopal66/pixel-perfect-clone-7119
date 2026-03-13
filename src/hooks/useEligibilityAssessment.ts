@@ -542,6 +542,8 @@ export function useEligibilityAssessment() {
     setCombinedSummary(null);
     setLenderResults([]);
     setMatchResults([]);
+    setBankRiskResults([]);
+    setBankRiskConsolidated(null);
     setCurrentStep('upload');
   }, []);
 
