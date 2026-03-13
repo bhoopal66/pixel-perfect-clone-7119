@@ -148,7 +148,7 @@ export class RuleEngineExecutor {
       return String(Math.max(...values));
     });
     try {
-      // Validate: only allow digits, operators, parens, dots, spaces
+      // Validate: only allow digits, operators, parens, dots, spaces, modulo
       if (/^[0-9+\-*/().%\s,]+$/.test(processed)) {
         return this.safeEvaluateMath(processed);
       }
@@ -187,10 +187,11 @@ export class RuleEngineExecutor {
 
     const parseTerm = (): number => {
       let left = parseFactor();
-      while (pos < input.length && (peek() === '*' || peek() === '/')) {
+      while (pos < input.length && (peek() === '*' || peek() === '/' || peek() === '%')) {
         const op = advance();
         const right = parseFactor();
         if (op === '*') left *= right;
+        else if (op === '%') left = right !== 0 ? left % right : 0;
         else left = right !== 0 ? left / right : 0;
       }
       return left;
@@ -237,6 +238,7 @@ export class RuleEngineExecutor {
     let tenureAdjustment = 0;
     let hardReject = false;
     let limitCap: number | null = null;
+    let pricingBand: string | null = null;
 
     for (const rule of rules) {
       const observedValue = normalizedData[rule.field_name];
@@ -340,10 +342,13 @@ export class RuleEngineExecutor {
         }
       }
     } else {
+      // Fallback when no decision matrix is configured — log warning for admin awareness
+      console.warn(`No decision matrix configured for rule set ${ruleSetId}. Using default fallback logic.`);
       if (majorFails === 0 && minorFails === 0) eligibilityStatus = 'eligible';
       else if (majorFails === 0 && minorFails <= 2) eligibilityStatus = 'conditionally_eligible';
       else if (majorFails <= 1) eligibilityStatus = 'review_required';
       else eligibilityStatus = 'not_eligible';
+      decisionSummary = 'Determined via default fallback (no decision matrix configured)';
     }
     if (recommendedLimit <= 0) eligibilityStatus = 'not_eligible';
 
@@ -354,7 +359,8 @@ export class RuleEngineExecutor {
         recommended_tenure: recommendedTenure, score: Math.max(0, score),
         major_fail_count: majorFails, minor_fail_count: minorFails,
         risk_flags: riskFlags, failed_rules: failedRules,
-        decision_summary: decisionSummary, executed_at: new Date().toISOString(), executed_by: null,
+        decision_summary: decisionSummary, pricing_band: pricingBand || null,
+        executed_at: new Date().toISOString(), executed_by: null,
       },
       details,
     };

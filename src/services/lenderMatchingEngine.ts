@@ -181,10 +181,19 @@ export class LenderMatchingEngine {
     return `This client fits ${lenderName} ${productName || 'financing'} because monthly turnover of ${turnoverStr} ${strengths ? `with ${strengths}` : ''} aligns well with the lender's risk appetite.`;
   }
 
-  /** Main entry: run all lenders, score, rank, and save */
+  /** Main entry: use existing execution results if available, otherwise run engines */
   static async runMatchingEngine(caseId: string): Promise<LenderMatchResult[]> {
-    // Step 1: Run all lender rule engines
-    const executionResults = await RuleEngineExecutor.executeAllLenders(caseId);
+    // Step 1: Check for existing active execution results to avoid re-running rules after analyst adjustments
+    let executionResults: LenderExecutionResult[];
+    const { data: existingResults } = await from('lender_execution_results')
+      .select('*').eq('case_id', caseId).eq('is_active', true);
+    
+    if (existingResults && existingResults.length > 0) {
+      executionResults = existingResults;
+    } else {
+      // No existing results - run all lender rule engines
+      executionResults = await RuleEngineExecutor.executeAllLenders(caseId);
+    }
     if (executionResults.length === 0) return [];
 
     // Get config and normalized data

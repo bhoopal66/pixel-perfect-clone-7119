@@ -135,8 +135,22 @@ export class RelatedPartyService {
     if (error) throw error;
   }
 
-  /** Delete a related party */
-  static async deleteParty(partyId: string): Promise<void> {
+  /** Delete a related party and log the action */
+  static async deleteParty(partyId: string, caseId?: string): Promise<void> {
+    // Get the party info for audit before deleting
+    let partyName = 'Unknown';
+    let resolvedCaseId = caseId;
+    if (!resolvedCaseId) {
+      const { data: party } = await (supabase.from('case_related_parties') as any)
+        .select('entity_name, case_id')
+        .eq('id', partyId)
+        .single();
+      if (party) {
+        partyName = party.entity_name;
+        resolvedCaseId = party.case_id;
+      }
+    }
+
     const { error } = await (supabase.from('related_party_transactions') as any)
       .delete()
       .eq('related_party_id', partyId);
@@ -144,6 +158,18 @@ export class RelatedPartyService {
       await (supabase.from('case_related_parties') as any)
         .delete()
         .eq('id', partyId);
+    }
+
+    // Log the deletion to activity log
+    if (resolvedCaseId) {
+      const { ActivityLogService } = await import('@/services/permanentStorageService');
+      await ActivityLogService.log(
+        resolvedCaseId,
+        'related_party_deleted' as any,
+        `Related party deleted: ${partyName}`,
+        'case_related_parties',
+        partyId
+      );
     }
   }
 
