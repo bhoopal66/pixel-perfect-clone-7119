@@ -284,8 +284,7 @@ export class RelatedPartyService {
     const totalBankCredits = txns.reduce((s, t) => s + (t.credit || 0), 0);
     const totalBankDebits = txns.reduce((s, t) => s + (t.debit || 0), 0);
 
-    const totalActivity = totalBankCredits + totalBankDebits;
-    const relatedPartyRatio = totalActivity > 0 ? (totalCredits + totalDebits) / totalActivity : 0;
+    const relatedPartyRatio = totalBankCredits > 0 ? totalCredits / totalBankCredits : 0;
 
     let riskFlag = 'low';
     if (relatedPartyRatio > 0.3) riskFlag = 'high';
