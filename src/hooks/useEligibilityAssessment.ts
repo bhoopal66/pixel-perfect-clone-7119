@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { LenderMatchingEngine, type LenderMatchResult } from '@/services/lenderMatchingEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
