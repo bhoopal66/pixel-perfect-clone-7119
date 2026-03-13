@@ -1,14 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale } from 'lucide-react';
+import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
+import { saveAndDownloadReport } from '@/services/persistentReportService';
+import { toast } from 'sonner';
+import ExcelJS from 'exceljs';
 import type { CombinedFinancialSummary as SummaryType } from '@/types/assessment.types';
 
 interface CombinedSummaryProps {
   summary: SummaryType | null;
   caseNumber: string | null;
+  caseId?: string | null;
 }
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
