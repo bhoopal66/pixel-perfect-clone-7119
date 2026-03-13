@@ -29,6 +29,7 @@ const TABS = [
   { key: 'documents', label: 'Documents', icon: FileText },
   { key: 'extraction', label: 'Extraction', icon: Eye },
   { key: 'summary', label: 'Financial Summary', icon: BarChart3 },
+  { key: 'related_parties', label: 'Related Parties', icon: Users },
   { key: 'lenders', label: 'Lender Results', icon: Shield },
   { key: 'ai', label: 'AI Recommendation', icon: Brain },
   { key: 'reports', label: 'Reports', icon: Download },
