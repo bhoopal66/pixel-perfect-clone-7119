@@ -52,6 +52,20 @@ export interface RelatedPartyFlowSummary {
   created_at: string;
 }
 
+/** Cross-reference result used for financial impact analysis */
+export interface RelatedPartyCrossRef {
+  totalCredits: number;
+  relatedPartyCredits: number;
+  relatedPartyDebits: number;
+  rpRatio: number;
+  adjustedTurnover: number;       // Total credits minus RP credits
+  originalTurnover: number;       // Total credits (original)
+  turnoverImpactPct: number;      // % reduction in turnover due to RP
+  adjustedVsVatVariance: number;  // Variance between RP-adjusted turnover and VAT
+  riskFlag: string;
+  entityBreakdown: { entity: string; credit: number; debit: number; ratio: number }[];
+}
+
 export const ENTITY_TYPES = [
   { value: 'sister_concern', label: 'Sister Concern' },
   { value: 'parent_company', label: 'Parent Company' },
