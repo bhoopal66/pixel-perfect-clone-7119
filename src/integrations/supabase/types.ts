@@ -1232,6 +1232,56 @@ export type Database = {
           },
         ]
       }
+      case_related_parties: {
+        Row: {
+          added_by: string | null
+          case_id: string
+          created_at: string
+          entity_name: string
+          entity_type: string
+          id: string
+          is_active: boolean
+          relationship_description: string | null
+          shareholder_link: string | null
+          trade_license_no: string | null
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          case_id: string
+          created_at?: string
+          entity_name: string
+          entity_type?: string
+          id?: string
+          is_active?: boolean
+          relationship_description?: string | null
+          shareholder_link?: string | null
+          trade_license_no?: string | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          case_id?: string
+          created_at?: string
+          entity_name?: string
+          entity_type?: string
+          id?: string
+          is_active?: boolean
+          relationship_description?: string | null
+          shareholder_link?: string | null
+          trade_license_no?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_related_parties_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_reports: {
         Row: {
           based_on_execution_id: string | null
@@ -3100,6 +3150,135 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      related_party_flow_summary: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          inflow_ratio: number | null
+          outflow_ratio: number | null
+          overall_ratio: number | null
+          parties_detected: number | null
+          risk_level: string | null
+          total_bank_credits: number | null
+          total_bank_debits: number | null
+          total_related_inflows: number | null
+          total_related_outflows: number | null
+          transactions_matched: number | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          inflow_ratio?: number | null
+          outflow_ratio?: number | null
+          overall_ratio?: number | null
+          parties_detected?: number | null
+          risk_level?: string | null
+          total_bank_credits?: number | null
+          total_bank_debits?: number | null
+          total_related_inflows?: number | null
+          total_related_outflows?: number | null
+          transactions_matched?: number | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          inflow_ratio?: number | null
+          outflow_ratio?: number | null
+          overall_ratio?: number | null
+          parties_detected?: number | null
+          risk_level?: string | null
+          total_bank_credits?: number | null
+          total_bank_debits?: number | null
+          total_related_inflows?: number | null
+          total_related_outflows?: number | null
+          transactions_matched?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "related_party_flow_summary_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      related_party_transactions: {
+        Row: {
+          account_number: string | null
+          bank_name: string | null
+          case_id: string
+          created_at: string
+          credit: number | null
+          debit: number | null
+          description: string | null
+          id: string
+          match_confidence: number | null
+          match_method: string | null
+          related_party_id: string
+          transaction_id: string | null
+          txn_date: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name?: string | null
+          case_id: string
+          created_at?: string
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          id?: string
+          match_confidence?: number | null
+          match_method?: string | null
+          related_party_id: string
+          transaction_id?: string | null
+          txn_date?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string | null
+          case_id?: string
+          created_at?: string
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          id?: string
+          match_confidence?: number | null
+          match_method?: string | null
+          related_party_id?: string
+          transaction_id?: string | null
+          txn_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "related_party_transactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "related_party_transactions_related_party_id_fkey"
+            columns: ["related_party_id"]
+            isOneToOne: false
+            referencedRelation: "case_related_parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "related_party_transactions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_bank_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

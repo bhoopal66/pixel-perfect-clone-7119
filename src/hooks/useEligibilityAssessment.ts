@@ -5,6 +5,7 @@ import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
 import { AssessmentRuleEngine } from '@/services/assessmentRuleEngine';
+import { RelatedPartyService } from '@/services/relatedPartyService';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
 import { BankingRiskAnalysisEngine, type BankAnalysisResult, type ConsolidatedAnalysis, type AccountAnalysisInput } from '@/services/bankingRiskAnalysisEngine';
 import {
@@ -391,6 +392,16 @@ export function useEligibilityAssessment() {
           setBankRiskResults(riskResults);
           setBankRiskConsolidated(riskConsolidated);
           await ActivityLogService.log(caseData.id, 'bank_risk_analysis', `Banking risk analysis completed: ${riskResults.length} account(s), ${riskConsolidated.overall_risk_flags.length} risk flag(s)`);
+
+          // Auto-detect related party transactions
+          try {
+            const rpResult = await RelatedPartyService.detectTransactions(caseData.id);
+            if (rpResult.matched > 0) {
+              await ActivityLogService.log(caseData.id, 'related_party_detection' as any, `Related party detection: ${rpResult.matched} transactions matched, risk: ${rpResult.summary.risk_level}`);
+            }
+          } catch (rpError) {
+            console.error('Related party detection error:', rpError);
+          }
         }
       } catch (riskError) {
         console.error('Banking risk analysis error:', riskError);

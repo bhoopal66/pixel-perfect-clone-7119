@@ -96,7 +96,7 @@ const RELATED_KW = ['group', 'holding', 'sister', 'related entity', 'intercompan
 
 export class BankingRiskAnalysisEngine {
 
-  static analyzeAccount(input: AccountAnalysisInput): BankAnalysisResult {
+  static analyzeAccount(input: AccountAnalysisInput, relatedPartyNames: string[] = []): BankAnalysisResult {
     const txns = input.transactions;
     const desc = (t: ParsedTransaction) => (t.description || '').toLowerCase();
 
@@ -203,8 +203,13 @@ export class BankingRiskAnalysisEngine {
     // 11. Circular / round-tripping
     const circularRatio = this.detectCircularFlows(txns, totalCredits);
 
-    // 12. Related party
-    const relatedFlows = txns.filter(t => matchAny(desc(t), RELATED_KW));
+    // 12. Related party - use register names + keyword detection
+    const relatedFlows = txns.filter(t => {
+      const d2 = desc(t);
+      if (matchAny(d2, RELATED_KW)) return true;
+      // Match against registered related party names
+      return relatedPartyNames.some(name => d2.includes(name));
+    });
     const relatedValue = relatedFlows.reduce((s, t) => s + t.credit + t.debit, 0);
     const relatedRatio = (totalCredits + totalDebits) > 0 ? relatedValue / (totalCredits + totalDebits) : 0;
 
@@ -334,14 +339,27 @@ export class BankingRiskAnalysisEngine {
   }
 
   /**
-   * Run full analysis and persist to database
+   * Run full analysis and persist to database.
+   * Also triggers related party detection if parties are registered.
    */
   static async runAndPersist(
     caseId: string,
     accounts: AccountAnalysisInput[]
   ): Promise<{ accountResults: BankAnalysisResult[]; consolidated: ConsolidatedAnalysis }> {
-    // Analyze each account
-    const accountResults = accounts.map(a => this.analyzeAccount(a));
+    // Fetch related party register for enhanced detection
+    let relatedPartyNames: string[] = [];
+    try {
+      const { data: parties } = await (supabase.from('case_related_parties') as any)
+        .select('entity_name')
+        .eq('case_id', caseId)
+        .eq('is_active', true);
+      if (parties && parties.length > 0) {
+        relatedPartyNames = parties.map((p: any) => p.entity_name.toLowerCase());
+      }
+    } catch { /* ignore */ }
+
+    // Analyze each account with related party register
+    const accountResults = accounts.map(a => this.analyzeAccount(a, relatedPartyNames));
     const consolidated = this.consolidate(accountResults);
 
     // Delete old results for this case, then insert new
