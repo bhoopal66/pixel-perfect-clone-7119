@@ -574,11 +574,13 @@ export class FraudDetectionEngine {
   private static checkRevenueMismatch(
     caseData: any, threshold: number
   ) {
-    const bankCredits = Number(caseData?.total_bank_credits) || 0;
+    // Normalize both to comparable periods:
+    // Use normalized_turnover (annualized bank credits) vs declared_vat_turnover (annualized VAT sales)
+    const annualizedBankTurnover = Number(caseData?.normalized_turnover) || Number(caseData?.estimated_annual_turnover) || 0;
     const vatTurnover = Number(caseData?.declared_vat_turnover) || 0;
-    if (bankCredits === 0 && vatTurnover === 0) return { flag: false, percent: 0 };
-    const maxVal = Math.max(bankCredits, vatTurnover);
-    const percent = maxVal > 0 ? (Math.abs(bankCredits - vatTurnover) / maxVal) * 100 : 0;
+    if (annualizedBankTurnover === 0 && vatTurnover === 0) return { flag: false, percent: 0 };
+    const maxVal = Math.max(annualizedBankTurnover, vatTurnover);
+    const percent = maxVal > 0 ? (Math.abs(annualizedBankTurnover - vatTurnover) / maxVal) * 100 : 0;
     return { flag: percent > threshold, percent: Math.round(percent * 100) / 100 };
   }
 
