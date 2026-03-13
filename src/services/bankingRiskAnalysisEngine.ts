@@ -370,7 +370,7 @@ export class BankingRiskAnalysisEngine {
       await (supabase.from('bank_analysis_results') as any).insert({
         case_id: caseId,
         ...r,
-        emi_lender_list: JSON.stringify(r.emi_lender_list),
+        emi_lender_list: r.emi_lender_list, // JSONB column — pass array directly, no JSON.stringify
       });
     }
 
@@ -379,7 +379,7 @@ export class BankingRiskAnalysisEngine {
     await (supabase.from('bank_analysis_consolidated') as any).insert({
       case_id: caseId,
       ...consolidated,
-      overall_risk_flags: JSON.stringify(consolidated.overall_risk_flags),
+      overall_risk_flags: consolidated.overall_risk_flags, // JSONB column — pass array directly
     });
 
     return { accountResults, consolidated };

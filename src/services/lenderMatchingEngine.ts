@@ -165,7 +165,11 @@ export class LenderMatchingEngine {
       reasons.push('Minimal rule failures');
 
     // Related Party Score contribution
-    const rpRatio = normalizedData.related_party_ratio || normalizedData.related_party_flow_ratio || 0;
+    // Normalize to decimal for display
+    let rpRatio = normalizedData.related_party_flow_ratio || 0;
+    if (rpRatio === 0 && normalizedData.related_party_ratio > 0) {
+      rpRatio = normalizedData.related_party_ratio / 100;
+    }
     const rpResult = this.calcRelatedPartyScore(rpRatio);
     if (rpResult.flag) {
       reasons.push(`High related party exposure (${(rpRatio * 100).toFixed(1)}%) – RP score: 0`);
