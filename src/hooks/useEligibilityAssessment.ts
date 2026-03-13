@@ -445,56 +445,57 @@ export function useEligibilityAssessment() {
         risk_flags_json: combined.riskFlags as any,
       } as any);
 
-      // Fetch lenders and run rule engine
-      const { data: lenders } = await supabase
-        .from('onboarding_lenders')
-        .select('*')
-        .eq('is_active', true);
-
-      if (lenders && lenders.length > 0) {
-        const results = AssessmentRuleEngine.evaluateAllLenders(
-          combined,
-          summaries,
-          vatResults,
-          lenders.map(l => ({
-            id: l.id,
-            name: l.name,
-            short_code: l.short_code,
-            lender_type: l.lender_type,
-            eligibility_rules: l.eligibility_rules as any,
-          }))
-        );
-        setLenderResults(results);
-
-        // Save lender results to DB
-        await supabase.from('assessment_lender_results').insert(
-          results.map(r => ({
-            case_id: caseData.id,
+      // Run database-driven lender rule engine (unified engine)
+      try {
+        const { RuleEngineExecutor } = await import('@/services/ruleEngineExecutor');
+        const executionResults = await RuleEngineExecutor.executeAllLenders(caseData.id);
+        
+        if (executionResults.length > 0) {
+          // Map execution results to the assessment lender results format for UI display
+          const mappedResults = executionResults.map(r => ({
             lender_id: r.lender_id,
-            lender_name: r.lender_name,
-            product_name: r.product_name,
-            eligibility_status: r.eligibility_status,
+            lender_name: '', // Will be populated below
+            product_name: null as string | null,
+            eligibility_status: r.eligibility_status as any,
             recommended_limit: r.recommended_limit,
-            limit_basis: r.limit_basis,
-            tenure_months: r.tenure_months,
-            pricing_band: r.pricing_band,
-            key_reasons: r.key_reasons as any,
-            failed_rules: r.failed_rules as any,
-            risk_flags: r.risk_flags as any,
-            passed_rules: r.passed_rules as any,
-            required_deviations: r.required_deviations as any,
-            rule_details: r.rule_details as any,
-          }))
-        );
-
-        await ActivityLogService.log(caseData.id, 'lender_engine_run', `Lender rules evaluated against ${lenders.length} lenders`);
+            limit_basis: r.decision_summary || null,
+            tenure_months: r.recommended_tenure,
+            pricing_band: r.pricing_band || null,
+            key_reasons: (r.failed_rules || []).map((f: any) => f.rule_name) as string[],
+            failed_rules: r.failed_rules as any[] || [],
+            risk_flags: (r.risk_flags || []) as string[],
+            passed_rules: [] as any[],
+            required_deviations: [] as string[],
+            rule_details: [] as any[],
+          }));
+          
+          // Fetch lender names
+          const { data: lenders } = await supabase
+            .from('onboarding_lenders')
+            .select('id, name')
+            .eq('is_active', true);
+          
+          for (const mr of mappedResults) {
+            const lender = lenders?.find(l => l.id === mr.lender_id);
+            mr.lender_name = lender?.name || 'Unknown';
+          }
+          
+          setLenderResults(mappedResults);
+          await ActivityLogService.log(caseData.id, 'lender_engine_run', `Lender rules evaluated: ${executionResults.length} product(s) across active lenders`);
+        }
+      } catch (lenderErr) {
+        console.error('Lender rule engine error:', lenderErr);
+        toast.error('Lender rule engine failed - check rule configuration');
       }
 
       // Update case summary + mark analysis completed
-      await supabase.from('assessment_cases').update({
+      const totalCreditsActual = bankFiles.filter(f => f.isValid).reduce((s, f) => s + f.totalCredits, 0);
+      const totalDebitsActual = bankFiles.filter(f => f.isValid).reduce((s, f) => s + f.totalDebits, 0);
+      
+      const { error: updateError } = await supabase.from('assessment_cases').update({
         status: 'review',
-        total_bank_credits: combined.avgMonthlyCredit * combined.statementMonthsCovered,
-        total_bank_debits: combined.avgMonthlyDebit * combined.statementMonthsCovered,
+        total_bank_credits: totalCreditsActual,
+        total_bank_debits: totalDebitsActual,
         avg_monthly_credit: combined.avgMonthlyCredit,
         avg_monthly_debit: combined.avgMonthlyDebit,
         avg_monthly_balance: combined.avgMonthlyBalance,
@@ -507,8 +508,13 @@ export function useEligibilityAssessment() {
         statement_months_covered: combined.statementMonthsCovered,
         vat_periods_covered: combined.vatPeriodsCovered,
         analysis_completed: true,
-        lenders_run_completed: !!(lenders && lenders.length > 0),
+        lenders_run_completed: true,
       } as any).eq('id', caseData.id);
+      
+      if (updateError) {
+        console.error('Failed to update case status:', updateError);
+        toast.error('Warning: Case status update failed');
+      }
 
       // Auto-run fraud detection after analysis
       try {
