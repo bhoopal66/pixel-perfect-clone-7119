@@ -231,8 +231,6 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           localFormData.owners.every(owner =>
             owner.ownerName &&
             owner.nationality &&
-            owner.emiratesId &&
-            owner.passportNumber &&
             owner.shareholdingPercent > 0 &&
             owner.residentStatus &&
             owner.mobile &&

@@ -88,7 +88,7 @@ export function OwnerCard({ owner, index, onUpdate, onRemove, canRemove }: Owner
             </Select>
           </FormField>
 
-          <FormField label="Emirates ID" required helperText="15-digit number">
+          <FormField label="Emirates ID" helperText="15-digit number">
             <Input
               placeholder="784-XXXX-XXXXXXX-X"
               value={owner.emiratesId}
@@ -97,7 +97,7 @@ export function OwnerCard({ owner, index, onUpdate, onRemove, canRemove }: Owner
             />
           </FormField>
 
-          <FormField label="Passport Number" required>
+          <FormField label="Passport Number">
             <Input
               placeholder="Passport number"
               value={owner.passportNumber}
