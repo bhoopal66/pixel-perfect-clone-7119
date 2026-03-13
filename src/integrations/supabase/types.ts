@@ -3234,12 +3234,12 @@ export type Database = {
           credit: number | null
           debit: number | null
           description: string | null
+          detected_by: string | null
           id: string
-          match_confidence: number | null
-          match_method: string | null
+          mapping_confidence: number | null
           related_party_id: string
+          transaction_date: string | null
           transaction_id: string | null
-          txn_date: string | null
         }
         Insert: {
           account_number?: string | null
@@ -3249,12 +3249,12 @@ export type Database = {
           credit?: number | null
           debit?: number | null
           description?: string | null
+          detected_by?: string | null
           id?: string
-          match_confidence?: number | null
-          match_method?: string | null
+          mapping_confidence?: number | null
           related_party_id: string
+          transaction_date?: string | null
           transaction_id?: string | null
-          txn_date?: string | null
         }
         Update: {
           account_number?: string | null
@@ -3264,12 +3264,12 @@ export type Database = {
           credit?: number | null
           debit?: number | null
           description?: string | null
+          detected_by?: string | null
           id?: string
-          match_confidence?: number | null
-          match_method?: string | null
+          mapping_confidence?: number | null
           related_party_id?: string
+          transaction_date?: string | null
           transaction_id?: string | null
-          txn_date?: string | null
         }
         Relationships: [
           {

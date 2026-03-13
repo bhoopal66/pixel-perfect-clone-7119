@@ -28,14 +28,14 @@ export interface RelatedPartyTransaction {
   case_id: string;
   related_party_id: string;
   transaction_id: string | null;
-  txn_date: string | null;
+  transaction_date: string | null;
   description: string | null;
   debit: number;
   credit: number;
   bank_name: string | null;
   account_number: string | null;
-  match_method: string;
-  match_confidence: number;
+  detected_by: string;
+  mapping_confidence: number;
   created_at: string;
 }
 
