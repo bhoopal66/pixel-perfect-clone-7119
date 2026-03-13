@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Cases from "./pages/Cases";
 import UserManagement from "./pages/UserManagement";
 import AgentManagement from "./pages/AgentManagement";
 import UserProfile from "./pages/UserProfile";
@@ -179,7 +178,7 @@ const AppRoutes = () => (
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-    <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+    <Route path="/cases" element={<Navigate to="/" replace />} />
     <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
     <Route path="/admin/users" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
     <Route path="/admin/agents" element={<AgentManagementRoute><AgentManagement /></AgentManagementRoute>} />
