@@ -5,3 +5,4 @@ export { FormulaBuilder } from './FormulaBuilder';
 export { DecisionMatrixEditor } from './DecisionMatrixEditor';
 export { TestRuleEngine } from './TestRuleEngine';
 export { PolicyAuditLog } from './PolicyAuditLog';
+export { MatchConfigEditor } from './MatchConfigEditor';

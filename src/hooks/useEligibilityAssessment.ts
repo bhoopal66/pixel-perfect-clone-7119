@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { LenderMatchingEngine, type LenderMatchResult } from '@/services/lenderMatchingEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
@@ -34,6 +35,8 @@ export function useEligibilityAssessment() {
   const [vatAnalysis, setVatAnalysis] = useState<VatPeriodAnalysis[]>([]);
   const [combinedSummary, setCombinedSummary] = useState<CombinedFinancialSummary | null>(null);
   const [lenderResults, setLenderResults] = useState<Omit<AssessmentLenderResult, 'id' | 'case_id' | 'created_at' | 'updated_at'>[]>([]);
+  const [matchResults, setMatchResults] = useState<LenderMatchResult[]>([]);
+  const [isMatchingRunning, setIsMatchingRunning] = useState(false);
 
   // Parse bank statement PDF
   const parseBankStatement = useCallback(async (file: File): Promise<ParsedBankFile | null> => {
@@ -341,6 +344,17 @@ export function useEligibilityAssessment() {
         vat_periods_covered: combined.vatPeriodsCovered,
       }).eq('id', caseData.id);
 
+      // Auto-run matching engine after analysis
+      try {
+        setIsMatchingRunning(true);
+        const matches = await LenderMatchingEngine.runMatchingEngine(caseData.id);
+        setMatchResults(matches);
+      } catch (matchError) {
+        console.error('Matching engine error:', matchError);
+      } finally {
+        setIsMatchingRunning(false);
+      }
+
       toast.success('Analysis completed successfully');
       setCurrentStep('extraction');
     } catch (error) {
@@ -352,6 +366,22 @@ export function useEligibilityAssessment() {
   }, [bankFiles, vatFiles, companyName]);
 
   // Reset entire workflow
+  // Run matching engine on demand
+  const runMatchingEngine = useCallback(async () => {
+    if (!caseId) return;
+    setIsMatchingRunning(true);
+    try {
+      const matches = await LenderMatchingEngine.runMatchingEngine(caseId);
+      setMatchResults(matches);
+      toast.success('Funding options updated');
+    } catch (error) {
+      console.error('Matching engine error:', error);
+      toast.error('Failed to run matching engine');
+    } finally {
+      setIsMatchingRunning(false);
+    }
+  }, [caseId]);
+
   const resetAssessment = useCallback(() => {
     setCaseId(null);
     setCaseNumber(null);
@@ -362,6 +392,7 @@ export function useEligibilityAssessment() {
     setVatAnalysis([]);
     setCombinedSummary(null);
     setLenderResults([]);
+    setMatchResults([]);
     setCurrentStep('upload');
   }, []);
 
@@ -379,11 +410,14 @@ export function useEligibilityAssessment() {
     vatAnalysis,
     combinedSummary,
     lenderResults,
+    matchResults,
+    isMatchingRunning,
     handleBankFiles,
     handleVatFiles,
     removeBankFile,
     removeVatFile,
     runAnalysis,
+    runMatchingEngine,
     resetAssessment,
   };
 }

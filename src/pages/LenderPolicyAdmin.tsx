@@ -12,7 +12,8 @@ import {
   LenderProductManager, RuleSetManager, RuleBuilder,
   FormulaBuilder, DecisionMatrixEditor, TestRuleEngine, PolicyAuditLog,
 } from '@/components/rule-engine';
-import { ArrowLeft, Shield, Package, Layers, Cog, Calculator, Grid3X3, Play, History } from 'lucide-react';
+import { MatchConfigEditor } from '@/components/rule-engine/MatchConfigEditor';
+import { ArrowLeft, Shield, Package, Layers, Cog, Calculator, Grid3X3, Play, History, Settings2 } from 'lucide-react';
 
 const LenderPolicyAdmin = () => {
   const navigate = useNavigate();
@@ -115,6 +116,7 @@ const LenderPolicyAdmin = () => {
             <TabsTrigger value="formulas" disabled={!selectedRuleSetId} className="gap-1.5 text-sm"><Calculator className="h-4 w-4" />Formulas</TabsTrigger>
             <TabsTrigger value="decisions" disabled={!selectedRuleSetId} className="gap-1.5 text-sm"><Grid3X3 className="h-4 w-4" />Decisions</TabsTrigger>
             <TabsTrigger value="test" className="gap-1.5 text-sm"><Play className="h-4 w-4" />Test Engine</TabsTrigger>
+            <TabsTrigger value="match-config" className="gap-1.5 text-sm"><Settings2 className="h-4 w-4" />Match Config</TabsTrigger>
             <TabsTrigger value="audit" className="gap-1.5 text-sm"><History className="h-4 w-4" />Audit Log</TabsTrigger>
           </TabsList>
 
@@ -135,6 +137,9 @@ const LenderPolicyAdmin = () => {
           </TabsContent>
           <TabsContent value="test">
             <TestRuleEngine lenderId={selectedLenderId} productId={selectedProductId} ruleSetId={selectedRuleSetId} />
+          </TabsContent>
+          <TabsContent value="match-config">
+            <MatchConfigEditor />
           </TabsContent>
           <TabsContent value="audit">
             <PolicyAuditLog lenderId={selectedLenderId} />

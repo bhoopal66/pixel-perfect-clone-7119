@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Upload, Eye, BarChart3, Receipt, Layers, Shield, Edit3,
-  ArrowLeft, RotateCcw, Briefcase
+  ArrowLeft, RotateCcw, Briefcase, Trophy
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -18,16 +18,20 @@ import {
   LenderResults,
   ManualReview,
 } from '@/components/eligibility-engine';
+import { FundingRecommendation } from '@/components/eligibility-engine/FundingRecommendation';
 import { useEligibilityAssessment } from '@/hooks/useEligibilityAssessment';
 import type { AssessmentStep } from '@/types/assessment.types';
 
-const STEPS: { key: AssessmentStep; label: string; icon: React.ReactNode; requiresAnalysis: boolean }[] = [
+type ExtendedStep = AssessmentStep | 'funding';
+
+const STEPS: { key: ExtendedStep; label: string; icon: React.ReactNode; requiresAnalysis: boolean }[] = [
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" />, requiresAnalysis: false },
   { key: 'extraction', label: 'Extraction', icon: <Eye className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'bank_analysis', label: 'Bank Analysis', icon: <BarChart3 className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'vat_analysis', label: 'VAT Analysis', icon: <Receipt className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'combined_summary', label: 'Summary', icon: <Layers className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'lender_results', label: 'Lender Results', icon: <Shield className="h-4 w-4" />, requiresAnalysis: true },
+  { key: 'funding', label: 'Funding', icon: <Trophy className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'manual_review', label: 'Review', icon: <Edit3 className="h-4 w-4" />, requiresAnalysis: true },
 ];
 
@@ -35,6 +39,7 @@ const EligibilityEngine: React.FC = () => {
   const navigate = useNavigate();
   const assessment = useEligibilityAssessment();
   const hasAnalysis = assessment.monthlySummaries.length > 0 || assessment.caseId !== null;
+  const [activeTab, setActiveTab] = React.useState<string>(assessment.currentStep);
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,11 +79,14 @@ const EligibilityEngine: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs
-          value={assessment.currentStep}
+          value={activeTab}
           onValueChange={(v) => {
             const step = STEPS.find(s => s.key === v);
             if (step && (!step.requiresAnalysis || hasAnalysis)) {
-              assessment.setCurrentStep(v as AssessmentStep);
+              setActiveTab(v);
+              if (v !== 'funding') {
+                assessment.setCurrentStep(v as AssessmentStep);
+              }
             }
           }}
         >
@@ -156,6 +164,29 @@ const EligibilityEngine: React.FC = () => {
             <TabsContent value="lender_results">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <LenderResults results={assessment.lenderResults} />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="funding">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="space-y-4">
+                  {assessment.caseId && (
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={assessment.runMatchingEngine}
+                        disabled={assessment.isMatchingRunning}
+                        className="gap-2"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        {assessment.isMatchingRunning ? 'Analyzing...' : 'Check Funding Options'}
+                      </Button>
+                    </div>
+                  )}
+                  <FundingRecommendation
+                    results={assessment.matchResults}
+                    isLoading={assessment.isMatchingRunning}
+                  />
+                </div>
               </motion.div>
             </TabsContent>
 

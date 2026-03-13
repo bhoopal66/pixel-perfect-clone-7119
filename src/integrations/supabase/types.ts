@@ -1146,6 +1146,164 @@ export type Database = {
           },
         ]
       }
+      lender_match_config: {
+        Row: {
+          base_probability_factor: number
+          cheque_return_deduction: number
+          config_name: string
+          created_at: string
+          created_by: string | null
+          customer_concentration_deduction: number
+          eligibility_weight: number
+          id: string
+          is_active: boolean
+          limit_weight: number
+          negative_balance_deduction: number
+          risk_weight: number
+          rule_pass_weight: number
+          updated_at: string
+          vat_mismatch_deduction: number
+        }
+        Insert: {
+          base_probability_factor?: number
+          cheque_return_deduction?: number
+          config_name?: string
+          created_at?: string
+          created_by?: string | null
+          customer_concentration_deduction?: number
+          eligibility_weight?: number
+          id?: string
+          is_active?: boolean
+          limit_weight?: number
+          negative_balance_deduction?: number
+          risk_weight?: number
+          rule_pass_weight?: number
+          updated_at?: string
+          vat_mismatch_deduction?: number
+        }
+        Update: {
+          base_probability_factor?: number
+          cheque_return_deduction?: number
+          config_name?: string
+          created_at?: string
+          created_by?: string | null
+          customer_concentration_deduction?: number
+          eligibility_weight?: number
+          id?: string
+          is_active?: boolean
+          limit_weight?: number
+          negative_balance_deduction?: number
+          risk_weight?: number
+          rule_pass_weight?: number
+          updated_at?: string
+          vat_mismatch_deduction?: number
+        }
+        Relationships: []
+      }
+      lender_match_results: {
+        Row: {
+          approval_probability: number
+          case_id: string
+          created_at: string
+          decision_status: string
+          eligibility_score: number
+          execution_result_id: string | null
+          id: string
+          is_best_match: boolean
+          lender_id: string
+          lender_name: string
+          limit_score: number
+          match_score: number
+          product_id: string
+          product_name: string | null
+          rank_position: number
+          recommendation_reasons: Json | null
+          recommended_limit: number
+          recommended_tenure: number | null
+          risk_flags: Json | null
+          risk_score: number
+          rule_pass_score: number
+          sales_pitch: string | null
+        }
+        Insert: {
+          approval_probability?: number
+          case_id: string
+          created_at?: string
+          decision_status?: string
+          eligibility_score?: number
+          execution_result_id?: string | null
+          id?: string
+          is_best_match?: boolean
+          lender_id: string
+          lender_name: string
+          limit_score?: number
+          match_score?: number
+          product_id: string
+          product_name?: string | null
+          rank_position?: number
+          recommendation_reasons?: Json | null
+          recommended_limit?: number
+          recommended_tenure?: number | null
+          risk_flags?: Json | null
+          risk_score?: number
+          rule_pass_score?: number
+          sales_pitch?: string | null
+        }
+        Update: {
+          approval_probability?: number
+          case_id?: string
+          created_at?: string
+          decision_status?: string
+          eligibility_score?: number
+          execution_result_id?: string | null
+          id?: string
+          is_best_match?: boolean
+          lender_id?: string
+          lender_name?: string
+          limit_score?: number
+          match_score?: number
+          product_id?: string
+          product_name?: string | null
+          rank_position?: number
+          recommendation_reasons?: Json | null
+          recommended_limit?: number
+          recommended_tenure?: number | null
+          risk_flags?: Json | null
+          risk_score?: number
+          rule_pass_score?: number
+          sales_pitch?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_match_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_match_results_execution_result_id_fkey"
+            columns: ["execution_result_id"]
+            isOneToOne: false
+            referencedRelation: "lender_execution_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_match_results_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_match_results_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "lender_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lender_policy_audit_log: {
         Row: {
           action_done: string
