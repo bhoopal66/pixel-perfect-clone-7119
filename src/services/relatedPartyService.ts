@@ -80,17 +80,22 @@ export class RelatedPartyService {
   /** Add a related party */
   static async addParty(caseId: string, party: {
     entity_name: string;
-    entity_type: string;
+    relationship_type: string;
     trade_license_no?: string;
     relationship_description?: string;
     shareholder_link?: string;
+    ownership_percentage?: number;
+    shareholder_name?: string;
+    country?: string;
+    industry?: string;
+    remarks?: string;
   }): Promise<RelatedParty> {
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await (supabase.from('case_related_parties') as any)
       .insert({
         case_id: caseId,
         ...party,
-        added_by: user?.id || null,
+        created_by: user?.id || null,
       })
       .select()
       .single();
@@ -101,11 +106,16 @@ export class RelatedPartyService {
   /** Update a related party */
   static async updateParty(partyId: string, updates: Partial<{
     entity_name: string;
-    entity_type: string;
+    relationship_type: string;
     trade_license_no: string;
     relationship_description: string;
     shareholder_link: string;
-    is_active: boolean;
+    ownership_percentage: number;
+    shareholder_name: string;
+    country: string;
+    industry: string;
+    active_status: boolean;
+    remarks: string;
   }>): Promise<void> {
     const { error } = await (supabase.from('case_related_parties') as any)
       .update({ ...updates, updated_at: new Date().toISOString() })
