@@ -1234,41 +1234,56 @@ export type Database = {
       }
       case_related_parties: {
         Row: {
-          added_by: string | null
+          active_status: boolean
           case_id: string
+          country: string | null
           created_at: string
+          created_by: string | null
           entity_name: string
-          entity_type: string
           id: string
-          is_active: boolean
+          industry: string | null
+          ownership_percentage: number | null
           relationship_description: string | null
+          relationship_type: string
+          remarks: string | null
           shareholder_link: string | null
+          shareholder_name: string | null
           trade_license_no: string | null
           updated_at: string
         }
         Insert: {
-          added_by?: string | null
+          active_status?: boolean
           case_id: string
+          country?: string | null
           created_at?: string
+          created_by?: string | null
           entity_name: string
-          entity_type?: string
           id?: string
-          is_active?: boolean
+          industry?: string | null
+          ownership_percentage?: number | null
           relationship_description?: string | null
+          relationship_type?: string
+          remarks?: string | null
           shareholder_link?: string | null
+          shareholder_name?: string | null
           trade_license_no?: string | null
           updated_at?: string
         }
         Update: {
-          added_by?: string | null
+          active_status?: boolean
           case_id?: string
+          country?: string | null
           created_at?: string
+          created_by?: string | null
           entity_name?: string
-          entity_type?: string
           id?: string
-          is_active?: boolean
+          industry?: string | null
+          ownership_percentage?: number | null
           relationship_description?: string | null
+          relationship_type?: string
+          remarks?: string | null
           shareholder_link?: string | null
+          shareholder_name?: string | null
           trade_license_no?: string | null
           updated_at?: string
         }
