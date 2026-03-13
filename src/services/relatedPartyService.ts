@@ -8,12 +8,17 @@ export interface RelatedParty {
   id: string;
   case_id: string;
   entity_name: string;
-  entity_type: string;
+  relationship_type: string;
   trade_license_no: string | null;
   relationship_description: string | null;
   shareholder_link: string | null;
-  is_active: boolean;
-  added_by: string | null;
+  ownership_percentage: number;
+  shareholder_name: string | null;
+  country: string | null;
+  industry: string | null;
+  active_status: boolean;
+  remarks: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
