@@ -32,6 +32,16 @@ interface LenderConfig {
     pricing_tiers?: { min: number; max: number; rate: string }[];
     max_tenure_months?: number;
     industry_exclusions?: string[];
+    // HFS-specific rules
+    min_monthly_revenue?: number;
+    max_monthly_revenue?: number;
+    min_receivable_days?: number;
+    min_uae_revenue_pct?: number;
+    min_b2b_revenue_pct?: number;
+    min_gross_margin_pct?: number;
+    max_existing_debt?: number;
+    require_past_breakeven?: boolean;
+    require_proceeds_for_cogs?: boolean;
   };
 }
 
