@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Cases from "./pages/Cases";
 import UserManagement from "./pages/UserManagement";
 import AgentManagement from "./pages/AgentManagement";
 import UserProfile from "./pages/UserProfile";
