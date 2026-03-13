@@ -374,6 +374,15 @@ export class RuleEngineExecutor {
     const { data: lenders } = await supabase.from('onboarding_lenders').select('*').eq('is_active', true);
     if (!lenders?.length) return [];
 
+    // Get active financial summary ID for traceability
+    const { data: activeSummary } = await supabase
+      .from('combined_financial_summary')
+      .select('id')
+      .eq('case_id', caseId)
+      .eq('is_active', true)
+      .maybeSingle();
+    const summaryId = activeSummary?.id || null;
+
     // Mark previous results as inactive (preserve audit trail)
     await from('lender_execution_results').update({ is_active: false }).eq('case_id', caseId).eq('is_active', true);
 
@@ -393,6 +402,8 @@ export class RuleEngineExecutor {
             caseId, lender.id, product.id, ruleSets[0].id, normalizedData
           );
           execution.executed_by = user?.user?.id || null;
+          // Link to the active financial summary for audit traceability
+          (execution as any).summary_id = summaryId;
 
           const { data: saved, error } = await from('lender_execution_results')
             .insert(execution).select().single();

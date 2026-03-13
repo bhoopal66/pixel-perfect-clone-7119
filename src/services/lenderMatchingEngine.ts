@@ -302,7 +302,11 @@ export class LenderMatchingEngine {
     // Step 5: Save results (match results are re-computable ranking data, delete-insert is acceptable)
     await from('lender_match_results').delete().eq('case_id', caseId);
     
-    const toInsert = matchResults.map(({ id, ...rest }) => rest);
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const toInsert = matchResults.map(({ id, ...rest }) => ({
+      ...rest,
+      created_by: currentUser?.id || null,
+    }));
     const { data: saved, error } = await from('lender_match_results')
       .insert(toInsert).select();
     
