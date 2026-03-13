@@ -18,8 +18,10 @@ import { toast } from 'sonner';
 import {
   RelatedPartyService, ENTITY_TYPES,
   type RelatedParty, type RelatedPartyTransaction, type RelatedPartyFlowSummary,
+  type RelatedPartyCrossRef,
 } from '@/services/relatedPartyService';
 import { CurrencyService } from '@/services/currencyService';
+import { Separator } from '@/components/ui/separator';
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
