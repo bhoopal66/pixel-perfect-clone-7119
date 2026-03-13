@@ -25,7 +25,50 @@ const varianceTagConfig = {
   manual_review: { label: 'Manual Review Needed', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 
-export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseNumber }) => {
+export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseNumber, caseId }) => {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportSummary = async () => {
+    if (!summary || !caseId) return;
+    setIsExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Taamul Case Management';
+      const sheet = workbook.addWorksheet('Financial Summary');
+      sheet.columns = [
+        { header: 'Metric', key: 'metric', width: 35 },
+        { header: 'Value', key: 'value', width: 25 },
+      ];
+      sheet.addRows([
+        { metric: 'Company', value: summary.companyName || 'N/A' },
+        { metric: 'Case Number', value: caseNumber || 'N/A' },
+        { metric: 'Est. Annual Turnover (Bank)', value: summary.estimatedAnnualTurnover },
+        { metric: 'Avg Monthly Credit', value: summary.avgMonthlyCredit },
+        { metric: 'Avg Monthly Debit', value: summary.avgMonthlyDebit },
+        { metric: 'Avg Monthly Balance', value: summary.avgMonthlyBalance },
+        { metric: 'Declared VAT Turnover', value: summary.declaredVatTurnover },
+        { metric: 'Bank-VAT Variance %', value: `${summary.bankVatVariance.toFixed(2)}%` },
+        { metric: 'Normalized Turnover', value: summary.normalizedTurnover },
+        { metric: 'Variance Tag', value: summary.varianceTag },
+        { metric: 'Statement Months', value: summary.statementMonthsCovered },
+        { metric: 'VAT Periods', value: summary.vatPeriodsCovered },
+      ]);
+      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const fileName = `financial_summary_${(summary.companyName || 'case').replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      await saveAndDownloadReport(caseId, 'combined_financial_summary_report', `Financial Summary - ${summary.companyName || caseNumber}`, blob, fileName, 'xlsx');
+      toast.success('Financial summary report saved & downloaded');
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export financial summary');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   if (!summary) {
     return (
       <Card>
