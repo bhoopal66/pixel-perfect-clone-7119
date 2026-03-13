@@ -22,7 +22,13 @@ import {
   XCircle, 
   FileText,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  FolderOpen,
+  ClipboardCheck,
+  Send,
+  Loader2,
+  ShieldCheck,
+  ShieldX
 } from 'lucide-react';
 import { format } from 'date-fns';
 
