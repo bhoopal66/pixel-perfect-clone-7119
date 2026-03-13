@@ -445,6 +445,16 @@ export class BankingRiskAnalysisEngine {
     return 'stable';
   }
 
+  private static classifyConsistency(values: number[]): string {
+    if (values.length < 2) return 'insufficient_data';
+    const avg = values.reduce((s, v) => s + v, 0) / values.length;
+    if (avg === 0) return 'no_salary';
+    const cv = Math.sqrt(values.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / values.length) / avg;
+    if (cv < 0.15) return 'consistent';
+    if (cv < 0.4) return 'irregular';
+    return 'volatile';
+  }
+
   private static detectCircularFlows(txns: ParsedTransaction[], totalCredits: number): number {
     if (totalCredits === 0) return 0;
     let circularValue = 0;
