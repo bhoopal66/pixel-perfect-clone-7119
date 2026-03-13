@@ -214,14 +214,14 @@ export class RelatedPartyService {
             case_id: caseId,
             related_party_id: party.id,
             transaction_id: txn.id,
-            txn_date: txn.txn_date,
+            transaction_date: txn.txn_date,
             description: txn.description,
             debit: txn.debit || 0,
             credit: txn.credit || 0,
             bank_name: txn.bank_name,
             account_number: txn.account_number_masked,
-            match_method: 'full_name_match',
-            match_confidence: 0.95,
+            detected_by: 'full_name_match',
+            mapping_confidence: 0.95,
           });
           partiesDetected.add(party.id);
           continue;
