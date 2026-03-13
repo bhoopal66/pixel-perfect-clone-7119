@@ -334,14 +334,27 @@ export class BankingRiskAnalysisEngine {
   }
 
   /**
-   * Run full analysis and persist to database
+   * Run full analysis and persist to database.
+   * Also triggers related party detection if parties are registered.
    */
   static async runAndPersist(
     caseId: string,
     accounts: AccountAnalysisInput[]
   ): Promise<{ accountResults: BankAnalysisResult[]; consolidated: ConsolidatedAnalysis }> {
-    // Analyze each account
-    const accountResults = accounts.map(a => this.analyzeAccount(a));
+    // Fetch related party register for enhanced detection
+    let relatedPartyNames: string[] = [];
+    try {
+      const { data: parties } = await (supabase.from('case_related_parties') as any)
+        .select('entity_name')
+        .eq('case_id', caseId)
+        .eq('is_active', true);
+      if (parties && parties.length > 0) {
+        relatedPartyNames = parties.map((p: any) => p.entity_name.toLowerCase());
+      }
+    } catch { /* ignore */ }
+
+    // Analyze each account with related party register
+    const accountResults = accounts.map(a => this.analyzeAccount(a, relatedPartyNames));
     const consolidated = this.consolidate(accountResults);
 
     // Delete old results for this case, then insert new
