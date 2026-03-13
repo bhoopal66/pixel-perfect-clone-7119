@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
-  ArrowLeft, FileText, Eye, BarChart3, Shield, Brain, Download, Clock, Building2,
+  ArrowLeft, FileText, Eye, BarChart3, Shield, Brain, Download, Clock, Building2, Users,
 } from 'lucide-react';
 import { DocumentsTab } from '@/components/case-detail/DocumentsTab';
 import { ExtractionTab } from '@/components/case-detail/ExtractionTab';
