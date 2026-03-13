@@ -14,6 +14,14 @@ interface CombinedSummaryProps {
   summary: SummaryType | null;
   caseNumber: string | null;
   caseId?: string | null;
+  rpCrossRef?: {
+    relatedPartyCredits: number;
+    adjustedTurnover: number;
+    turnoverImpactPct: number;
+    adjustedVsVatVariance: number;
+    rpRatio: number;
+    riskFlag: string;
+  } | null;
 }
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
