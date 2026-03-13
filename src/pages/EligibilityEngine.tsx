@@ -79,11 +79,14 @@ const EligibilityEngine: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs
-          value={assessment.currentStep}
+          value={activeTab}
           onValueChange={(v) => {
             const step = STEPS.find(s => s.key === v);
             if (step && (!step.requiresAnalysis || hasAnalysis)) {
-              assessment.setCurrentStep(v as AssessmentStep);
+              setActiveTab(v);
+              if (v !== 'funding') {
+                assessment.setCurrentStep(v as AssessmentStep);
+              }
             }
           }}
         >
