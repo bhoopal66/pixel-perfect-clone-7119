@@ -267,6 +267,15 @@ export const LenderResults: React.FC<LenderResultsProps> = ({ results, caseId })
 
   return (
     <div className="space-y-6">
+      {/* Header with Export */}
+      {caseId && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={handleExportLenderResults} disabled={isExporting} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" />
+            {isExporting ? 'Exporting...' : 'Export Results'}
+          </Button>
+        </div>
+      )}
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-success/20">
