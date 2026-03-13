@@ -497,6 +497,14 @@ export function useEligibilityAssessment() {
         lenders_run_completed: !!(lenders && lenders.length > 0),
       } as any).eq('id', caseData.id);
 
+      // Auto-run fraud detection after analysis
+      try {
+        await FraudDetectionEngine.runDetection(caseData.id);
+        await ActivityLogService.log(caseData.id, 'fraud_detection_run', 'Fraud detection engine completed');
+      } catch (fraudErr) {
+        console.error('Fraud detection error:', fraudErr);
+      }
+
       // Auto-run matching engine after analysis
       try {
         setIsMatchingRunning(true);
