@@ -6,15 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp,
-  Building2, TrendingUp, Shield, AlertCircle
+  Building2, TrendingUp, Shield, AlertCircle, Download
 } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
+import { saveAndDownloadReport } from '@/services/persistentReportService';
+import { toast } from 'sonner';
+import ExcelJS from 'exceljs';
 import type { AssessmentLenderResult, RuleResult } from '@/types/assessment.types';
 
 type LenderResult = Omit<AssessmentLenderResult, 'id' | 'case_id' | 'created_at' | 'updated_at'>;
 
 interface LenderResultsProps {
   results: LenderResult[];
+  caseId?: string | null;
 }
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
@@ -188,7 +192,52 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
   );
 };
 
-export const LenderResults: React.FC<LenderResultsProps> = ({ results }) => {
+export const LenderResults: React.FC<LenderResultsProps> = ({ results, caseId }) => {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportLenderResults = async () => {
+    if (!caseId || results.length === 0) return;
+    setIsExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Taamul Case Management';
+      const sheet = workbook.addWorksheet('Lender Results');
+      sheet.columns = [
+        { header: 'Lender', key: 'lender', width: 25 },
+        { header: 'Product', key: 'product', width: 20 },
+        { header: 'Status', key: 'status', width: 18 },
+        { header: 'Recommended Limit', key: 'limit', width: 20 },
+        { header: 'Pricing Band', key: 'pricing', width: 15 },
+        { header: 'Passed Rules', key: 'passed', width: 12 },
+        { header: 'Failed Rules', key: 'failed', width: 12 },
+      ];
+      results.forEach(r => {
+        sheet.addRow({
+          lender: r.lender_name,
+          product: r.product_name || 'N/A',
+          status: r.eligibility_status,
+          limit: r.recommended_limit || 0,
+          pricing: r.pricing_band || 'N/A',
+          passed: r.passed_rules?.length || 0,
+          failed: r.failed_rules?.length || 0,
+        });
+      });
+      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const fileName = `lender_results_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      await saveAndDownloadReport(caseId, 'lender_eligibility_report', 'Lender Eligibility Results', blob, fileName, 'xlsx');
+      toast.success('Lender results report saved & downloaded');
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export lender results');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   if (results.length === 0) {
     return (
       <Card>
@@ -218,6 +267,15 @@ export const LenderResults: React.FC<LenderResultsProps> = ({ results }) => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Export */}
+      {caseId && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={handleExportLenderResults} disabled={isExporting} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" />
+            {isExporting ? 'Exporting...' : 'Export Results'}
+          </Button>
+        </div>
+      )}
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-success/20">

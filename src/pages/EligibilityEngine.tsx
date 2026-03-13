@@ -157,13 +157,14 @@ const EligibilityEngine: React.FC = () => {
                 <CombinedSummary
                   summary={assessment.combinedSummary}
                   caseNumber={assessment.caseNumber}
+                  caseId={assessment.caseId}
                 />
               </motion.div>
             </TabsContent>
 
             <TabsContent value="lender_results">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <LenderResults results={assessment.lenderResults} />
+                <LenderResults results={assessment.lenderResults} caseId={assessment.caseId} />
               </motion.div>
             </TabsContent>
 
