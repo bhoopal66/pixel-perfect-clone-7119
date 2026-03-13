@@ -129,7 +129,8 @@ export type CaseActivityType =
   | 'policy_version_changed'
   | 'case_approved'
   | 'case_status_changed'
-  | 'document_archived';
+  | 'document_archived'
+  | 'bank_risk_analysis';
 
 export type CaseDocumentType =
   | 'bank_statement'
