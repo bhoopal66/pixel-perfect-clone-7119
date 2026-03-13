@@ -271,7 +271,7 @@ export class RelatedPartyService {
             credit: txn.credit || 0,
             bank_name: txn.bank_name,
             account_number: txn.account_number_masked,
-            detected_by: 'token_match',
+            detected_by: `token_match (${party.source})`,
             mapping_confidence: tokenMatches.length / party.tokens.length,
           });
           partiesDetected.add(party.id);
