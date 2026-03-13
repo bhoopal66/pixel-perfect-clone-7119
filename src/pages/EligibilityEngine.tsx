@@ -19,6 +19,7 @@ import {
   ManualReview,
 } from '@/components/eligibility-engine';
 import { FundingRecommendation } from '@/components/eligibility-engine/FundingRecommendation';
+import { BankingRiskAnalysis } from '@/components/eligibility-engine/BankingRiskAnalysis';
 import { useEligibilityAssessment } from '@/hooks/useEligibilityAssessment';
 import type { AssessmentStep } from '@/types/assessment.types';
 
