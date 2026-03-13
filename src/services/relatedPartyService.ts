@@ -373,11 +373,21 @@ export class RelatedPartyService {
 
     if (!summary) return null;
 
-    // Get total bank credits for the case
-    const { data: bankTxns } = await supabase
-      .from('assessment_bank_transactions')
-      .select('credit, debit')
-      .eq('case_id', caseId);
+    // Get total bank credits for the case (with pagination)
+    let bankTxns: any[] = [];
+    let rangeFrom = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page } = await supabase
+        .from('assessment_bank_transactions')
+        .select('credit, debit')
+        .eq('case_id', caseId)
+        .range(rangeFrom, rangeFrom + pageSize - 1);
+      if (!page || page.length === 0) break;
+      bankTxns = bankTxns.concat(page);
+      if (page.length < pageSize) break;
+      rangeFrom += pageSize;
+    }
 
     const totalCredits = (bankTxns || []).reduce((s, t) => s + (t.credit || 0), 0);
     const rpCredits = summary.total_related_credit;
