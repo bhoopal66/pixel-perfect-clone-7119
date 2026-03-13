@@ -152,6 +152,18 @@ export class LenderMatchingEngine {
       reasons.push('No risk flags identified');
     if (result.major_fail_count === 0 && result.minor_fail_count <= 1)
       reasons.push('Minimal rule failures');
+
+    // Related Party Score contribution
+    const rpRatio = normalizedData.related_party_ratio || normalizedData.related_party_flow_ratio || 0;
+    const rpResult = this.calcRelatedPartyScore(rpRatio);
+    if (rpResult.flag) {
+      reasons.push(`High related party exposure (${(rpRatio * 100).toFixed(1)}%) – RP score: 0`);
+    } else if (rpRatio < 0.10) {
+      reasons.push(`Low related party exposure – RP score: +5`);
+    } else {
+      reasons.push(`Moderate related party exposure – RP score: +3`);
+    }
+
     return reasons;
   }
 
