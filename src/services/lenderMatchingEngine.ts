@@ -100,7 +100,7 @@ export class LenderMatchingEngine {
     return Math.min(weight, Math.round((recommendedLimit / maxLimit) * weight * 100) / 100);
   }
 
-  /** Calculate risk quality score */
+  /** Calculate risk quality score (includes Related Party Score) */
   static calcRiskScore(
     normalizedData: Record<string, any>, config: MatchConfig
   ): number {
@@ -113,7 +113,24 @@ export class LenderMatchingEngine {
       score -= config.vat_mismatch_deduction;
     if ((normalizedData.top_5_customer_concentration || 0) > 60)
       score -= config.customer_concentration_deduction;
+
+    // Related Party Score: <10% → +5, 10–25% → +3, >25% → 0 + flag
+    const rpRatio = normalizedData.related_party_ratio || normalizedData.related_party_flow_ratio || 0;
+    if (rpRatio < 0.10) {
+      score += 5;
+    } else if (rpRatio <= 0.25) {
+      score += 3;
+    }
+    // >25% adds 0 and risk flag is handled separately
+
     return Math.max(0, score);
+  }
+
+  /** Calculate related party score standalone (for display) */
+  static calcRelatedPartyScore(rpRatio: number): { score: number; flag: boolean } {
+    if (rpRatio < 0.10) return { score: 5, flag: false };
+    if (rpRatio <= 0.25) return { score: 3, flag: false };
+    return { score: 0, flag: true };
   }
 
   /** Generate recommendation reasons */
