@@ -352,7 +352,7 @@ export class BankingRiskAnalysisEngine {
       const { data: parties } = await (supabase.from('case_related_parties') as any)
         .select('entity_name')
         .eq('case_id', caseId)
-        .eq('is_active', true);
+        .eq('active_status', true);
       if (parties && parties.length > 0) {
         relatedPartyNames = parties.map((p: any) => p.entity_name.toLowerCase());
       }

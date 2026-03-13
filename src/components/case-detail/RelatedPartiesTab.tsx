@@ -34,10 +34,15 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   const [editParty, setEditParty] = useState<RelatedParty | null>(null);
   const [form, setForm] = useState({
     entity_name: '',
-    entity_type: 'sister_concern',
+    relationship_type: 'sister_concern',
     trade_license_no: '',
     relationship_description: '',
     shareholder_link: '',
+    ownership_percentage: 0,
+    shareholder_name: '',
+    country: '',
+    industry: '',
+    remarks: '',
   });
 
   const { data: parties = [], isLoading: loadingParties } = useQuery({
@@ -102,18 +107,24 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   });
 
   const resetForm = () => setForm({
-    entity_name: '', entity_type: 'sister_concern',
+    entity_name: '', relationship_type: 'sister_concern',
     trade_license_no: '', relationship_description: '', shareholder_link: '',
+    ownership_percentage: 0, shareholder_name: '', country: '', industry: '', remarks: '',
   });
 
   const openEdit = (p: RelatedParty) => {
     setEditParty(p);
     setForm({
       entity_name: p.entity_name,
-      entity_type: p.entity_type,
+      relationship_type: p.relationship_type,
       trade_license_no: p.trade_license_no || '',
       relationship_description: p.relationship_description || '',
       shareholder_link: p.shareholder_link || '',
+      ownership_percentage: p.ownership_percentage || 0,
+      shareholder_name: p.shareholder_name || '',
+      country: p.country || '',
+      industry: p.industry || '',
+      remarks: p.remarks || '',
     });
   };
 
@@ -130,19 +141,39 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   };
 
   const PartyForm = (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
       <div>
         <label className="text-sm font-medium text-foreground">Entity Name *</label>
         <Input value={form.entity_name} onChange={e => setForm(f => ({ ...f, entity_name: e.target.value }))} placeholder="Company name" />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground">Entity Type</label>
-        <Select value={form.entity_type} onValueChange={v => setForm(f => ({ ...f, entity_type: v }))}>
+        <label className="text-sm font-medium text-foreground">Relationship Type</label>
+        <Select value={form.relationship_type} onValueChange={v => setForm(f => ({ ...f, relationship_type: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {ENTITY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium text-foreground">Ownership %</label>
+          <Input type="number" min={0} max={100} value={form.ownership_percentage} onChange={e => setForm(f => ({ ...f, ownership_percentage: parseFloat(e.target.value) || 0 }))} />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-foreground">Shareholder Name</label>
+          <Input value={form.shareholder_name} onChange={e => setForm(f => ({ ...f, shareholder_name: e.target.value }))} placeholder="Optional" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium text-foreground">Country</label>
+          <Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} placeholder="e.g. UAE" />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-foreground">Industry</label>
+          <Input value={form.industry} onChange={e => setForm(f => ({ ...f, industry: e.target.value }))} placeholder="e.g. Trading" />
+        </div>
       </div>
       <div>
         <label className="text-sm font-medium text-foreground">Trade License No.</label>
@@ -153,8 +184,8 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
         <Input value={form.relationship_description} onChange={e => setForm(f => ({ ...f, relationship_description: e.target.value }))} placeholder="e.g. Same shareholder" />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground">Shareholder Link</label>
-        <Input value={form.shareholder_link} onChange={e => setForm(f => ({ ...f, shareholder_link: e.target.value }))} placeholder="Optional" />
+        <label className="text-sm font-medium text-foreground">Remarks</label>
+        <Input value={form.remarks} onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} placeholder="Optional notes" />
       </div>
     </div>
   );
@@ -242,8 +273,10 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                     <TableRow>
                       <TableHead>Entity Name</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Trade License</TableHead>
-                      <TableHead>Relationship</TableHead>
+                      <TableHead>Ownership %</TableHead>
+                      <TableHead>Shareholder</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Industry</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
@@ -254,14 +287,16 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                         <TableCell className="font-medium">{p.entity_name}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
-                            {ENTITY_TYPES.find(t => t.value === p.entity_type)?.label || p.entity_type}
+                            {ENTITY_TYPES.find(t => t.value === p.relationship_type)?.label || p.relationship_type}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.trade_license_no || '—'}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.relationship_description || '—'}</TableCell>
+                        <TableCell className="text-sm font-mono">{p.ownership_percentage > 0 ? `${p.ownership_percentage}%` : '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.shareholder_name || '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.country || '—'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.industry || '—'}</TableCell>
                         <TableCell>
-                          <Badge variant={p.is_active ? 'default' : 'secondary'} className="text-xs">
-                            {p.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant={p.active_status ? 'default' : 'secondary'} className="text-xs">
+                            {p.active_status ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell>

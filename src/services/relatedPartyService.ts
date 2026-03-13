@@ -8,12 +8,17 @@ export interface RelatedParty {
   id: string;
   case_id: string;
   entity_name: string;
-  entity_type: string;
+  relationship_type: string;
   trade_license_no: string | null;
   relationship_description: string | null;
   shareholder_link: string | null;
-  is_active: boolean;
-  added_by: string | null;
+  ownership_percentage: number;
+  shareholder_name: string | null;
+  country: string | null;
+  industry: string | null;
+  active_status: boolean;
+  remarks: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +62,7 @@ export const ENTITY_TYPES = [
   { value: 'parent_entity', label: 'Parent Entity' },
   { value: 'subsidiary', label: 'Subsidiary' },
   { value: 'shareholder_linked', label: 'Shareholder Linked' },
+  { value: 'joint_venture', label: 'Joint Venture' },
   { value: 'other', label: 'Other Related Entity' },
 ] as const;
 
@@ -74,17 +80,22 @@ export class RelatedPartyService {
   /** Add a related party */
   static async addParty(caseId: string, party: {
     entity_name: string;
-    entity_type: string;
+    relationship_type: string;
     trade_license_no?: string;
     relationship_description?: string;
     shareholder_link?: string;
+    ownership_percentage?: number;
+    shareholder_name?: string;
+    country?: string;
+    industry?: string;
+    remarks?: string;
   }): Promise<RelatedParty> {
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await (supabase.from('case_related_parties') as any)
       .insert({
         case_id: caseId,
         ...party,
-        added_by: user?.id || null,
+        created_by: user?.id || null,
       })
       .select()
       .single();
@@ -95,11 +106,16 @@ export class RelatedPartyService {
   /** Update a related party */
   static async updateParty(partyId: string, updates: Partial<{
     entity_name: string;
-    entity_type: string;
+    relationship_type: string;
     trade_license_no: string;
     relationship_description: string;
     shareholder_link: string;
-    is_active: boolean;
+    ownership_percentage: number;
+    shareholder_name: string;
+    country: string;
+    industry: string;
+    active_status: boolean;
+    remarks: string;
   }>): Promise<void> {
     const { error } = await (supabase.from('case_related_parties') as any)
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -129,7 +145,7 @@ export class RelatedPartyService {
   }> {
     // 1. Get related parties
     const parties = await this.getParties(caseId);
-    const activeParties = parties.filter(p => p.is_active);
+    const activeParties = parties.filter(p => p.active_status);
     if (activeParties.length === 0) {
       // Create empty summary
       const summary = await this.upsertSummary(caseId, {
