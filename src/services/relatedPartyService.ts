@@ -42,18 +42,14 @@ export interface RelatedPartyTransaction {
 export interface RelatedPartyFlowSummary {
   id: string;
   case_id: string;
-  total_related_inflows: number;
-  total_related_outflows: number;
-  total_bank_credits: number;
-  total_bank_debits: number;
-  inflow_ratio: number;
-  outflow_ratio: number;
-  overall_ratio: number;
-  risk_level: string;
-  parties_detected: number;
-  transactions_matched: number;
+  total_related_credit: number;
+  total_related_debit: number;
+  related_party_ratio: number;
+  number_of_related_entities: number;
+  largest_related_entity: string | null;
+  largest_related_flow: number;
+  risk_flag: string;
   created_at: string;
-  updated_at: string;
 }
 
 export const ENTITY_TYPES = [
