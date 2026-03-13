@@ -304,8 +304,8 @@ export class FraudDetectionEngine {
         revenue_mismatch_percent: Math.round(revMismatch.percent * 100) / 100,
         fraud_risk_score: frs,
         fraud_risk_category: category,
-        risk_flags_json: JSON.stringify(riskFlags),
-        flagged_transactions_json: JSON.stringify(flaggedTxns),
+        risk_flags_json: riskFlags,
+        flagged_transactions_json: flaggedTxns,
         analyst_remarks: prevRemarks,
       })
       .select().single();
