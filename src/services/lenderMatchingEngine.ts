@@ -115,7 +115,14 @@ export class LenderMatchingEngine {
       score -= config.customer_concentration_deduction;
 
     // Related Party Score: <10% → +5, 10–25% → +3, >25% → 0 + flag
-    const rpRatio = normalizedData.related_party_ratio || normalizedData.related_party_flow_ratio || 0;
+    // NOTE: related_party_ratio is stored as percentage (e.g. 18.5), 
+    // related_party_flow_ratio is stored as decimal (e.g. 0.185)
+    // Normalize to decimal for comparison
+    let rpRatio = normalizedData.related_party_flow_ratio || 0;
+    // If only percentage form is available, convert
+    if (rpRatio === 0 && normalizedData.related_party_ratio > 0) {
+      rpRatio = normalizedData.related_party_ratio / 100;
+    }
     if (rpRatio < 0.10) {
       score += 5;
     } else if (rpRatio <= 0.25) {
@@ -126,10 +133,14 @@ export class LenderMatchingEngine {
     return Math.max(0, score);
   }
 
-  /** Calculate related party score standalone (for display) */
+  /** Calculate related party score standalone (for display) 
+   *  @param rpRatio - decimal ratio (e.g. 0.185 for 18.5%)
+   */
   static calcRelatedPartyScore(rpRatio: number): { score: number; flag: boolean } {
-    if (rpRatio < 0.10) return { score: 5, flag: false };
-    if (rpRatio <= 0.25) return { score: 3, flag: false };
+    // Detect if passed as percentage and convert
+    const ratio = rpRatio > 1 ? rpRatio / 100 : rpRatio;
+    if (ratio < 0.10) return { score: 5, flag: false };
+    if (ratio <= 0.25) return { score: 3, flag: false };
     return { score: 0, flag: true };
   }
 
@@ -154,7 +165,11 @@ export class LenderMatchingEngine {
       reasons.push('Minimal rule failures');
 
     // Related Party Score contribution
-    const rpRatio = normalizedData.related_party_ratio || normalizedData.related_party_flow_ratio || 0;
+    // Normalize to decimal for display
+    let rpRatio = normalizedData.related_party_flow_ratio || 0;
+    if (rpRatio === 0 && normalizedData.related_party_ratio > 0) {
+      rpRatio = normalizedData.related_party_ratio / 100;
+    }
     const rpResult = this.calcRelatedPartyScore(rpRatio);
     if (rpResult.flag) {
       reasons.push(`High related party exposure (${(rpRatio * 100).toFixed(1)}%) – RP score: 0`);

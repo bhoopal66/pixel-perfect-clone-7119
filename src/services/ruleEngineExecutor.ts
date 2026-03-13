@@ -36,7 +36,7 @@ export class RuleEngineExecutor {
       avg_monthly_debit: Number(caseData.avg_monthly_debit) || 0,
       avg_monthly_balance: Number(caseData.avg_monthly_balance) || 0,
       adjusted_monthly_turnover: (Number(caseData.normalized_turnover) || 0) / Math.max(caseData.statement_months_covered || 1, 1),
-      vat_monthly_sales: (Number(caseData.declared_vat_turnover) || 0) / Math.max((caseData.vat_periods_covered || 1) * 3, 1),
+      vat_monthly_sales: (Number(caseData.declared_vat_turnover) || 0) / 12,
       bank_vat_variance: Number(caseData.bank_vat_variance_percent) || 0,
       negative_balance_days: totalNegDays,
       returned_cheque_count: totalBounces,

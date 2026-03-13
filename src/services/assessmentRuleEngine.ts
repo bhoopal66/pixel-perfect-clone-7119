@@ -1,4 +1,9 @@
-// Assessment Rule Engine - Evaluates case against lender rules
+/**
+ * @deprecated This engine is DEPRECATED. Use RuleEngineExecutor from '@/services/ruleEngineExecutor' instead.
+ * The unified database-driven rule engine replaced this hardcoded engine in V4.
+ * This file is retained only for reference — do NOT import or call from production code paths.
+ */
+// Assessment Rule Engine - Evaluates case against lender rules (DEPRECATED)
 import type {
   CombinedFinancialSummary,
   BankMonthlyAnalysis,

@@ -437,7 +437,7 @@ export function useEligibilityAssessment() {
         avg_monthly_balance: combined.avgMonthlyBalance,
         adjusted_annual_turnover: combined.estimatedAnnualTurnover,
         adjusted_monthly_turnover: combined.avgMonthlyCredit,
-        vat_monthly_sales: combined.declaredVatTurnover / Math.max(combined.vatPeriodsCovered * 3, 1),
+        vat_monthly_sales: combined.declaredVatTurnover > 0 ? combined.declaredVatTurnover / 12 : 0,
         bank_vat_variance: combined.variancePercent,
         negative_balance_days: combined.negativeBalanceDays,
         returned_cheque_count: combined.totalBounces,
