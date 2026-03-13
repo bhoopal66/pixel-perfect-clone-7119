@@ -364,7 +364,8 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                           <TableCell className="text-sm">{t.bank_name || '—'}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
-                              {t.detected_by === 'full_name_match' ? 'Full Match' : 'Token Match'}
+                              {t.detected_by?.includes('full_name') ? 'Full Match' : 'Token Match'}
+                              {t.detected_by?.includes('shareholder') ? ' (Shareholder)' : t.detected_by?.includes('group') ? ' (Group Co.)' : ''}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm font-mono">{(t.mapping_confidence * 100).toFixed(0)}%</TableCell>
