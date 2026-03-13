@@ -63,7 +63,7 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
         { metric: 'VAT Periods', value: summary.vatPeriodsCovered },
       ]);
       sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
 
       // Add Related Party Analysis sheet if data available
       if (rpCrossRef && rpCrossRef.relatedPartyCredits > 0) {

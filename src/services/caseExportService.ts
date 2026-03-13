@@ -498,11 +498,13 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 function styleHeaderRow(sheet: ExcelJS.Worksheet): void {
+  // Use a professional dark blue that works in both light and dark contexts
+  const headerColor = 'FF1E3A5F';
   sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
   sheet.getRow(1).fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF2563EB' },
+    fgColor: { argb: headerColor },
   };
 }
 
