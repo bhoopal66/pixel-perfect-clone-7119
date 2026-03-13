@@ -16,6 +16,7 @@ import { LenderResultsTab } from '@/components/case-detail/LenderResultsTab';
 import { AiRecommendationTab } from '@/components/case-detail/AiRecommendationTab';
 import { ReportsTab } from '@/components/case-detail/ReportsTab';
 import { TimelineTab } from '@/components/case-detail/TimelineTab';
+import { RelatedPartiesTab } from '@/components/case-detail/RelatedPartiesTab';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
