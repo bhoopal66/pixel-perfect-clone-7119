@@ -64,6 +64,26 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
       sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
 
+      // Add Related Party Analysis sheet if data available
+      if (rpCrossRef && rpCrossRef.relatedPartyCredits > 0) {
+        const rpSheet = workbook.addWorksheet('Related Party Analysis');
+        rpSheet.columns = [
+          { header: 'Metric', key: 'metric', width: 35 },
+          { header: 'Value', key: 'value', width: 25 },
+        ];
+        rpSheet.addRows([
+          { metric: 'Total Bank Credits', value: rpCrossRef.adjustedTurnover + rpCrossRef.relatedPartyCredits },
+          { metric: 'Related Party Credits', value: rpCrossRef.relatedPartyCredits },
+          { metric: 'RP-Adjusted Turnover', value: rpCrossRef.adjustedTurnover },
+          { metric: 'Turnover Reduction %', value: `${rpCrossRef.turnoverImpactPct.toFixed(1)}%` },
+          { metric: 'RP Ratio (Credits)', value: `${(rpCrossRef.rpRatio * 100).toFixed(1)}%` },
+          { metric: 'Adjusted vs VAT Variance', value: `${rpCrossRef.adjustedVsVatVariance.toFixed(1)}%` },
+          { metric: 'Risk Flag', value: rpCrossRef.riskFlag.charAt(0).toUpperCase() + rpCrossRef.riskFlag.slice(1) },
+        ]);
+        rpSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        rpSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+      }
+
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const fileName = `financial_summary_${(summary.companyName || 'case').replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
