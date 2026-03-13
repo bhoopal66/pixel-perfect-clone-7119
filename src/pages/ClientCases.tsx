@@ -206,9 +206,13 @@ export default function ClientCases() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="checked">Checked</SelectItem>
+                  <SelectItem value="eligible">Eligible</SelectItem>
+                  <SelectItem value="not_eligible">Not Eligible</SelectItem>
+                  <SelectItem value="to_submit">To Submit</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="under_review">Under Review</SelectItem>
+                  <SelectItem value="under_process">Under Process</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="declined">Declined</SelectItem>
                 </SelectContent>
