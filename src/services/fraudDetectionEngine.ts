@@ -375,13 +375,15 @@ export class FraudDetectionEngine {
   }
 
   private static detectArtificialTurnover(txns: BankTxn[]) {
-    const sorted = [...txns].filter(t => t.txn_date && t.credit > 0)
+    // Use ALL transactions (credits AND debits) to find credits followed by rapid debits
+    const allSorted = [...txns].filter(t => t.txn_date)
       .sort((a, b) => new Date(a.txn_date!).getTime() - new Date(b.txn_date!).getTime());
-    if (sorted.length === 0) return { flag: false, value: 0, examples: [] as FlaggedTransaction[] };
+    const creditTxns = allSorted.filter(t => t.credit > 0);
+    if (creditTxns.length === 0) return { flag: false, value: 0, examples: [] as FlaggedTransaction[] };
 
     // Calculate monthly averages
     const monthlyCredits = new Map<string, number>();
-    for (const t of sorted) {
+    for (const t of creditTxns) {
       const key = t.txn_date!.substring(0, 7);
       monthlyCredits.set(key, (monthlyCredits.get(key) || 0) + t.credit);
     }
@@ -390,15 +392,15 @@ export class FraudDetectionEngine {
     let value = 0;
     const examples: FlaggedTransaction[] = [];
 
-    for (const t of sorted) {
+    for (const t of creditTxns) {
       const d = new Date(t.txn_date!);
       const dayOfMonth = d.getDate();
       const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 
       // Large credits in last 3 days of month
       if (dayOfMonth >= daysInMonth - 2 && t.credit > avgMonthly * 0.3) {
-        // Check if withdrawn soon after
-        const nextDebits = sorted.filter(dt =>
+        // Check if withdrawn soon after — search ALL transactions for debits
+        const nextDebits = allSorted.filter(dt =>
           dt.debit > 0 && dt.txn_date! > t.txn_date! &&
           (new Date(dt.txn_date!).getTime() - d.getTime()) < 3 * 24 * 60 * 60 * 1000
         );
