@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import EligibilityEngine from "./pages/EligibilityEngine";
 import LenderPolicyAdmin from "./pages/LenderPolicyAdmin";
+import AssessmentCaseDetail from "./pages/AssessmentCaseDetail";
 
 const queryClient = new QueryClient();
 
@@ -191,6 +192,7 @@ const AppRoutes = () => (
     <Route path="/client-cases/:id" element={<ProtectedRoute><ClientCaseDetail /></ProtectedRoute>} />
     {/* Eligibility Assessment Engine */}
     <Route path="/eligibility-engine" element={<ProtectedRoute><EligibilityEngine /></ProtectedRoute>} />
+    <Route path="/assessment-case/:id" element={<ProtectedRoute><AssessmentCaseDetail /></ProtectedRoute>} />
     {/* Lender Policy Administration */}
     <Route path="/lender-policy-admin" element={<AdminRoute><LenderPolicyAdmin /></AdminRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
