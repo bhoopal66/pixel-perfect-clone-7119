@@ -306,7 +306,7 @@ export class RelatedPartyService {
     const { data, error } = await (supabase.from('related_party_transactions') as any)
       .select('*')
       .eq('case_id', caseId)
-      .order('txn_date', { ascending: false });
+      .order('transaction_date', { ascending: false });
     if (error) throw error;
     return data || [];
   }
