@@ -6,15 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp,
-  Building2, TrendingUp, Shield, AlertCircle
+  Building2, TrendingUp, Shield, AlertCircle, Download
 } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
+import { saveAndDownloadReport } from '@/services/persistentReportService';
+import { toast } from 'sonner';
+import ExcelJS from 'exceljs';
 import type { AssessmentLenderResult, RuleResult } from '@/types/assessment.types';
 
 type LenderResult = Omit<AssessmentLenderResult, 'id' | 'case_id' | 'created_at' | 'updated_at'>;
 
 interface LenderResultsProps {
   results: LenderResult[];
+  caseId?: string | null;
 }
 
 const fmt = (v: number) => CurrencyService.format(v, 'AED');
