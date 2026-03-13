@@ -28,14 +28,14 @@ export interface RelatedPartyTransaction {
   case_id: string;
   related_party_id: string;
   transaction_id: string | null;
-  txn_date: string | null;
+  transaction_date: string | null;
   description: string | null;
   debit: number;
   credit: number;
   bank_name: string | null;
   account_number: string | null;
-  match_method: string;
-  match_confidence: number;
+  detected_by: string;
+  mapping_confidence: number;
   created_at: string;
 }
 
@@ -214,14 +214,14 @@ export class RelatedPartyService {
             case_id: caseId,
             related_party_id: party.id,
             transaction_id: txn.id,
-            txn_date: txn.txn_date,
+            transaction_date: txn.txn_date,
             description: txn.description,
             debit: txn.debit || 0,
             credit: txn.credit || 0,
             bank_name: txn.bank_name,
             account_number: txn.account_number_masked,
-            match_method: 'full_name_match',
-            match_confidence: 0.95,
+            detected_by: 'full_name_match',
+            mapping_confidence: 0.95,
           });
           partiesDetected.add(party.id);
           continue;
@@ -237,14 +237,14 @@ export class RelatedPartyService {
             case_id: caseId,
             related_party_id: party.id,
             transaction_id: txn.id,
-            txn_date: txn.txn_date,
+            transaction_date: txn.txn_date,
             description: txn.description,
             debit: txn.debit || 0,
             credit: txn.credit || 0,
             bank_name: txn.bank_name,
             account_number: txn.account_number_masked,
-            match_method: 'token_match',
-            match_confidence: tokenMatches.length / party.tokens.length,
+            detected_by: 'token_match',
+            mapping_confidence: tokenMatches.length / party.tokens.length,
           });
           partiesDetected.add(party.id);
         }
@@ -306,7 +306,7 @@ export class RelatedPartyService {
     const { data, error } = await (supabase.from('related_party_transactions') as any)
       .select('*')
       .eq('case_id', caseId)
-      .order('txn_date', { ascending: false });
+      .order('transaction_date', { ascending: false });
     if (error) throw error;
     return data || [];
   }

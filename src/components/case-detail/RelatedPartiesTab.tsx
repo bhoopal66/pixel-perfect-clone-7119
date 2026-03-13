@@ -353,7 +353,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                     <TableBody>
                       {detectedTxns.map(t => (
                         <TableRow key={t.id}>
-                          <TableCell className="text-sm">{t.txn_date || '—'}</TableCell>
+                          <TableCell className="text-sm">{t.transaction_date || '—'}</TableCell>
                           <TableCell className="text-sm max-w-[200px] truncate">{t.description || '—'}</TableCell>
                           <TableCell className="text-right font-mono text-sm text-success">
                             {t.credit > 0 ? fmt(t.credit) : '—'}
@@ -364,10 +364,10 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                           <TableCell className="text-sm">{t.bank_name || '—'}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
-                              {t.match_method === 'full_name_match' ? 'Full Match' : 'Token Match'}
+                              {t.detected_by === 'full_name_match' ? 'Full Match' : 'Token Match'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-sm font-mono">{(t.match_confidence * 100).toFixed(0)}%</TableCell>
+                          <TableCell className="text-sm font-mono">{(t.mapping_confidence * 100).toFixed(0)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
