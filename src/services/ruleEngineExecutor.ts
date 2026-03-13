@@ -358,7 +358,8 @@ export class RuleEngineExecutor {
         recommended_tenure: recommendedTenure, score: Math.max(0, score),
         major_fail_count: majorFails, minor_fail_count: minorFails,
         risk_flags: riskFlags, failed_rules: failedRules,
-        decision_summary: decisionSummary, executed_at: new Date().toISOString(), executed_by: null,
+        decision_summary: decisionSummary, pricing_band: pricingBand || null,
+        executed_at: new Date().toISOString(), executed_by: null,
       },
       details,
     };
