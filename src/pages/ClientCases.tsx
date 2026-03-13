@@ -22,7 +22,13 @@ import {
   XCircle, 
   FileText,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  FolderOpen,
+  ClipboardCheck,
+  Send,
+  Loader2,
+  ShieldCheck,
+  ShieldX
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -43,7 +49,7 @@ const MOCK_CASES = [
     companyName: 'Global Trading FZE',
     loanType: 'Working Capital',
     loanAmount: 750000,
-    status: 'under_review',
+    status: 'under_process',
     updatedAt: '2024-01-14T15:45:00Z'
   },
   {
@@ -70,18 +76,57 @@ const MOCK_CASES = [
     companyName: 'Al Madina Services',
     loanType: 'Term Loan',
     loanAmount: 250000,
-    status: 'draft',
+    status: 'open',
     updatedAt: '2024-01-11T11:15:00Z'
+  },
+  {
+    id: '6',
+    caseId: 'BL-2024-006',
+    companyName: 'Gulf Logistics LLC',
+    loanType: 'Term Loan',
+    loanAmount: 600000,
+    status: 'checked',
+    updatedAt: '2024-01-10T08:30:00Z'
+  },
+  {
+    id: '7',
+    caseId: 'BL-2024-007',
+    companyName: 'Sharjah Motors',
+    loanType: 'Working Capital',
+    loanAmount: 450000,
+    status: 'eligible',
+    updatedAt: '2024-01-09T12:00:00Z'
+  },
+  {
+    id: '8',
+    caseId: 'BL-2024-008',
+    companyName: 'Desert Construction Co.',
+    loanType: 'POS Finance',
+    loanAmount: 200000,
+    status: 'not_eligible',
+    updatedAt: '2024-01-08T16:45:00Z'
+  },
+  {
+    id: '9',
+    caseId: 'BL-2024-009',
+    companyName: 'Falcon Trading FZE',
+    loanType: 'Term Loan',
+    loanAmount: 800000,
+    status: 'to_submit',
+    updatedAt: '2024-01-07T10:00:00Z'
   }
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: React.ReactNode }> = {
-  draft: { label: 'Draft', variant: 'outline', icon: <FileText className="h-3 w-3" /> },
-  in_process: { label: 'In Process', variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
-  submitted: { label: 'Submitted', variant: 'default', icon: <Clock className="h-3 w-3" /> },
-  under_review: { label: 'Under Review', variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
-  approved: { label: 'Approved', variant: 'default', icon: <CheckCircle2 className="h-3 w-3" /> },
-  declined: { label: 'Declined', variant: 'destructive', icon: <XCircle className="h-3 w-3" /> }
+const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: React.ReactNode; className?: string }> = {
+  open: { label: 'Open', variant: 'outline', icon: <FolderOpen className="h-3 w-3" />, className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' },
+  checked: { label: 'Checked', variant: 'secondary', icon: <ClipboardCheck className="h-3 w-3" />, className: 'border-violet-500/30 text-violet-600 bg-violet-500/10' },
+  eligible: { label: 'Eligible', variant: 'default', icon: <ShieldCheck className="h-3 w-3" />, className: 'border-emerald-500/30 text-emerald-600 bg-emerald-500/10' },
+  not_eligible: { label: 'Not Eligible', variant: 'destructive', icon: <ShieldX className="h-3 w-3" />, className: 'border-red-500/30 text-red-600 bg-red-500/10' },
+  to_submit: { label: 'To Submit', variant: 'outline', icon: <Send className="h-3 w-3" />, className: 'border-amber-500/30 text-amber-600 bg-amber-500/10' },
+  submitted: { label: 'Submitted', variant: 'default', icon: <CheckCircle2 className="h-3 w-3" />, className: 'border-sky-500/30 text-sky-600 bg-sky-500/10' },
+  under_process: { label: 'Under Process', variant: 'secondary', icon: <Loader2 className="h-3 w-3" />, className: 'border-orange-500/30 text-orange-600 bg-orange-500/10' },
+  approved: { label: 'Approved', variant: 'default', icon: <CheckCircle2 className="h-3 w-3" />, className: 'border-emerald-500/30 text-emerald-700 bg-emerald-500/15' },
+  declined: { label: 'Declined', variant: 'destructive', icon: <XCircle className="h-3 w-3" />, className: 'border-destructive/30 text-destructive bg-destructive/10' },
 };
 
 export default function ClientCases() {
@@ -98,9 +143,9 @@ export default function ClientCases() {
   });
 
   const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.open;
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
+      <Badge variant="outline" className={`flex items-center gap-1 w-fit ${config.className || ''}`}>
         {config.icon}
         {config.label}
       </Badge>
@@ -161,9 +206,13 @@ export default function ClientCases() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="checked">Checked</SelectItem>
+                  <SelectItem value="eligible">Eligible</SelectItem>
+                  <SelectItem value="not_eligible">Not Eligible</SelectItem>
+                  <SelectItem value="to_submit">To Submit</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="under_review">Under Review</SelectItem>
+                  <SelectItem value="under_process">Under Process</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="declined">Declined</SelectItem>
                 </SelectContent>
