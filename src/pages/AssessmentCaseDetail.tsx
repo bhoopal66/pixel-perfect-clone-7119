@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
-  ArrowLeft, FileText, Eye, BarChart3, Shield, Brain, Download, Clock, Building2, Users,
+  ArrowLeft, FileText, Eye, BarChart3, Shield, Brain, Download, Clock, Building2, Users, ShieldAlert,
 } from 'lucide-react';
 import { DocumentsTab } from '@/components/case-detail/DocumentsTab';
 import { ExtractionTab } from '@/components/case-detail/ExtractionTab';
@@ -17,6 +17,7 @@ import { AiRecommendationTab } from '@/components/case-detail/AiRecommendationTa
 import { ReportsTab } from '@/components/case-detail/ReportsTab';
 import { TimelineTab } from '@/components/case-detail/TimelineTab';
 import { RelatedPartiesTab } from '@/components/case-detail/RelatedPartiesTab';
+import { FraudDetectionTab } from '@/components/case-detail/FraudDetectionTab';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -30,6 +31,7 @@ const TABS = [
   { key: 'extraction', label: 'Extraction', icon: Eye },
   { key: 'summary', label: 'Financial Summary', icon: BarChart3 },
   { key: 'related_parties', label: 'Related Parties', icon: Users },
+  { key: 'fraud', label: 'Fraud Detection', icon: ShieldAlert },
   { key: 'lenders', label: 'Lender Results', icon: Shield },
   { key: 'ai', label: 'AI Recommendation', icon: Brain },
   { key: 'reports', label: 'Reports', icon: Download },
