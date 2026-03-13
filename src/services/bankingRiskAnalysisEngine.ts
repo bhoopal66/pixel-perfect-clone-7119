@@ -203,8 +203,13 @@ export class BankingRiskAnalysisEngine {
     // 11. Circular / round-tripping
     const circularRatio = this.detectCircularFlows(txns, totalCredits);
 
-    // 12. Related party
-    const relatedFlows = txns.filter(t => matchAny(desc(t), RELATED_KW));
+    // 12. Related party - use register names + keyword detection
+    const relatedFlows = txns.filter(t => {
+      const d2 = desc(t);
+      if (matchAny(d2, RELATED_KW)) return true;
+      // Match against registered related party names
+      return relatedPartyNames.some(name => d2.includes(name));
+    });
     const relatedValue = relatedFlows.reduce((s, t) => s + t.credit + t.debit, 0);
     const relatedRatio = (totalCredits + totalDebits) > 0 ? relatedValue / (totalCredits + totalDebits) : 0;
 
