@@ -34,10 +34,15 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   const [editParty, setEditParty] = useState<RelatedParty | null>(null);
   const [form, setForm] = useState({
     entity_name: '',
-    entity_type: 'sister_concern',
+    relationship_type: 'sister_concern',
     trade_license_no: '',
     relationship_description: '',
     shareholder_link: '',
+    ownership_percentage: 0,
+    shareholder_name: '',
+    country: '',
+    industry: '',
+    remarks: '',
   });
 
   const { data: parties = [], isLoading: loadingParties } = useQuery({
