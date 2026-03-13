@@ -131,14 +131,14 @@ export class RuleEngineExecutor {
     return Math.round(result);
   }
 
-  /** Safe expression evaluator supporting min/max and basic math */
+  /** Safe expression evaluator supporting min/max and basic math — NO Function()/eval */
   static evaluateExpression(expr: string, data: Record<string, any>): number {
     let processed = expr;
     const sortedKeys = Object.keys(data).sort((a, b) => b.length - a.length);
     for (const key of sortedKeys) {
       processed = processed.replace(new RegExp(`\\b${key}\\b`, 'g'), String(data[key] ?? 0));
     }
-    // Handle min/max
+    // Handle min/max (nested not supported)
     processed = processed.replace(/min\(([^)]+)\)/gi, (_, args) => {
       const values = args.split(',').map((s: string) => parseFloat(s.trim()) || 0);
       return String(Math.min(...values));
@@ -148,13 +148,66 @@ export class RuleEngineExecutor {
       return String(Math.max(...values));
     });
     try {
+      // Validate: only allow digits, operators, parens, dots, spaces
       if (/^[0-9+\-*/().%\s,]+$/.test(processed)) {
-        return Function('"use strict"; return (' + processed + ')')() as number;
+        return this.safeEvaluateMath(processed);
       }
       return 0;
     } catch {
       return 0;
     }
+  }
+
+  /** Evaluate a simple math expression safely without Function()/eval using a recursive descent parser */
+  private static safeEvaluateMath(expr: string): number {
+    const tokens = expr.replace(/\s+/g, '').split('');
+    let pos = 0;
+
+    const peek = () => tokens[pos];
+    const consume = () => tokens[pos++];
+
+    const parseNumber = (): number => {
+      let numStr = '';
+      if (peek() === '-') numStr += consume();
+      while (pos < tokens.length && (/[0-9.]/.test(peek()))) numStr += consume();
+      if (numStr === '' || numStr === '-') return 0;
+      return parseFloat(numStr) || 0;
+    };
+
+    const parseFactor = (): number => {
+      if (peek() === '(') {
+        consume(); // '('
+        const val = parseExpr();
+        if (peek() === ')') consume(); // ')'
+        return val;
+      }
+      return parseNumber();
+    };
+
+    const parseTerm = (): number => {
+      let left = parseFactor();
+      while (pos < tokens.length && (peek() === '*' || peek() === '/')) {
+        const op = consume();
+        const right = parseFactor();
+        if (op === '*') left *= right;
+        else left = right !== 0 ? left / right : 0;
+      }
+      return left;
+    };
+
+    const parseExpr = (): number => {
+      let left = parseTerm();
+      while (pos < tokens.length && (peek() === '+' || peek() === '-') && tokens[pos - 1] !== '(') {
+        const op = consume();
+        const right = parseTerm();
+        if (op === '+') left += right;
+        else left -= right;
+      }
+      return left;
+    };
+
+    const result = parseExpr();
+    return isFinite(result) ? result : 0;
   }
 
   /** Execute rules for a single product */
@@ -314,8 +367,8 @@ export class RuleEngineExecutor {
     const { data: lenders } = await supabase.from('onboarding_lenders').select('*').eq('is_active', true);
     if (!lenders?.length) return [];
 
-    // Clear previous results
-    await from('lender_execution_results').delete().eq('case_id', caseId);
+    // Mark previous results as inactive (preserve audit trail)
+    await from('lender_execution_results').update({ is_active: false }).eq('case_id', caseId).eq('is_active', true);
 
     const results: LenderExecutionResult[] = [];
     for (const lender of lenders) {

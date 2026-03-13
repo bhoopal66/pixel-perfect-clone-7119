@@ -272,7 +272,13 @@ export class FraudDetectionEngine {
     else if (frs < 60) category = 'high';
     else if (frs < 80) category = 'moderate';
 
-    // Upsert results
+    // Preserve analyst remarks from previous run
+    const { data: prevResult } = await from('fraud_detection_results')
+      .select('analyst_remarks').eq('case_id', caseId)
+      .order('created_at', { ascending: false }).limit(1).single();
+    const prevRemarks = prevResult?.analyst_remarks || null;
+
+    // Delete old results then insert new (fraud results are re-computable, no audit trail needed)
     await from('fraud_detection_results').delete().eq('case_id', caseId);
     const { data: result, error } = await from('fraud_detection_results')
       .insert({
@@ -300,6 +306,7 @@ export class FraudDetectionEngine {
         fraud_risk_category: category,
         risk_flags_json: JSON.stringify(riskFlags),
         flagged_transactions_json: JSON.stringify(flaggedTxns),
+        analyst_remarks: prevRemarks,
       })
       .select().single();
 
@@ -375,13 +382,15 @@ export class FraudDetectionEngine {
   }
 
   private static detectArtificialTurnover(txns: BankTxn[]) {
-    const sorted = [...txns].filter(t => t.txn_date && t.credit > 0)
+    // Use ALL transactions (credits AND debits) to find credits followed by rapid debits
+    const allSorted = [...txns].filter(t => t.txn_date)
       .sort((a, b) => new Date(a.txn_date!).getTime() - new Date(b.txn_date!).getTime());
-    if (sorted.length === 0) return { flag: false, value: 0, examples: [] as FlaggedTransaction[] };
+    const creditTxns = allSorted.filter(t => t.credit > 0);
+    if (creditTxns.length === 0) return { flag: false, value: 0, examples: [] as FlaggedTransaction[] };
 
     // Calculate monthly averages
     const monthlyCredits = new Map<string, number>();
-    for (const t of sorted) {
+    for (const t of creditTxns) {
       const key = t.txn_date!.substring(0, 7);
       monthlyCredits.set(key, (monthlyCredits.get(key) || 0) + t.credit);
     }
@@ -390,15 +399,15 @@ export class FraudDetectionEngine {
     let value = 0;
     const examples: FlaggedTransaction[] = [];
 
-    for (const t of sorted) {
+    for (const t of creditTxns) {
       const d = new Date(t.txn_date!);
       const dayOfMonth = d.getDate();
       const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 
       // Large credits in last 3 days of month
       if (dayOfMonth >= daysInMonth - 2 && t.credit > avgMonthly * 0.3) {
-        // Check if withdrawn soon after
-        const nextDebits = sorted.filter(dt =>
+        // Check if withdrawn soon after — search ALL transactions for debits
+        const nextDebits = allSorted.filter(dt =>
           dt.debit > 0 && dt.txn_date! > t.txn_date! &&
           (new Date(dt.txn_date!).getTime() - d.getTime()) < 3 * 24 * 60 * 60 * 1000
         );
@@ -572,11 +581,13 @@ export class FraudDetectionEngine {
   private static checkRevenueMismatch(
     caseData: any, threshold: number
   ) {
-    const bankCredits = Number(caseData?.total_bank_credits) || 0;
+    // Normalize both to comparable periods:
+    // Use normalized_turnover (annualized bank credits) vs declared_vat_turnover (annualized VAT sales)
+    const annualizedBankTurnover = Number(caseData?.normalized_turnover) || Number(caseData?.estimated_annual_turnover) || 0;
     const vatTurnover = Number(caseData?.declared_vat_turnover) || 0;
-    if (bankCredits === 0 && vatTurnover === 0) return { flag: false, percent: 0 };
-    const maxVal = Math.max(bankCredits, vatTurnover);
-    const percent = maxVal > 0 ? (Math.abs(bankCredits - vatTurnover) / maxVal) * 100 : 0;
+    if (annualizedBankTurnover === 0 && vatTurnover === 0) return { flag: false, percent: 0 };
+    const maxVal = Math.max(annualizedBankTurnover, vatTurnover);
+    const percent = maxVal > 0 ? (Math.abs(annualizedBankTurnover - vatTurnover) / maxVal) * 100 : 0;
     return { flag: percent > threshold, percent: Math.round(percent * 100) / 100 };
   }
 
