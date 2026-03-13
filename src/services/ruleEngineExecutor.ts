@@ -2,6 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { LenderRule, LenderFormulaConfig, LenderDecisionMatrix, LenderExecutionResult, LenderRuleResultDetail } from '@/types/ruleEngine.types';
 
+import { RelatedPartyService } from '@/services/relatedPartyService';
+
 const from = (table: string) => (supabase as any).from(table);
 
 export class RuleEngineExecutor {
