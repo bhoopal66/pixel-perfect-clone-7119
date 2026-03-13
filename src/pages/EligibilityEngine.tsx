@@ -29,6 +29,7 @@ const STEPS: { key: ExtendedStep; label: string; icon: React.ReactNode; requires
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" />, requiresAnalysis: false },
   { key: 'extraction', label: 'Extraction', icon: <Eye className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'bank_analysis', label: 'Bank Analysis', icon: <BarChart3 className="h-4 w-4" />, requiresAnalysis: true },
+  { key: 'bank_risk', label: 'Banking Risk', icon: <ShieldAlert className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'vat_analysis', label: 'VAT Analysis', icon: <Receipt className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'combined_summary', label: 'Summary', icon: <Layers className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'lender_results', label: 'Lender Results', icon: <Shield className="h-4 w-4" />, requiresAnalysis: true },
