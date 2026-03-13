@@ -812,6 +812,229 @@ export type Database = {
           },
         ]
       }
+      bank_analysis_consolidated: {
+        Row: {
+          accounts_analyzed: number | null
+          balance_trend: string | null
+          case_id: string
+          created_at: string
+          id: string
+          largest_concentration_ratio: number | null
+          overall_cash_ratio: number | null
+          overall_emi_total: number | null
+          overall_eod_balance: number | null
+          overall_fx_ratio: number | null
+          overall_govt_ratio: number | null
+          overall_od_utilization: number | null
+          overall_related_party_flag: boolean | null
+          overall_return_ratio: number | null
+          overall_risk_flags: Json | null
+          overall_round_tripping_flag: boolean | null
+          overall_salary_outflow: number | null
+          total_monthly_credit: number | null
+          total_monthly_debit: number | null
+          total_months_covered: number | null
+        }
+        Insert: {
+          accounts_analyzed?: number | null
+          balance_trend?: string | null
+          case_id: string
+          created_at?: string
+          id?: string
+          largest_concentration_ratio?: number | null
+          overall_cash_ratio?: number | null
+          overall_emi_total?: number | null
+          overall_eod_balance?: number | null
+          overall_fx_ratio?: number | null
+          overall_govt_ratio?: number | null
+          overall_od_utilization?: number | null
+          overall_related_party_flag?: boolean | null
+          overall_return_ratio?: number | null
+          overall_risk_flags?: Json | null
+          overall_round_tripping_flag?: boolean | null
+          overall_salary_outflow?: number | null
+          total_monthly_credit?: number | null
+          total_monthly_debit?: number | null
+          total_months_covered?: number | null
+        }
+        Update: {
+          accounts_analyzed?: number | null
+          balance_trend?: string | null
+          case_id?: string
+          created_at?: string
+          id?: string
+          largest_concentration_ratio?: number | null
+          overall_cash_ratio?: number | null
+          overall_emi_total?: number | null
+          overall_eod_balance?: number | null
+          overall_fx_ratio?: number | null
+          overall_govt_ratio?: number | null
+          overall_od_utilization?: number | null
+          overall_related_party_flag?: boolean | null
+          overall_return_ratio?: number | null
+          overall_risk_flags?: Json | null
+          overall_round_tripping_flag?: boolean | null
+          overall_salary_outflow?: number | null
+          total_monthly_credit?: number | null
+          total_monthly_debit?: number | null
+          total_months_covered?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_analysis_consolidated_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_analysis_results: {
+        Row: {
+          account_number: string | null
+          average_eod_balance: number | null
+          avg_monthly_credit_12m: number | null
+          avg_monthly_credit_24m: number | null
+          avg_monthly_debit_12m: number | null
+          avg_monthly_debit_24m: number | null
+          bank_name: string | null
+          case_id: string
+          cash_deposit_ratio: number | null
+          cash_risk_flag: boolean | null
+          circular_flow_ratio: number | null
+          created_at: string
+          emi_lender_list: Json | null
+          emi_monthly_total: number | null
+          estimated_employee_count: number | null
+          fx_exposure_flag: boolean | null
+          fx_transaction_ratio: number | null
+          government_receipt_ratio: number | null
+          government_receivable_flag: boolean | null
+          id: string
+          largest_payer_name: string | null
+          largest_payer_ratio: number | null
+          max_monthly_balance: number | null
+          min_monthly_balance: number | null
+          month_end_balance_trend: string | null
+          monthly_salary_outflow: number | null
+          months_covered: number | null
+          od_utilization_ratio: number | null
+          payer_concentration_flag: boolean | null
+          peak_month: string | null
+          period_from: string | null
+          period_to: string | null
+          related_party_flag: boolean | null
+          related_party_flow_ratio: number | null
+          returned_cheque_count: number | null
+          returned_cheque_flag: boolean | null
+          returned_cheque_ratio: number | null
+          returned_cheque_value: number | null
+          round_tripping_flag: boolean | null
+          salary_consistency_flag: string | null
+          total_credits: number | null
+          total_debits: number | null
+          trough_month: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          average_eod_balance?: number | null
+          avg_monthly_credit_12m?: number | null
+          avg_monthly_credit_24m?: number | null
+          avg_monthly_debit_12m?: number | null
+          avg_monthly_debit_24m?: number | null
+          bank_name?: string | null
+          case_id: string
+          cash_deposit_ratio?: number | null
+          cash_risk_flag?: boolean | null
+          circular_flow_ratio?: number | null
+          created_at?: string
+          emi_lender_list?: Json | null
+          emi_monthly_total?: number | null
+          estimated_employee_count?: number | null
+          fx_exposure_flag?: boolean | null
+          fx_transaction_ratio?: number | null
+          government_receipt_ratio?: number | null
+          government_receivable_flag?: boolean | null
+          id?: string
+          largest_payer_name?: string | null
+          largest_payer_ratio?: number | null
+          max_monthly_balance?: number | null
+          min_monthly_balance?: number | null
+          month_end_balance_trend?: string | null
+          monthly_salary_outflow?: number | null
+          months_covered?: number | null
+          od_utilization_ratio?: number | null
+          payer_concentration_flag?: boolean | null
+          peak_month?: string | null
+          period_from?: string | null
+          period_to?: string | null
+          related_party_flag?: boolean | null
+          related_party_flow_ratio?: number | null
+          returned_cheque_count?: number | null
+          returned_cheque_flag?: boolean | null
+          returned_cheque_ratio?: number | null
+          returned_cheque_value?: number | null
+          round_tripping_flag?: boolean | null
+          salary_consistency_flag?: string | null
+          total_credits?: number | null
+          total_debits?: number | null
+          trough_month?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          average_eod_balance?: number | null
+          avg_monthly_credit_12m?: number | null
+          avg_monthly_credit_24m?: number | null
+          avg_monthly_debit_12m?: number | null
+          avg_monthly_debit_24m?: number | null
+          bank_name?: string | null
+          case_id?: string
+          cash_deposit_ratio?: number | null
+          cash_risk_flag?: boolean | null
+          circular_flow_ratio?: number | null
+          created_at?: string
+          emi_lender_list?: Json | null
+          emi_monthly_total?: number | null
+          estimated_employee_count?: number | null
+          fx_exposure_flag?: boolean | null
+          fx_transaction_ratio?: number | null
+          government_receipt_ratio?: number | null
+          government_receivable_flag?: boolean | null
+          id?: string
+          largest_payer_name?: string | null
+          largest_payer_ratio?: number | null
+          max_monthly_balance?: number | null
+          min_monthly_balance?: number | null
+          month_end_balance_trend?: string | null
+          monthly_salary_outflow?: number | null
+          months_covered?: number | null
+          od_utilization_ratio?: number | null
+          payer_concentration_flag?: boolean | null
+          peak_month?: string | null
+          period_from?: string | null
+          period_to?: string | null
+          related_party_flag?: boolean | null
+          related_party_flow_ratio?: number | null
+          returned_cheque_count?: number | null
+          returned_cheque_flag?: boolean | null
+          returned_cheque_ratio?: number | null
+          returned_cheque_value?: number | null
+          round_tripping_flag?: boolean | null
+          salary_consistency_flag?: string | null
+          total_credits?: number | null
+          total_debits?: number | null
+          trough_month?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_analysis_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_owners: {
         Row: {
           case_id: string
