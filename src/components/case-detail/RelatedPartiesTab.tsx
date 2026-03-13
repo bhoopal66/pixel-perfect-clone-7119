@@ -353,7 +353,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
                     <TableBody>
                       {detectedTxns.map(t => (
                         <TableRow key={t.id}>
-                          <TableCell className="text-sm">{t.txn_date || '—'}</TableCell>
+                          <TableCell className="text-sm">{t.transaction_date || '—'}</TableCell>
                           <TableCell className="text-sm max-w-[200px] truncate">{t.description || '—'}</TableCell>
                           <TableCell className="text-right font-mono text-sm text-success">
                             {t.credit > 0 ? fmt(t.credit) : '—'}
