@@ -167,6 +167,29 @@ const EligibilityEngine: React.FC = () => {
               </motion.div>
             </TabsContent>
 
+            <TabsContent value="funding">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="space-y-4">
+                  {assessment.caseId && (
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={assessment.runMatchingEngine}
+                        disabled={assessment.isMatchingRunning}
+                        className="gap-2"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        {assessment.isMatchingRunning ? 'Analyzing...' : 'Check Funding Options'}
+                      </Button>
+                    </div>
+                  )}
+                  <FundingRecommendation
+                    results={assessment.matchResults}
+                    isLoading={assessment.isMatchingRunning}
+                  />
+                </div>
+              </motion.div>
+            </TabsContent>
+
             <TabsContent value="manual_review">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <ManualReview

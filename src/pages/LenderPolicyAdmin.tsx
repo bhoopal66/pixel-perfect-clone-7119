@@ -138,6 +138,9 @@ const LenderPolicyAdmin = () => {
           <TabsContent value="test">
             <TestRuleEngine lenderId={selectedLenderId} productId={selectedProductId} ruleSetId={selectedRuleSetId} />
           </TabsContent>
+          <TabsContent value="match-config">
+            <MatchConfigEditor />
+          </TabsContent>
           <TabsContent value="audit">
             <PolicyAuditLog lenderId={selectedLenderId} />
           </TabsContent>

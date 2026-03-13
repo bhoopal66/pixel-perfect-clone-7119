@@ -410,11 +410,14 @@ export function useEligibilityAssessment() {
     vatAnalysis,
     combinedSummary,
     lenderResults,
+    matchResults,
+    isMatchingRunning,
     handleBankFiles,
     handleVatFiles,
     removeBankFile,
     removeVatFile,
     runAnalysis,
+    runMatchingEngine,
     resetAssessment,
   };
 }
