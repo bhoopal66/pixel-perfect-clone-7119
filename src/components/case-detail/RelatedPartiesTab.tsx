@@ -206,29 +206,44 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Related Credits</p>
-              <p className="text-lg font-bold text-foreground">{fmt(summary.total_related_credit)}</p>
+              <p className="text-xs font-medium text-muted-foreground">Total Related Party Inflow</p>
+              <p className="text-lg font-bold text-success">{fmt(summary.total_related_credit)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Credits from related entities</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Related Debits</p>
-              <p className="text-lg font-bold text-foreground">{fmt(summary.total_related_debit)}</p>
+              <p className="text-xs font-medium text-muted-foreground">Total Related Party Outflow</p>
+              <p className="text-lg font-bold text-destructive">{fmt(summary.total_related_debit)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Debits to related entities</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">RP Ratio</p>
+              <p className="text-xs font-medium text-muted-foreground">% of Banking Activity</p>
               <p className={`text-lg font-bold ${riskColor(summary.risk_flag)}`}>{pct(summary.related_party_ratio)}</p>
               <div className="mt-1">{riskBadge(summary.risk_flag)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5 pb-4">
-              <p className="text-xs font-medium text-muted-foreground">Entities</p>
+              <p className="text-xs font-medium text-muted-foreground">Related Entities</p>
               <p className="text-lg font-bold text-foreground">{summary.number_of_related_entities}</p>
               {summary.largest_related_entity && (
                 <p className="text-xs text-muted-foreground mt-1 truncate">Largest: {summary.largest_related_entity}</p>
+              )}
+              {parties.length > 0 && (
+                <div className="mt-2 space-y-0.5">
+                  {parties.filter(p => p.active_status).slice(0, 5).map(p => (
+                    <p key={p.id} className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block flex-shrink-0" />
+                      {p.entity_name}
+                    </p>
+                  ))}
+                  {parties.filter(p => p.active_status).length > 5 && (
+                    <p className="text-xs text-muted-foreground">+{parties.filter(p => p.active_status).length - 5} more</p>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
