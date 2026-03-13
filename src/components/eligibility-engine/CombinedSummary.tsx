@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download } from 'lucide-react';
+import { Building2, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, Scale, Download, ArrowUpDown } from 'lucide-react';
 import { CurrencyService } from '@/services/currencyService';
 import { saveAndDownloadReport } from '@/services/persistentReportService';
 import { toast } from 'sonner';
