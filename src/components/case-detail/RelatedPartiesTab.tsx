@@ -263,6 +263,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
           <TabsTrigger value="register" className="text-xs gap-1"><Users className="h-3.5 w-3.5" /> Register</TabsTrigger>
           <TabsTrigger value="transactions" className="text-xs gap-1"><ArrowUpDown className="h-3.5 w-3.5" /> Detected Transactions</TabsTrigger>
           <TabsTrigger value="impact" className="text-xs gap-1"><TrendingDown className="h-3.5 w-3.5" /> Financial Impact</TabsTrigger>
+          <TabsTrigger value="crossref" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" /> Document Cross-Reference</TabsTrigger>
         </TabsList>
 
         {/* Register Tab */}
