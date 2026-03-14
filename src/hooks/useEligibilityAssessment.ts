@@ -60,6 +60,7 @@ export function useEligibilityAssessment() {
       const detection = PDFParser.detectBank(pdfData.text);
       const transactions = PDFParser.extractTransactions(pdfData.text, detection.detectedBank || undefined);
       const accountInfo = PDFParser.extractAccountInfo(pdfData.text);
+      const detectedCurrency = CurrencyService.detectCurrency(pdfData.text);
 
       const parsedTxns: ParsedTransaction[] = transactions.map(t => ({
         date: t.date,
@@ -96,6 +97,7 @@ export function useEligibilityAssessment() {
           : parsedTxns.length === 0
             ? 'No transactions could be extracted'
             : null,
+        detectedCurrency,
       };
     } catch (error) {
       console.error('Bank statement parse error:', error);
