@@ -84,10 +84,10 @@ describe("OwnerCard", () => {
   });
 
   it("does not show delete button when canRemove is false", () => {
-    render(<OwnerCard {...mockProps} canRemove={false} />);
+    const { container } = render(<OwnerCard {...mockProps} canRemove={false} />);
     
-    const deleteButtons = screen.queryAllByRole("button", { name: /trash/i });
-    expect(deleteButtons).toHaveLength(0);
+    const deleteButton = container.querySelector('button svg.lucide-trash-2');
+    expect(deleteButton).not.toBeInTheDocument();
   });
 
   it("displays duplicate warnings", () => {
