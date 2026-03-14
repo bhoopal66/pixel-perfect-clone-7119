@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Step2OwnerDetails } from "./Step2OwnerDetails";
-import { OnboardingContext } from "@/contexts/OnboardingContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { createEmptyFormData, createEmptyOwner } from "@/types/onboarding.types";
 
 describe("Step2OwnerDetails", () => {
