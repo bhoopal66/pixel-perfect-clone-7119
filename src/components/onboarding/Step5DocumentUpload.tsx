@@ -155,7 +155,7 @@ export function Step5DocumentUpload() {
 
   // Filter conditional documents
   const mandatoryDocs = DOCUMENT_TYPES.mandatory.filter(doc => {
-    if (doc.id === 'vat_certificate') {
+    if (doc.id === 'vat_certificate' || doc.id === 'vat_returns') {
       return formData.bankingTurnover.vatRegistered;
     }
     return true;
