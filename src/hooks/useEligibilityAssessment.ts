@@ -429,7 +429,7 @@ export function useEligibilityAssessment() {
         }
       }
       const allTransactionsRaw = allTransactions;
-      const summaries = AssessmentAnalysisEngine.calculateMonthlySummaries(allTransactions);
+      const summaries = AssessmentAnalysisEngine.calculateMonthlySummaries(allTransactionsRaw);
       setMonthlySummaries(summaries);
 
       // Calculate VAT analysis
