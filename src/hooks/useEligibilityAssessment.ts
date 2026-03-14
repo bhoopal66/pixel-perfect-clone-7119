@@ -31,10 +31,6 @@ import type {
 import type { AccountCurrencyConfig } from '@/types/currency.types';
 
 
-  // Multi-currency state
-  const [accountConfigs, setAccountConfigs] = useState<AccountCurrencyConfig[]>([]);
-  const [baseReportingCurrency, setBaseReportingCurrency] = useState('AED');
-
 
 export function useEligibilityAssessment() {
   const [currentStep, setCurrentStep] = useState<AssessmentStep>('upload');
@@ -56,6 +52,11 @@ export function useEligibilityAssessment() {
   const [isMatchingRunning, setIsMatchingRunning] = useState(false);
   const [bankRiskResults, setBankRiskResults] = useState<BankAnalysisResult[]>([]);
   const [bankRiskConsolidated, setBankRiskConsolidated] = useState<ConsolidatedAnalysis | null>(null);
+
+  // Multi-currency state
+  const [accountConfigs, setAccountConfigs] = useState<AccountCurrencyConfig[]>([]);
+  const [baseReportingCurrency, setBaseReportingCurrency] = useState('AED');
+
 
   // Parse bank statement PDF
   const parseBankStatement = useCallback(async (file: File): Promise<ParsedBankFile | null> => {
