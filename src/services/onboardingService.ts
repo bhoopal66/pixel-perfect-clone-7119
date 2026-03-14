@@ -199,6 +199,7 @@ export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promis
   const payload = owners.map((owner, index) => ({
     case_id: caseId,
     owner_name: owner.ownerName,
+    role: owner.role || 'Partner',
     nationality: owner.nationality,
     emirates_id: owner.emiratesId,
     passport_number: owner.passportNumber,
@@ -206,6 +207,9 @@ export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promis
     resident_status: owner.residentStatus,
     mobile: owner.mobile,
     email: owner.email,
+    address: owner.address || '',
+    is_signatory: owner.isSignatory || false,
+    is_ubo: owner.isUbo || false,
     display_order: index + 1
   }));
 
@@ -235,13 +239,17 @@ export async function getOwners(caseId: string): Promise<OwnerDetails[]> {
   return data.map(owner => ({
     id: owner.id,
     ownerName: owner.owner_name,
+    role: (owner as any).role || 'Partner',
     nationality: owner.nationality,
     emiratesId: owner.emirates_id,
     passportNumber: owner.passport_number,
     shareholdingPercent: Number(owner.shareholding_percent),
     residentStatus: owner.resident_status,
     mobile: owner.mobile,
-    email: owner.email
+    email: owner.email,
+    address: (owner as any).address || '',
+    isSignatory: (owner as any).is_signatory || false,
+    isUbo: (owner as any).is_ubo || false
   }));
 }
 
