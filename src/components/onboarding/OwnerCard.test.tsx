@@ -71,11 +71,14 @@ describe("OwnerCard", () => {
     expect(mockProps.onUpdate).toHaveBeenCalled();
   });
 
-  it("calls onRemove when delete button is clicked", () => {
-    render(<OwnerCard {...mockProps} />);
+  it("calls onRemove when delete button is clicked", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<OwnerCard {...mockProps} />);
     
-    const deleteButton = screen.getByRole("button", { name: /trash/i });
-    fireEvent.click(deleteButton);
+    const deleteButton = container.querySelector('button svg.lucide-trash-2')?.closest('button');
+    if (deleteButton) {
+      await user.click(deleteButton);
+    }
     
     expect(mockProps.onRemove).toHaveBeenCalled();
   });
