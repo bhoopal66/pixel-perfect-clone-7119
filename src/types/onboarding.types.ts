@@ -120,6 +120,7 @@ export const UAE_BANKS = [
   'Emirates NBD',
   'First Abu Dhabi Bank (FAB)',
   'Abu Dhabi Commercial Bank (ADCB)',
+  'Abu Dhabi Islamic Bank (ADIB)',
   'Dubai Islamic Bank',
   'Mashreq Bank',
   'RAKBANK',
