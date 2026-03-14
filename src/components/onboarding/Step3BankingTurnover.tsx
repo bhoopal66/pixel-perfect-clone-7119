@@ -161,7 +161,7 @@ export function Step3BankingTurnover() {
             </FormField>
 
             {bt.vatRegistered && (
-              <FormField label="Annual VAT Turnover (AED)" required>
+              <FormField label="Annual VAT Turnover (AED)">
                 <Input
                   type="number"
                   placeholder="As per VAT returns"
