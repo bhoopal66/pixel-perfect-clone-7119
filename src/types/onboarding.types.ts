@@ -130,7 +130,13 @@ export const UAE_BANKS = [
   'National Bank of Fujairah',
   'Ajman Bank',
   'Al Hilal Bank',
-  'United Arab Bank'
+  'United Arab Bank',
+  'Dubai Bank',
+  'Noor Bank',
+  'HSBC UAE',
+  'Standard Chartered UAE',
+  'Citibank UAE',
+  'Bank of Baroda UAE'
 ];
 
 export const DOCUMENT_TYPES = {
