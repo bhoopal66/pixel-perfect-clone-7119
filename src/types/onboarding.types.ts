@@ -16,6 +16,7 @@ export interface BusinessDetails {
 export interface OwnerDetails {
   id: string;
   ownerName: string;
+  role: string;
   nationality: string;
   emiratesId: string;
   passportNumber: string;
@@ -23,7 +24,20 @@ export interface OwnerDetails {
   residentStatus: string;
   mobile: string;
   email: string;
+  address: string;
+  isSignatory: boolean;
+  isUbo: boolean;
 }
+
+export const OWNER_ROLES = [
+  'Partner',
+  'Shareholder',
+  'Director',
+  'Managing Partner',
+  'Authorized Signatory',
+  'POA Holder',
+  'Ultimate Beneficial Owner (UBO)'
+] as const;
 
 export interface BankingTurnover {
   existingBankAccounts: string[];
