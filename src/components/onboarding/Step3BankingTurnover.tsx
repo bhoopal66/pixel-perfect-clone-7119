@@ -127,7 +127,7 @@ export function Step3BankingTurnover() {
               </Select>
             </FormField>
 
-            <FormField label="Monthly Avg Turnover (AED)" required>
+            <FormField label="Monthly Avg Turnover (AED)" helperText="Will be calculated after statement analysis">
               <Input
                 type="number"
                 placeholder="e.g., 500000"
@@ -161,7 +161,7 @@ export function Step3BankingTurnover() {
             </FormField>
 
             {bt.vatRegistered && (
-              <FormField label="Annual VAT Turnover (AED)" required>
+              <FormField label="Annual VAT Turnover (AED)">
                 <Input
                   type="number"
                   placeholder="As per VAT returns"
