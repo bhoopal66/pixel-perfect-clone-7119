@@ -645,7 +645,7 @@ export function useEligibilityAssessment() {
     } finally {
       setIsProcessing(false);
     }
-  }, [bankFiles, vatFiles, companyName]);
+  }, [bankFiles, vatFiles, companyName, accountConfigs, baseReportingCurrency]);
 
   // Run matching engine on demand
   const runMatchingEngine = useCallback(async () => {
