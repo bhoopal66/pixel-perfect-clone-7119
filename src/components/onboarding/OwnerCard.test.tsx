@@ -42,11 +42,11 @@ describe("OwnerCard", () => {
   });
 
   it("displays role and status badges", () => {
-    render(<OwnerCard {...mockProps} />);
+    const { getByText } = render(<OwnerCard {...mockProps} />);
     
-    expect(screen.getByText("Managing Partner")).toBeInTheDocument();
-    expect(screen.getByText("Signatory")).toBeInTheDocument();
-    expect(screen.getByText("UBO")).toBeInTheDocument();
+    expect(getByText("Managing Partner")).toBeInTheDocument();
+    expect(getByText("Signatory")).toBeInTheDocument();
+    expect(getByText("UBO")).toBeInTheDocument();
   });
 
   it("calls onUpdate when name is changed", () => {
