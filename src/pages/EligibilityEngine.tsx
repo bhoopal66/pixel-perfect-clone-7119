@@ -156,6 +156,8 @@ const EligibilityEngine: React.FC = () => {
                 <BankAnalysis
                   monthlySummaries={assessment.monthlySummaries}
                   bankFiles={assessment.bankFiles}
+                  baseReportingCurrency={assessment.baseReportingCurrency}
+                  accountConfigs={assessment.accountConfigs}
                 />
               </motion.div>
             </TabsContent>

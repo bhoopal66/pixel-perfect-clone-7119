@@ -172,6 +172,16 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
                 {summary.vatPeriodsCovered > 0 && (
                   <Badge variant="outline">{summary.vatPeriodsCovered} VAT period(s)</Badge>
                 )}
+                {summary.baseReportingCurrency && (
+                  <Badge variant="outline" className="border-primary/30">
+                    Base: {summary.baseReportingCurrency}
+                  </Badge>
+                )}
+                {summary.multiCurrencyFlag && summary.currenciesUsed && (
+                  <Badge variant="outline" className="border-accent text-accent">
+                    Multi-currency: {summary.currenciesUsed.join(', ')}
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
