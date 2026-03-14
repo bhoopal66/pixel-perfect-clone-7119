@@ -27,6 +27,8 @@ interface CombinedSummaryProps {
 
 import type { CurrencyCode } from '@/services/currencyService';
 
+const fmt = (v: number, currency: CurrencyCode = 'AED') => CurrencyService.format(v, currency);
+
 const varianceTagConfig = {
   strong_match: { label: 'Strong Match', color: 'bg-success/10 text-success border-success/30' },
   moderate_variance: { label: 'Moderate Variance', color: 'bg-warning/10 text-warning border-warning/30' },
