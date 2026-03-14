@@ -129,6 +129,17 @@ const EligibilityEngine: React.FC = () => {
               </motion.div>
             </TabsContent>
 
+            <TabsContent value="account_setup">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AccountSetupPanel
+                  accounts={assessment.accountConfigs}
+                  baseReportingCurrency={assessment.baseReportingCurrency}
+                  onAccountUpdate={assessment.updateAccountConfig}
+                  onBaseReportingCurrencyChange={assessment.setBaseReportingCurrency}
+                />
+              </motion.div>
+            </TabsContent>
+
             <TabsContent value="extraction">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <ExtractionReview
