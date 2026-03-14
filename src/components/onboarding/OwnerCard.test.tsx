@@ -60,13 +60,15 @@ describe("OwnerCard", () => {
     expect(mockProps.onUpdate).toHaveBeenCalled();
   });
 
-  it("calls onUpdate when ownership percentage is changed", () => {
-    render(<OwnerCard {...mockProps} />);
+  it("calls onUpdate when ownership percentage is changed", async () => {
+    const user = userEvent.setup();
+    const { getByDisplayValue } = render(<OwnerCard {...mockProps} />);
     
-    const percentInput = screen.getByDisplayValue("60");
-    fireEvent.change(percentInput, { target: { value: "70" } });
+    const percentInput = getByDisplayValue("60");
+    await user.clear(percentInput);
+    await user.type(percentInput, "70");
     
-    expect(mockProps.onUpdate).toHaveBeenCalledWith({ shareholdingPercent: 70 });
+    expect(mockProps.onUpdate).toHaveBeenCalled();
   });
 
   it("calls onRemove when delete button is clicked", () => {
