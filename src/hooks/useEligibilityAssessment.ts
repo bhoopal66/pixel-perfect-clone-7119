@@ -679,6 +679,8 @@ export function useEligibilityAssessment() {
     setMatchResults([]);
     setBankRiskResults([]);
     setBankRiskConsolidated(null);
+    setAccountConfigs([]);
+    setBaseReportingCurrency('AED');
     setCurrentStep('upload');
   }, []);
 
@@ -707,5 +709,10 @@ export function useEligibilityAssessment() {
     runAnalysis,
     runMatchingEngine,
     resetAssessment,
+    // Multi-currency
+    accountConfigs,
+    baseReportingCurrency,
+    setBaseReportingCurrency,
+    updateAccountConfig,
   };
 }
