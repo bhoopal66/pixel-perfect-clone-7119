@@ -178,6 +178,9 @@ export interface ParsedBankFile {
   isDuplicate: boolean;
   isValid: boolean;
   validationMessage: string | null;
+  // Currency fields
+  detectedCurrency: string;
+  documentId?: string;
 }
 
 export interface ParsedTransaction {
