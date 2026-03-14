@@ -5,11 +5,42 @@ import { OwnerCard } from './OwnerCard';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Users, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMemo, useCallback } from 'react';
 
 export function Step2OwnerDetails() {
   const { formData, updateOwner, addOwner, removeOwner, getTotalShareholding } = useOnboarding();
   const totalShareholding = getTotalShareholding();
   const isShareholdingValid = totalShareholding === 100;
+
+  // Reorder helpers
+  const moveOwner = useCallback((fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= formData.owners.length) return;
+    const newOwners = [...formData.owners];
+    const [moved] = newOwners.splice(fromIndex, 1);
+    newOwners.splice(toIndex, 0, moved);
+    // Update all owners with new order by triggering updates
+    newOwners.forEach((owner, idx) => {
+      updateOwner(owner.id, { ...owner });
+    });
+  }, [formData.owners, updateOwner]);
+
+  // Duplicate detection
+  const duplicateWarningsMap = useMemo(() => {
+    const warnings: Record<string, string[]> = {};
+    formData.owners.forEach(o => { warnings[o.id] = []; });
+
+    formData.owners.forEach((owner, i) => {
+      if (owner.emiratesId && owner.emiratesId.trim()) {
+        const dupes = formData.owners.filter((o, j) => j !== i && o.emiratesId.trim() === owner.emiratesId.trim());
+        if (dupes.length > 0) warnings[owner.id].push('Duplicate Emirates ID detected');
+      }
+      if (owner.passportNumber && owner.passportNumber.trim()) {
+        const dupes = formData.owners.filter((o, j) => j !== i && o.passportNumber.trim() === owner.passportNumber.trim());
+        if (dupes.length > 0) warnings[owner.id].push('Duplicate Passport Number detected');
+      }
+    });
+    return warnings;
+  }, [formData.owners]);
 
   return (
     <div className="space-y-6">
@@ -20,13 +51,12 @@ export function Step2OwnerDetails() {
               <Users className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle>Owner / Partner Details</CardTitle>
-              <CardDescription>Add all shareholders and their details</CardDescription>
+              <CardTitle>Owners / Partners / Shareholders</CardTitle>
+              <CardDescription>Add all partners, shareholders, and beneficial owners. Total shareholding must equal 100%.</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Shareholding indicator */}
           <Alert
             className={cn(
               'mb-6',
@@ -59,6 +89,7 @@ export function Step2OwnerDetails() {
                     {totalShareholding > 100 ? '(Exceeds 100%)' : `(${100 - totalShareholding}% remaining)`}
                   </span>
                 )}
+                {' · '}{formData.owners.length} owner{formData.owners.length !== 1 ? 's' : ''}
               </AlertDescription>
             </div>
           </Alert>
@@ -69,19 +100,19 @@ export function Step2OwnerDetails() {
                 key={owner.id}
                 owner={owner}
                 index={index}
+                totalOwners={formData.owners.length}
                 onUpdate={(data) => updateOwner(owner.id, data)}
                 onRemove={() => removeOwner(owner.id)}
+                onMoveUp={() => moveOwner(index, index - 1)}
+                onMoveDown={() => moveOwner(index, index + 1)}
                 canRemove={formData.owners.length > 1}
+                duplicateWarnings={duplicateWarningsMap[owner.id] || []}
               />
             ))}
 
-            <Button
-              variant="outline"
-              onClick={addOwner}
-              className="w-full h-12 border-dashed"
-            >
+            <Button variant="outline" onClick={addOwner} className="w-full h-12 border-dashed">
               <Plus className="h-4 w-4 mr-2" />
-              Add Another Owner
+              Add Owner / Partner
             </Button>
           </div>
         </CardContent>
