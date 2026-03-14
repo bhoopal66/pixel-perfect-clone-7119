@@ -322,6 +322,10 @@ export function useEligibilityAssessment() {
 
           // Save bank transactions linked to extraction run
           if (bf.transactions.length > 0) {
+            const stmtCurrency = acConfig?.statementCurrencyCode || bf.detectedCurrency || 'AED';
+            const fxRate = acConfig?.exchangeRate || 1;
+            const needsConversion = stmtCurrency !== baseReportingCurrency;
+            
             await supabase.from('assessment_bank_transactions').insert(
               bf.transactions.map(t => ({
                 case_id: caseData.id,
@@ -330,14 +334,24 @@ export function useEligibilityAssessment() {
                 txn_date: t.date,
                 description: t.description,
                 cheque_no: t.chequeNo || null,
-                debit: t.debit,
-                credit: t.credit,
-                balance: t.balance,
-                bank_name: bf.bankName,
+                debit: needsConversion ? Math.round(t.debit * fxRate * 100) / 100 : t.debit,
+                credit: needsConversion ? Math.round(t.credit * fxRate * 100) / 100 : t.credit,
+                balance: needsConversion ? Math.round(t.balance * fxRate * 100) / 100 : t.balance,
+                bank_name: acConfig?.bankNameConfirmed || bf.bankName,
                 account_name: bf.accountHolder,
                 category: t.category || null,
                 month: t.date ? new Date(t.date).getMonth() + 1 : null,
                 year: t.date ? new Date(t.date).getFullYear() : null,
+                original_currency_code: stmtCurrency,
+                original_debit: t.debit,
+                original_credit: t.credit,
+                original_balance: t.balance,
+                base_currency_code: baseReportingCurrency,
+                converted_debit: needsConversion ? Math.round(t.debit * fxRate * 100) / 100 : t.debit,
+                converted_credit: needsConversion ? Math.round(t.credit * fxRate * 100) / 100 : t.credit,
+                converted_balance: needsConversion ? Math.round(t.balance * fxRate * 100) / 100 : t.balance,
+                applied_exchange_rate: fxRate,
+                conversion_status: needsConversion ? 'converted' : 'not_required',
               } as any))
             );
           }
