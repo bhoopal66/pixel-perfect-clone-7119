@@ -31,6 +31,10 @@ import type {
 import type { AccountCurrencyConfig } from '@/types/currency.types';
 
 
+  // Multi-currency state
+  const [accountConfigs, setAccountConfigs] = useState<AccountCurrencyConfig[]>([]);
+  const [baseReportingCurrency, setBaseReportingCurrency] = useState('AED');
+
 
 export function useEligibilityAssessment() {
   const [currentStep, setCurrentStep] = useState<AssessmentStep>('upload');
