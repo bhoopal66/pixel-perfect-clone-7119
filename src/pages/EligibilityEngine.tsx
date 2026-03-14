@@ -145,6 +145,8 @@ const EligibilityEngine: React.FC = () => {
                 <ExtractionReview
                   bankFiles={assessment.bankFiles}
                   vatFiles={assessment.vatFiles}
+                  baseReportingCurrency={assessment.baseReportingCurrency}
+                  accountConfigs={assessment.accountConfigs}
                 />
               </motion.div>
             </TabsContent>
