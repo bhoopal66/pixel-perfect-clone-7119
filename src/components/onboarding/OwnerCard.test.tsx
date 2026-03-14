@@ -33,12 +33,12 @@ describe("OwnerCard", () => {
   };
 
   it("renders owner details correctly", () => {
-    render(<OwnerCard {...mockProps} />);
+    const { getByDisplayValue } = render(<OwnerCard {...mockProps} />);
     
-    expect(screen.getByDisplayValue("John Smith")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("60")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("+971501234567")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("john@example.com")).toBeInTheDocument();
+    expect(getByDisplayValue("John Smith")).toBeInTheDocument();
+    expect(getByDisplayValue("60")).toBeInTheDocument();
+    expect(getByDisplayValue("+971501234567")).toBeInTheDocument();
+    expect(getByDisplayValue("john@example.com")).toBeInTheDocument();
   });
 
   it("displays role and status badges", () => {
