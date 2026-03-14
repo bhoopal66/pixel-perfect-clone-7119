@@ -115,6 +115,7 @@ export function useEligibilityAssessment() {
         isDuplicate: false,
         isValid: false,
         validationMessage: error instanceof Error ? error.message : 'Failed to parse PDF',
+        detectedCurrency: 'AED',
       };
     }
   }, [bankFiles]);
