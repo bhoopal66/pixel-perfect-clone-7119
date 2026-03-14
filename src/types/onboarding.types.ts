@@ -143,7 +143,7 @@ export const DOCUMENT_TYPES = {
   mandatory: [
     { id: 'trade_license', label: 'Trade License', description: 'Valid Trade License copy' },
     { id: 'owner_passport', label: 'Owner Passport + EID', description: 'All owners passport and Emirates ID' },
-    { id: 'bank_statements', label: 'Bank Statements', description: '6 or 12 months PDF statements' },
+    { id: 'bank_statements', label: 'Bank Statements (Monthly)', description: 'Upload up to 12 monthly PDF statements', multiFile: true, maxFiles: 12 },
     { id: 'vat_certificate', label: 'VAT Certificate', description: 'Required if VAT registered', conditional: true }
   ],
   optional: [

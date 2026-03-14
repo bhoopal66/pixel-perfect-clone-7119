@@ -8,31 +8,36 @@ import { Upload, File, X, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from '
 import { cn } from '@/lib/utils';
 
 interface DocumentUploadCardProps {
-  docType: { id: string; label: string; description: string; conditional?: boolean };
-  existingDoc?: DocumentUpload;
-  onUpload: (file: File, type: string) => void;
+  docType: { id: string; label: string; description: string; conditional?: boolean; multiFile?: boolean; maxFiles?: number };
+  existingDocs: DocumentUpload[];
+  onUpload: (files: File[], type: string) => void;
   onRemove: (id: string) => void;
   isRequired: boolean;
   isUploading?: boolean;
 }
 
-function DocumentUploadCard({ docType, existingDoc, onUpload, onRemove, isRequired, isUploading }: DocumentUploadCardProps) {
+function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequired, isUploading }: DocumentUploadCardProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const isMulti = docType.multiFile;
+  const maxFiles = docType.maxFiles || 1;
+  const completedDocs = existingDocs.filter(d => d.status === 'completed');
+  const canUploadMore = isMulti ? completedDocs.length < maxFiles : completedDocs.length === 0;
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      onUpload(file, docType.id);
+    const files = Array.from(e.dataTransfer.files).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
+    if (files.length > 0) {
+      onUpload(files, docType.id);
     }
-  }, [onUpload, docType.id]);
+  }, [onUpload, docType.id, isMulti, maxFiles, completedDocs.length]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onUpload(file, docType.id);
+    const files = Array.from(e.target.files || []).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
+    if (files.length > 0) {
+      onUpload(files, docType.id);
     }
+    e.target.value = '';
   };
 
   return (
@@ -41,71 +46,85 @@ function DocumentUploadCard({ docType, existingDoc, onUpload, onRemove, isRequir
       isDragging && 'ring-2 ring-primary border-primary'
     )}>
       <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm">{docType.label}</span>
-              {isRequired && <span className="text-destructive text-xs">*</span>}
+        <div className="space-y-3">
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-sm">{docType.label}</span>
+                {isRequired && <span className="text-destructive text-xs">*</span>}
+                {isMulti && (
+                  <span className="text-xs text-muted-foreground">
+                    ({completedDocs.length}/{maxFiles})
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{docType.description}</p>
             </div>
-            <p className="text-xs text-muted-foreground">{docType.description}</p>
+
+            {canUploadMore && (
+              <div
+                className="relative"
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleFileSelect}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  multiple={isMulti}
+                  disabled={isUploading}
+                />
+                <Button variant="outline" size="sm" className="pointer-events-none" disabled={isUploading}>
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-1" />
+                  )}
+                  Upload{isMulti ? ' Files' : ''}
+                </Button>
+              </div>
+            )}
           </div>
 
-          {existingDoc ? (
-            <div className="flex items-center gap-2">
-              {existingDoc.status === 'completed' && (
-                <>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="max-w-[120px] truncate">{existingDoc.fileName}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemove(existingDoc.id)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-              {existingDoc.status === 'uploading' && (
-                <div className="flex items-center gap-2 w-32">
-                  <Progress value={existingDoc.uploadProgress} className="h-2" />
-                  <span className="text-xs">{existingDoc.uploadProgress}%</span>
+          {/* Show uploaded files list */}
+          {existingDocs.length > 0 && (
+            <div className="space-y-1.5 pl-1">
+              {existingDocs.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-2 text-sm">
+                  {doc.status === 'completed' && (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                      <span className="max-w-[200px] truncate text-xs">{doc.fileName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemove(doc.id)}
+                        className="h-6 w-6 p-0 ml-auto"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                  {doc.status === 'uploading' && (
+                    <div className="flex items-center gap-2 w-32">
+                      <Progress value={doc.uploadProgress} className="h-1.5" />
+                      <span className="text-xs">{doc.uploadProgress}%</span>
+                    </div>
+                  )}
+                  {doc.status === 'error' && (
+                    <>
+                      <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      <span className="text-xs text-destructive truncate">{doc.fileName}</span>
+                      <Button variant="ghost" size="sm" className="h-6 ml-auto">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                    </>
+                  )}
                 </div>
-              )}
-              {existingDoc.status === 'error' && (
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <Button variant="ghost" size="sm" className="h-8">
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    Retry
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div
-              className="relative"
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={handleFileSelect}
-                accept=".pdf,.jpg,.jpeg,.png"
-                disabled={isUploading}
-              />
-              <Button variant="outline" size="sm" className="pointer-events-none" disabled={isUploading}>
-                {isUploading ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4 mr-1" />
-                )}
-                Upload
-              </Button>
+              ))}
             </div>
           )}
         </div>
@@ -118,9 +137,11 @@ export function Step5DocumentUpload() {
   const { formData, uploadDocument, removeDocument, isSaving } = useOnboarding();
   const [uploadingType, setUploadingType] = useState<string | null>(null);
 
-  const handleUpload = useCallback(async (file: File, type: string) => {
+  const handleUpload = useCallback(async (files: File[], type: string) => {
     setUploadingType(type);
-    await uploadDocument(file, type);
+    for (const file of files) {
+      await uploadDocument(file, type);
+    }
     setUploadingType(null);
   }, [uploadDocument]);
 
@@ -128,8 +149,8 @@ export function Step5DocumentUpload() {
     await removeDocument(id);
   }, [removeDocument]);
 
-  const getDocForType = (type: string) => {
-    return formData.documents.find(doc => doc.type === type);
+  const getDocsForType = (type: string) => {
+    return formData.documents.filter(doc => doc.type === type);
   };
 
   // Filter conditional documents
@@ -166,7 +187,7 @@ export function Step5DocumentUpload() {
                 <DocumentUploadCard
                   key={doc.id}
                   docType={doc}
-                  existingDoc={getDocForType(doc.id)}
+                  existingDocs={getDocsForType(doc.id)}
                   onUpload={handleUpload}
                   onRemove={handleRemove}
                   isRequired={true}
@@ -184,7 +205,7 @@ export function Step5DocumentUpload() {
                 <DocumentUploadCard
                   key={doc.id}
                   docType={doc}
-                  existingDoc={getDocForType(doc.id)}
+                  existingDocs={getDocsForType(doc.id)}
                   onUpload={handleUpload}
                   onRemove={handleRemove}
                   isRequired={false}
