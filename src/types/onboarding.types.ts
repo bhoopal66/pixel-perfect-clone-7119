@@ -144,7 +144,8 @@ export const DOCUMENT_TYPES = {
     { id: 'trade_license', label: 'Trade License', description: 'Valid Trade License copy' },
     { id: 'owner_passport', label: 'Owner Passport + EID', description: 'All owners passport and Emirates ID' },
     { id: 'bank_statements', label: 'Bank Statements (Monthly)', description: 'Upload up to 12 monthly PDF statements', multiFile: true, maxFiles: 12 },
-    { id: 'vat_certificate', label: 'VAT Certificate', description: 'Required if VAT registered', conditional: true }
+    { id: 'vat_certificate', label: 'VAT Certificate', description: 'Required if VAT registered', conditional: true },
+    { id: 'vat_returns', label: 'VAT Returns (Quarterly)', description: 'Upload 4 or 8 quarterly VAT return PDFs', conditional: true, multiFile: true, maxFiles: 8 }
   ],
   optional: [
     { id: 'moa_aoa', label: 'MOA/AOA', description: 'Memorandum & Articles of Association' },
