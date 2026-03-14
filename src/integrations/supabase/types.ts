@@ -317,11 +317,18 @@ export type Database = {
         Row: {
           account_name: string | null
           account_number_masked: string | null
+          applied_exchange_rate: number | null
           balance: number | null
           bank_name: string | null
+          base_currency_code: string | null
           case_id: string
           category: string | null
           cheque_no: string | null
+          conversion_id: string | null
+          conversion_status: string | null
+          converted_balance: number | null
+          converted_credit: number | null
+          converted_debit: number | null
           created_at: string
           credit: number | null
           debit: number | null
@@ -334,6 +341,10 @@ export type Database = {
           is_recurring: boolean | null
           is_related_party: boolean | null
           month: number | null
+          original_balance: number | null
+          original_credit: number | null
+          original_currency_code: string | null
+          original_debit: number | null
           raw_text_reference: string | null
           source_page: number | null
           txn_date: string | null
@@ -342,11 +353,18 @@ export type Database = {
         Insert: {
           account_name?: string | null
           account_number_masked?: string | null
+          applied_exchange_rate?: number | null
           balance?: number | null
           bank_name?: string | null
+          base_currency_code?: string | null
           case_id: string
           category?: string | null
           cheque_no?: string | null
+          conversion_id?: string | null
+          conversion_status?: string | null
+          converted_balance?: number | null
+          converted_credit?: number | null
+          converted_debit?: number | null
           created_at?: string
           credit?: number | null
           debit?: number | null
@@ -359,6 +377,10 @@ export type Database = {
           is_recurring?: boolean | null
           is_related_party?: boolean | null
           month?: number | null
+          original_balance?: number | null
+          original_credit?: number | null
+          original_currency_code?: string | null
+          original_debit?: number | null
           raw_text_reference?: string | null
           source_page?: number | null
           txn_date?: string | null
@@ -367,11 +389,18 @@ export type Database = {
         Update: {
           account_name?: string | null
           account_number_masked?: string | null
+          applied_exchange_rate?: number | null
           balance?: number | null
           bank_name?: string | null
+          base_currency_code?: string | null
           case_id?: string
           category?: string | null
           cheque_no?: string | null
+          conversion_id?: string | null
+          conversion_status?: string | null
+          converted_balance?: number | null
+          converted_credit?: number | null
+          converted_debit?: number | null
           created_at?: string
           credit?: number | null
           debit?: number | null
@@ -384,6 +413,10 @@ export type Database = {
           is_recurring?: boolean | null
           is_related_party?: boolean | null
           month?: number | null
+          original_balance?: number | null
+          original_credit?: number | null
+          original_currency_code?: string | null
+          original_debit?: number | null
           raw_text_reference?: string | null
           source_page?: number | null
           txn_date?: string | null
@@ -395,6 +428,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_bank_transactions_conversion_id_fkey"
+            columns: ["conversion_id"]
+            isOneToOne: false
+            referencedRelation: "case_currency_conversion_rates"
             referencedColumns: ["id"]
           },
           {
@@ -425,6 +465,7 @@ export type Database = {
           avg_monthly_debit: number | null
           b2b_revenue_pct: number | null
           bank_vat_variance_percent: number | null
+          base_reporting_currency: string | null
           case_number: string | null
           cash_collection_pct: number | null
           company_name: string | null
@@ -443,6 +484,7 @@ export type Database = {
           legal_form: string | null
           lenders_run_completed: boolean
           mobile_number: string | null
+          multi_currency_flag: boolean | null
           normalized_turnover: number | null
           past_breakeven: boolean | null
           proceeds_for_cogs: boolean | null
@@ -471,6 +513,7 @@ export type Database = {
           avg_monthly_debit?: number | null
           b2b_revenue_pct?: number | null
           bank_vat_variance_percent?: number | null
+          base_reporting_currency?: string | null
           case_number?: string | null
           cash_collection_pct?: number | null
           company_name?: string | null
@@ -489,6 +532,7 @@ export type Database = {
           legal_form?: string | null
           lenders_run_completed?: boolean
           mobile_number?: string | null
+          multi_currency_flag?: boolean | null
           normalized_turnover?: number | null
           past_breakeven?: boolean | null
           proceeds_for_cogs?: boolean | null
@@ -517,6 +561,7 @@ export type Database = {
           avg_monthly_debit?: number | null
           b2b_revenue_pct?: number | null
           bank_vat_variance_percent?: number | null
+          base_reporting_currency?: string | null
           case_number?: string | null
           cash_collection_pct?: number | null
           company_name?: string | null
@@ -535,6 +580,7 @@ export type Database = {
           legal_form?: string | null
           lenders_run_completed?: boolean
           mobile_number?: string | null
+          multi_currency_flag?: boolean | null
           normalized_turnover?: number | null
           past_breakeven?: boolean | null
           proceeds_for_cogs?: boolean | null
@@ -558,10 +604,18 @@ export type Database = {
         Row: {
           account_holder: string | null
           account_number: string | null
+          bank_confirmed_at: string | null
+          bank_confirmed_by: string | null
+          bank_detection_source: string | null
+          bank_id: string | null
           bank_name: string | null
+          bank_name_confirmed: string | null
           case_id: string
           checksum_hash: string | null
           created_at: string
+          currency_confirmed_at: string | null
+          currency_confirmed_by: string | null
+          currency_detection_source: string | null
           document_type: string
           duplicate_flag: boolean
           file_name: string
@@ -576,6 +630,7 @@ export type Database = {
           original_file_name: string | null
           period_from: string | null
           period_to: string | null
+          statement_currency_code: string | null
           upload_source: string | null
           uploaded_by: string | null
           validation_message: string | null
@@ -584,10 +639,18 @@ export type Database = {
         Insert: {
           account_holder?: string | null
           account_number?: string | null
+          bank_confirmed_at?: string | null
+          bank_confirmed_by?: string | null
+          bank_detection_source?: string | null
+          bank_id?: string | null
           bank_name?: string | null
+          bank_name_confirmed?: string | null
           case_id: string
           checksum_hash?: string | null
           created_at?: string
+          currency_confirmed_at?: string | null
+          currency_confirmed_by?: string | null
+          currency_detection_source?: string | null
           document_type: string
           duplicate_flag?: boolean
           file_name: string
@@ -602,6 +665,7 @@ export type Database = {
           original_file_name?: string | null
           period_from?: string | null
           period_to?: string | null
+          statement_currency_code?: string | null
           upload_source?: string | null
           uploaded_by?: string | null
           validation_message?: string | null
@@ -610,10 +674,18 @@ export type Database = {
         Update: {
           account_holder?: string | null
           account_number?: string | null
+          bank_confirmed_at?: string | null
+          bank_confirmed_by?: string | null
+          bank_detection_source?: string | null
+          bank_id?: string | null
           bank_name?: string | null
+          bank_name_confirmed?: string | null
           case_id?: string
           checksum_hash?: string | null
           created_at?: string
+          currency_confirmed_at?: string | null
+          currency_confirmed_by?: string | null
+          currency_detection_source?: string | null
           document_type?: string
           duplicate_flag?: boolean
           file_name?: string
@@ -628,12 +700,20 @@ export type Database = {
           original_file_name?: string | null
           period_from?: string | null
           period_to?: string | null
+          statement_currency_code?: string | null
           upload_source?: string | null
           uploaded_by?: string | null
           validation_message?: string | null
           validation_status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "assessment_documents_bank_id_fkey"
+            columns: ["bank_id"]
+            isOneToOne: false
+            referencedRelation: "bank_master"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "assessment_documents_case_id_fkey"
             columns: ["case_id"]
@@ -816,10 +896,13 @@ export type Database = {
         Row: {
           accounts_analyzed: number | null
           balance_trend: string | null
+          base_currency_code: string | null
           case_id: string
           created_at: string
+          fx_assumption_notes: string | null
           id: string
           largest_concentration_ratio: number | null
+          multi_currency_flag: boolean | null
           overall_cash_ratio: number | null
           overall_emi_total: number | null
           overall_eod_balance: number | null
@@ -831,6 +914,9 @@ export type Database = {
           overall_risk_flags: Json | null
           overall_round_tripping_flag: boolean | null
           overall_salary_outflow: number | null
+          total_converted_average_balance: number | null
+          total_converted_monthly_credit: number | null
+          total_converted_monthly_debit: number | null
           total_monthly_credit: number | null
           total_monthly_debit: number | null
           total_months_covered: number | null
@@ -838,10 +924,13 @@ export type Database = {
         Insert: {
           accounts_analyzed?: number | null
           balance_trend?: string | null
+          base_currency_code?: string | null
           case_id: string
           created_at?: string
+          fx_assumption_notes?: string | null
           id?: string
           largest_concentration_ratio?: number | null
+          multi_currency_flag?: boolean | null
           overall_cash_ratio?: number | null
           overall_emi_total?: number | null
           overall_eod_balance?: number | null
@@ -853,6 +942,9 @@ export type Database = {
           overall_risk_flags?: Json | null
           overall_round_tripping_flag?: boolean | null
           overall_salary_outflow?: number | null
+          total_converted_average_balance?: number | null
+          total_converted_monthly_credit?: number | null
+          total_converted_monthly_debit?: number | null
           total_monthly_credit?: number | null
           total_monthly_debit?: number | null
           total_months_covered?: number | null
@@ -860,10 +952,13 @@ export type Database = {
         Update: {
           accounts_analyzed?: number | null
           balance_trend?: string | null
+          base_currency_code?: string | null
           case_id?: string
           created_at?: string
+          fx_assumption_notes?: string | null
           id?: string
           largest_concentration_ratio?: number | null
+          multi_currency_flag?: boolean | null
           overall_cash_ratio?: number | null
           overall_emi_total?: number | null
           overall_eod_balance?: number | null
@@ -875,6 +970,9 @@ export type Database = {
           overall_risk_flags?: Json | null
           overall_round_tripping_flag?: boolean | null
           overall_salary_outflow?: number | null
+          total_converted_average_balance?: number | null
+          total_converted_monthly_credit?: number | null
+          total_converted_monthly_debit?: number | null
           total_monthly_credit?: number | null
           total_monthly_debit?: number | null
           total_months_covered?: number | null
@@ -891,6 +989,7 @@ export type Database = {
       }
       bank_analysis_results: {
         Row: {
+          account_currency_code: string | null
           account_number: string | null
           average_eod_balance: number | null
           avg_monthly_credit_12m: number | null
@@ -898,14 +997,21 @@ export type Database = {
           avg_monthly_debit_12m: number | null
           avg_monthly_debit_24m: number | null
           bank_name: string | null
+          base_currency_code: string | null
           case_id: string
           cash_deposit_ratio: number | null
           cash_risk_flag: boolean | null
           circular_flow_ratio: number | null
+          converted_average_eod_balance: number | null
+          converted_avg_monthly_credit: number | null
+          converted_avg_monthly_debit: number | null
+          converted_max_monthly_balance: number | null
+          converted_min_monthly_balance: number | null
           created_at: string
           emi_lender_list: Json | null
           emi_monthly_total: number | null
           estimated_employee_count: number | null
+          exchange_rate_used: number | null
           fx_exposure_flag: boolean | null
           fx_transaction_ratio: number | null
           government_receipt_ratio: number | null
@@ -936,6 +1042,7 @@ export type Database = {
           trough_month: string | null
         }
         Insert: {
+          account_currency_code?: string | null
           account_number?: string | null
           average_eod_balance?: number | null
           avg_monthly_credit_12m?: number | null
@@ -943,14 +1050,21 @@ export type Database = {
           avg_monthly_debit_12m?: number | null
           avg_monthly_debit_24m?: number | null
           bank_name?: string | null
+          base_currency_code?: string | null
           case_id: string
           cash_deposit_ratio?: number | null
           cash_risk_flag?: boolean | null
           circular_flow_ratio?: number | null
+          converted_average_eod_balance?: number | null
+          converted_avg_monthly_credit?: number | null
+          converted_avg_monthly_debit?: number | null
+          converted_max_monthly_balance?: number | null
+          converted_min_monthly_balance?: number | null
           created_at?: string
           emi_lender_list?: Json | null
           emi_monthly_total?: number | null
           estimated_employee_count?: number | null
+          exchange_rate_used?: number | null
           fx_exposure_flag?: boolean | null
           fx_transaction_ratio?: number | null
           government_receipt_ratio?: number | null
@@ -981,6 +1095,7 @@ export type Database = {
           trough_month?: string | null
         }
         Update: {
+          account_currency_code?: string | null
           account_number?: string | null
           average_eod_balance?: number | null
           avg_monthly_credit_12m?: number | null
@@ -988,14 +1103,21 @@ export type Database = {
           avg_monthly_debit_12m?: number | null
           avg_monthly_debit_24m?: number | null
           bank_name?: string | null
+          base_currency_code?: string | null
           case_id?: string
           cash_deposit_ratio?: number | null
           cash_risk_flag?: boolean | null
           circular_flow_ratio?: number | null
+          converted_average_eod_balance?: number | null
+          converted_avg_monthly_credit?: number | null
+          converted_avg_monthly_debit?: number | null
+          converted_max_monthly_balance?: number | null
+          converted_min_monthly_balance?: number | null
           created_at?: string
           emi_lender_list?: Json | null
           emi_monthly_total?: number | null
           estimated_employee_count?: number | null
+          exchange_rate_used?: number | null
           fx_exposure_flag?: boolean | null
           fx_transaction_ratio?: number | null
           government_receipt_ratio?: number | null
@@ -1034,6 +1156,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bank_master: {
+        Row: {
+          bank_name: string
+          country: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          short_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_name: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          short_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_name?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          short_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       business_owners: {
         Row: {
@@ -1128,6 +1280,75 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_currency_conversion_rates: {
+        Row: {
+          account_number: string | null
+          case_id: string
+          conversion_method: string
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          effective_from_date: string | null
+          effective_to_date: string | null
+          exchange_rate: number
+          from_currency: string
+          id: string
+          is_active: boolean
+          remarks: string | null
+          to_currency: string
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          case_id: string
+          conversion_method?: string
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          effective_from_date?: string | null
+          effective_to_date?: string | null
+          exchange_rate: number
+          from_currency: string
+          id?: string
+          is_active?: boolean
+          remarks?: string | null
+          to_currency: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          case_id?: string
+          conversion_method?: string
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          effective_from_date?: string | null
+          effective_to_date?: string | null
+          exchange_rate?: number
+          from_currency?: string
+          id?: string
+          is_active?: boolean
+          remarks?: string | null
+          to_currency?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_currency_conversion_rates_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_currency_conversion_rates_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -1629,6 +1850,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      currency_master: {
+        Row: {
+          created_at: string
+          currency_code: string
+          currency_name: string
+          decimal_places: number
+          is_active: boolean
+          symbol: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code: string
+          currency_name: string
+          decimal_places?: number
+          is_active?: boolean
+          symbol: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          currency_name?: string
+          decimal_places?: number
+          is_active?: boolean
+          symbol?: string
+        }
+        Relationships: []
       }
       extraction_runs: {
         Row: {
