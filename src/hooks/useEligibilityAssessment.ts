@@ -440,8 +440,6 @@ export function useEligibilityAssessment() {
       const combined = { ...AssessmentAnalysisEngine.generateCombinedSummary(
         bankFiles, vatFiles, summaries, vatResults, companyName
       ), baseReportingCurrency, multiCurrencyFlag: accountConfigs.some(a => a.statementCurrencyCode !== baseReportingCurrency), currenciesUsed: [...new Set(accountConfigs.map(a => a.statementCurrencyCode))] };
-        bankFiles, vatFiles, summaries, vatResults, companyName
-      );
       setCombinedSummary(combined);
 
       // Save bank summaries to DB - associate each summary with the correct bank
