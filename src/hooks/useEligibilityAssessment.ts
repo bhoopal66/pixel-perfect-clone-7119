@@ -4,10 +4,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
+import { CurrencyService } from '@/services/currencyService';
+import { CurrencyConversionService } from '@/services/currencyConversionService';
 // AssessmentRuleEngine is deprecated in favor of the unified RuleEngineExecutor
 import { RelatedPartyService } from '@/services/relatedPartyService';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
 import { BankingRiskAnalysisEngine, type BankAnalysisResult, type ConsolidatedAnalysis, type AccountAnalysisInput } from '@/services/bankingRiskAnalysisEngine';
+import { FraudDetectionEngine } from '@/services/fraudDetectionEngine';
+import {
+  ActivityLogService,
+  ExtractionRunService,
+  FinancialSummaryService,
+} from '@/services/permanentStorageService';
+import { toast } from 'sonner';
+import type {
+  AssessmentCase,
+  AssessmentStep,
+  ParsedBankFile,
+  ParsedVatFile,
+  ParsedTransaction,
+  BankMonthlyAnalysis,
+  VatPeriodAnalysis,
+  CombinedFinancialSummary,
+  AssessmentLenderResult,
+} from '@/types/assessment.types';
+import type { AccountCurrencyConfig } from '@/types/currency.types';
 import { FraudDetectionEngine } from '@/services/fraudDetectionEngine';
 import {
   ActivityLogService,
