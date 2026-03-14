@@ -281,7 +281,10 @@ export function useEligibilityAssessment() {
       await ActivityLogService.log(caseData.id, 'case_status_changed', `Assessment case created: ${caseData.case_number || caseData.id}`);
 
       // Save documents & create extraction runs for bank files
-      for (const bf of bankFiles.filter(f => f.isValid)) {
+      const validBankFiles = bankFiles.filter(f => f.isValid);
+      for (let bfIdx = 0; bfIdx < validBankFiles.length; bfIdx++) {
+        const bf = validBankFiles[bfIdx];
+        const acConfig = accountConfigs[bfIdx];
         // Save document record
         const { data: docRecord } = await supabase
           .from('assessment_documents')
@@ -290,7 +293,7 @@ export function useEligibilityAssessment() {
             document_type: 'bank_statement',
             file_name: bf.fileName,
             original_file_name: bf.fileName,
-            bank_name: bf.bankName,
+            bank_name: acConfig?.bankNameConfirmed || bf.bankName,
             account_holder: bf.accountHolder,
             account_number: bf.accountNumber,
             period_from: bf.periodFrom,
@@ -299,6 +302,14 @@ export function useEligibilityAssessment() {
             validation_status: bf.isValid ? 'valid' : 'invalid',
             validation_message: bf.validationMessage,
             uploaded_by: user?.id || null,
+            statement_currency_code: acConfig?.statementCurrencyCode || bf.detectedCurrency || 'AED',
+            currency_detection_source: acConfig?.currencyDetectionSource || 'auto',
+            currency_confirmed_by: acConfig?.currencyConfirmed ? user?.id : null,
+            currency_confirmed_at: acConfig?.currencyConfirmed ? new Date().toISOString() : null,
+            bank_name_confirmed: acConfig?.bankNameConfirmed || bf.bankName,
+            bank_detection_source: acConfig?.bankDetectionSource || 'auto',
+            bank_confirmed_by: acConfig?.bankConfirmed ? user?.id : null,
+            bank_confirmed_at: acConfig?.bankConfirmed ? new Date().toISOString() : null,
           } as any)
           .select()
           .single();
