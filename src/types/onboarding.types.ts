@@ -185,13 +185,17 @@ export const createEmptyBusinessDetails = (): BusinessDetails => ({
 export const createEmptyOwner = (): OwnerDetails => ({
   id: crypto.randomUUID(),
   ownerName: '',
+  role: 'Partner',
   nationality: '',
   emiratesId: '',
   passportNumber: '',
   shareholdingPercent: 0,
   residentStatus: '',
   mobile: '',
-  email: ''
+  email: '',
+  address: '',
+  isSignatory: false,
+  isUbo: false
 });
 
 export const createEmptyBankingTurnover = (): BankingTurnover => ({
