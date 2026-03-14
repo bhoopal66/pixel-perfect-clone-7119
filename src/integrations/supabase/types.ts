@@ -1189,47 +1189,59 @@ export type Database = {
       }
       business_owners: {
         Row: {
+          address: string | null
           case_id: string
           created_at: string
           display_order: number | null
           email: string
           emirates_id: string
           id: string
+          is_signatory: boolean
+          is_ubo: boolean
           mobile: string
           nationality: string
           owner_name: string
           passport_number: string
           resident_status: string
+          role: string
           shareholding_percent: number
           updated_at: string
         }
         Insert: {
+          address?: string | null
           case_id: string
           created_at?: string
           display_order?: number | null
           email: string
           emirates_id: string
           id?: string
+          is_signatory?: boolean
+          is_ubo?: boolean
           mobile: string
           nationality: string
           owner_name: string
           passport_number: string
           resident_status: string
+          role?: string
           shareholding_percent: number
           updated_at?: string
         }
         Update: {
+          address?: string | null
           case_id?: string
           created_at?: string
           display_order?: number | null
           email?: string
           emirates_id?: string
           id?: string
+          is_signatory?: boolean
+          is_ubo?: boolean
           mobile?: string
           nationality?: string
           owner_name?: string
           passport_number?: string
           resident_status?: string
+          role?: string
           shareholding_percent?: number
           updated_at?: string
         }
