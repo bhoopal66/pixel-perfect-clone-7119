@@ -195,6 +195,23 @@ export function useEligibilityAssessment() {
       const results = await Promise.all(files.map(f => parseBankStatement(f)));
       const valid = results.filter(Boolean) as ParsedBankFile[];
       setBankFiles(prev => [...prev, ...valid]);
+      // Build account configs for new files
+      const newConfigs: AccountCurrencyConfig[] = valid.filter(f => f.isValid).map(f => ({
+        documentId: '',
+        fileName: f.fileName,
+        bankId: null,
+        bankName: f.bankName,
+        bankNameConfirmed: f.bankName,
+        bankDetectionSource: f.bankName ? 'auto' as const : 'manual' as const,
+        accountNumber: f.accountNumber,
+        statementCurrencyCode: f.detectedCurrency || 'AED',
+        currencyDetectionSource: 'auto' as const,
+        currencyConfirmed: false,
+        bankConfirmed: false,
+        exchangeRate: f.detectedCurrency === baseReportingCurrency ? 1 : 0,
+        exchangeRateEntered: f.detectedCurrency === baseReportingCurrency,
+      }));
+      setAccountConfigs(prev => [...prev, ...newConfigs]);
       const validCount = valid.filter(f => f.isValid).length;
       const dupeCount = valid.filter(f => f.isDuplicate).length;
       if (validCount > 0) toast.success(`${validCount} bank statement(s) parsed successfully`);
@@ -202,7 +219,7 @@ export function useEligibilityAssessment() {
     } finally {
       setIsProcessing(false);
     }
-  }, [parseBankStatement]);
+  }, [parseBankStatement, baseReportingCurrency]);
 
   const handleVatFiles = useCallback(async (files: File[]) => {
     setIsProcessing(true);
