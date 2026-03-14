@@ -262,6 +262,11 @@ export interface CombinedFinancialSummary {
   totalBounces: number;
   negativeBalanceDays: number;
   cashDepositRatio: number;
+  // Multi-currency fields
+  baseReportingCurrency?: string;
+  multiCurrencyFlag?: boolean;
+  currenciesUsed?: string[];
+  conversionNotes?: string;
 }
 
 export type AssessmentStep = 
