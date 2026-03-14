@@ -199,6 +199,7 @@ export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promis
   const payload = owners.map((owner, index) => ({
     case_id: caseId,
     owner_name: owner.ownerName,
+    role: owner.role || 'Partner',
     nationality: owner.nationality,
     emirates_id: owner.emiratesId,
     passport_number: owner.passportNumber,
@@ -206,6 +207,9 @@ export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promis
     resident_status: owner.residentStatus,
     mobile: owner.mobile,
     email: owner.email,
+    address: owner.address || '',
+    is_signatory: owner.isSignatory || false,
+    is_ubo: owner.isUbo || false,
     display_order: index + 1
   }));
 
