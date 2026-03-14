@@ -118,7 +118,7 @@ export function Step3BankingTurnover() {
                   <SelectValue placeholder="Select primary bank" />
                 </SelectTrigger>
                 <SelectContent>
-                  {UAE_BANKS.map((bank) => (
+                  {allBanks.map((bank) => (
                     <SelectItem key={bank} value={bank}>
                       {bank}
                     </SelectItem>
