@@ -236,7 +236,15 @@ export function useEligibilityAssessment() {
 
   const removeBankFile = useCallback((index: number) => {
     setBankFiles(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    // Also remove associated account config
+    setAccountConfigs(prev => {
+      const validFiles = bankFiles.filter(f => f.isValid);
+      if (index < validFiles.length) {
+        return prev.filter((_, i) => i !== index);
+      }
+      return prev;
+    });
+  }, [bankFiles]);
 
   const removeVatFile = useCallback((index: number) => {
     setVatFiles(prev => prev.filter((_, i) => i !== index));
