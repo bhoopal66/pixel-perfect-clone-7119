@@ -106,10 +106,9 @@ describe("OwnerCard", () => {
   });
 
   it("disables move down button for last owner", () => {
-    render(<OwnerCard {...mockProps} index={1} totalOwners={2} />);
+    const { container } = render(<OwnerCard {...mockProps} index={1} totalOwners={2} />);
     
-    const moveDownButtons = screen.getAllByRole("button");
-    const downButton = moveDownButtons.find(btn => btn.querySelector('.lucide-chevron-down'));
+    const downButton = container.querySelector('button svg.lucide-chevron-down')?.closest('button');
     expect(downButton).toBeDisabled();
   });
 
