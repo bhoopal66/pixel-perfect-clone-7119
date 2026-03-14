@@ -29,24 +29,8 @@ import type {
   AssessmentLenderResult,
 } from '@/types/assessment.types';
 import type { AccountCurrencyConfig } from '@/types/currency.types';
-import { FraudDetectionEngine } from '@/services/fraudDetectionEngine';
-import {
-  ActivityLogService,
-  ExtractionRunService,
-  FinancialSummaryService,
-} from '@/services/permanentStorageService';
-import { toast } from 'sonner';
-import type {
-  AssessmentCase,
-  AssessmentStep,
-  ParsedBankFile,
-  ParsedVatFile,
-  ParsedTransaction,
-  BankMonthlyAnalysis,
-  VatPeriodAnalysis,
-  CombinedFinancialSummary,
-  AssessmentLenderResult,
-} from '@/types/assessment.types';
+
+
 
 export function useEligibilityAssessment() {
   const [currentStep, setCurrentStep] = useState<AssessmentStep>('upload');
