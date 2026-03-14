@@ -92,10 +92,10 @@ describe("OwnerCard", () => {
 
   it("displays duplicate warnings", () => {
     const warnings = ["Duplicate Emirates ID detected", "Duplicate Passport Number detected"];
-    render(<OwnerCard {...mockProps} duplicateWarnings={warnings} />);
+    const { getByText } = render(<OwnerCard {...mockProps} duplicateWarnings={warnings} />);
     
-    expect(screen.getByText("Duplicate Emirates ID detected")).toBeInTheDocument();
-    expect(screen.getByText("Duplicate Passport Number detected")).toBeInTheDocument();
+    expect(getByText("Duplicate Emirates ID detected")).toBeInTheDocument();
+    expect(getByText("Duplicate Passport Number detected")).toBeInTheDocument();
   });
 
   it("disables move up button for first owner", () => {
