@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,11 +9,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField } from './FormField';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { UAE_BANKS } from '@/types/onboarding.types';
-import { Landmark, Info } from 'lucide-react';
+import { Landmark, Info, Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function Step3BankingTurnover() {
   const { formData, updateBankingTurnover } = useOnboarding();
   const bt = formData.bankingTurnover;
+  const [otherBankName, setOtherBankName] = useState('');
+
+  // Custom banks are any selected banks not in the predefined list
+  const customBanks = (bt.existingBankAccounts || []).filter(b => !UAE_BANKS.includes(b));
 
   const handleBankToggle = (bank: string, checked: boolean) => {
     const current = bt.existingBankAccounts || [];
@@ -22,6 +28,24 @@ export function Step3BankingTurnover() {
       updateBankingTurnover({ existingBankAccounts: current.filter(b => b !== bank) });
     }
   };
+
+  const handleAddOtherBank = () => {
+    const trimmed = otherBankName.trim();
+    if (!trimmed) return;
+    const current = bt.existingBankAccounts || [];
+    if (!current.includes(trimmed)) {
+      updateBankingTurnover({ existingBankAccounts: [...current, trimmed] });
+    }
+    setOtherBankName('');
+  };
+
+  const handleRemoveCustomBank = (bank: string) => {
+    const current = bt.existingBankAccounts || [];
+    updateBankingTurnover({ existingBankAccounts: current.filter(b => b !== bank) });
+  };
+
+  // All banks for primary dropdown: predefined + custom
+  const allBanks = [...UAE_BANKS, ...customBanks];
 
   return (
     <div className="space-y-6">
@@ -54,6 +78,34 @@ export function Step3BankingTurnover() {
                 </div>
               ))}
             </div>
+
+            {/* Custom banks display */}
+            {customBanks.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {customBanks.map((bank) => (
+                  <span key={bank} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                    {bank}
+                    <button onClick={() => handleRemoveCustomBank(bank)} className="hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add other bank */}
+            <div className="flex gap-2 mt-3">
+              <Input
+                placeholder="Other bank name..."
+                value={otherBankName}
+                onChange={(e) => setOtherBankName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOtherBank())}
+                className="h-10"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={handleAddOtherBank} disabled={!otherBankName.trim()}>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
+            </div>
           </FormField>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -66,7 +118,7 @@ export function Step3BankingTurnover() {
                   <SelectValue placeholder="Select primary bank" />
                 </SelectTrigger>
                 <SelectContent>
-                  {UAE_BANKS.map((bank) => (
+                  {allBanks.map((bank) => (
                     <SelectItem key={bank} value={bank}>
                       {bank}
                     </SelectItem>
