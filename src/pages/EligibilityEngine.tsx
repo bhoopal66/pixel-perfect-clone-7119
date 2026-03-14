@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Upload, Eye, BarChart3, Receipt, Layers, Shield, Edit3,
-  ArrowLeft, RotateCcw, Briefcase, Trophy, ShieldAlert
+  ArrowLeft, RotateCcw, Briefcase, Trophy, ShieldAlert, Settings2
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
