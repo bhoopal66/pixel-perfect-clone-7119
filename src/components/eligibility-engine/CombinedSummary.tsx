@@ -25,7 +25,9 @@ interface CombinedSummaryProps {
   } | null;
 }
 
-const fmt = (v: number) => CurrencyService.format(v, 'AED');
+import type { CurrencyCode } from '@/services/currencyService';
+
+const fmt = (v: number, currency: CurrencyCode = 'AED') => CurrencyService.format(v, currency);
 
 const varianceTagConfig = {
   strong_match: { label: 'Strong Match', color: 'bg-success/10 text-success border-success/30' },
@@ -169,6 +171,16 @@ export const CombinedSummary: React.FC<CombinedSummaryProps> = ({ summary, caseN
                 <Badge variant="outline">{summary.statementMonthsCovered} months coverage</Badge>
                 {summary.vatPeriodsCovered > 0 && (
                   <Badge variant="outline">{summary.vatPeriodsCovered} VAT period(s)</Badge>
+                )}
+                {summary.baseReportingCurrency && (
+                  <Badge variant="outline" className="border-primary/30">
+                    Base: {summary.baseReportingCurrency}
+                  </Badge>
+                )}
+                {summary.multiCurrencyFlag && summary.currenciesUsed && (
+                  <Badge variant="outline" className="border-accent text-accent">
+                    Multi-currency: {summary.currenciesUsed.join(', ')}
+                  </Badge>
                 )}
               </div>
             </div>

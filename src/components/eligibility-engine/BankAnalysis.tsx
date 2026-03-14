@@ -1,25 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, ArrowRightLeft } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CurrencyService } from '@/services/currencyService';
+import type { CurrencyCode } from '@/services/currencyService';
 import type { BankMonthlyAnalysis, ParsedBankFile } from '@/types/assessment.types';
+import type { AccountCurrencyConfig } from '@/types/currency.types';
 
 interface BankAnalysisProps {
   monthlySummaries: BankMonthlyAnalysis[];
   bankFiles: ParsedBankFile[];
+  baseReportingCurrency?: string;
+  accountConfigs?: AccountCurrencyConfig[];
 }
 
-const fmt = (v: number) => CurrencyService.format(v, 'AED');
-const fmtShort = (v: number) => {
-  if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
-  if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
-  return v.toFixed(0);
-};
+export const BankAnalysis: React.FC<BankAnalysisProps> = ({
+  monthlySummaries,
+  bankFiles,
+  baseReportingCurrency = 'AED',
+  accountConfigs = [],
+}) => {
+  const [viewMode, setViewMode] = useState<'base' | 'original'>('base');
+  const currency = (baseReportingCurrency || 'AED') as CurrencyCode;
+  const isMultiCurrency = accountConfigs.some(a => a.statementCurrencyCode !== baseReportingCurrency);
 
-export const BankAnalysis: React.FC<BankAnalysisProps> = ({ monthlySummaries, bankFiles }) => {
+  const fmt = (v: number) => CurrencyService.format(v, currency);
+  const fmtShort = (v: number) => {
+    if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+    if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
+    return v.toFixed(0);
+  };
+
   const totalCredits = monthlySummaries.reduce((s, m) => s + m.totalCredits, 0);
   const totalDebits = monthlySummaries.reduce((s, m) => s + m.totalDebits, 0);
   const monthCount = monthlySummaries.length || 1;
@@ -40,6 +54,49 @@ export const BankAnalysis: React.FC<BankAnalysisProps> = ({ monthlySummaries, ba
 
   return (
     <div className="space-y-6">
+      {/* Currency View Toggle */}
+      {isMultiCurrency && (
+        <Card className="border-accent/20">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4 text-accent" />
+                <span className="text-sm font-medium">Currency View</span>
+                <Badge variant="outline" className="text-xs">
+                  {accountConfigs.map(a => a.statementCurrencyCode).filter((v, i, arr) => arr.indexOf(v) === i).join(', ')}
+                </Badge>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant={viewMode === 'base' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('base')}
+                  className="text-xs h-7"
+                >
+                  {baseReportingCurrency} (Consolidated)
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'original' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('original')}
+                  className="text-xs h-7"
+                >
+                  Original Currency
+                </Button>
+              </div>
+            </div>
+            {viewMode === 'base' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                All values shown in {baseReportingCurrency} using manual exchange rates.
+                {accountConfigs.filter(a => a.statementCurrencyCode !== baseReportingCurrency && a.exchangeRateEntered).map(a =>
+                  ` ${a.statementCurrencyCode}→${baseReportingCurrency}: ${a.exchangeRate}`
+                ).join(',')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-success/20">
@@ -110,6 +167,7 @@ export const BankAnalysis: React.FC<BankAnalysisProps> = ({ monthlySummaries, ba
             <CardTitle className="flex items-center gap-2 text-lg">
               <BarChart3 className="h-5 w-5 text-primary" />
               Monthly Credit & Debit Trend
+              <Badge variant="secondary" className="text-xs ml-2">{baseReportingCurrency}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -133,7 +191,10 @@ export const BankAnalysis: React.FC<BankAnalysisProps> = ({ monthlySummaries, ba
       {/* Monthly Breakdown Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Monthly Breakdown</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            Monthly Breakdown
+            <Badge variant="secondary" className="text-xs">{baseReportingCurrency}</Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
