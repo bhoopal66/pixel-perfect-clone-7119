@@ -26,7 +26,7 @@ const STEP_LABELS = [
 
 function OnboardingContent() {
   const navigate = useNavigate();
-  const { currentStep, setCurrentStep, isStepValid, resetForm, formData } = useOnboarding();
+  const { currentStep, setCurrentStep, isStepValid, resetForm, formData, submitApplication } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNext = () => {
