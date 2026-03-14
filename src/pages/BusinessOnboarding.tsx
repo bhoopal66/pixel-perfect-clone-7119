@@ -26,7 +26,7 @@ const STEP_LABELS = [
 
 function OnboardingContent() {
   const navigate = useNavigate();
-  const { currentStep, setCurrentStep, isStepValid, resetForm, formData } = useOnboarding();
+  const { currentStep, setCurrentStep, isStepValid, resetForm, formData, submitApplication } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNext = () => {
@@ -55,12 +55,13 @@ function OnboardingContent() {
 
     setIsSubmitting(true);
     
-    // Simulate submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const success = await submitApplication();
     
-    toast.success('Application submitted successfully! Redirecting to Eligibility Engine…');
-    resetForm();
-    navigate('/eligibility-engine');
+    if (success) {
+      toast.success('Application submitted successfully! Redirecting to Eligibility Engine…');
+      resetForm();
+      navigate('/eligibility-engine');
+    }
     
     setIsSubmitting(false);
   };
