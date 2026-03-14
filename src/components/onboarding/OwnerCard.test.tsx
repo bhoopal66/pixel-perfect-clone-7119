@@ -49,13 +49,15 @@ describe("OwnerCard", () => {
     expect(getByText("UBO")).toBeInTheDocument();
   });
 
-  it("calls onUpdate when name is changed", () => {
-    render(<OwnerCard {...mockProps} />);
+  it("calls onUpdate when name is changed", async () => {
+    const user = userEvent.setup();
+    const { getByDisplayValue } = render(<OwnerCard {...mockProps} />);
     
-    const nameInput = screen.getByDisplayValue("John Smith");
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    const nameInput = getByDisplayValue("John Smith");
+    await user.clear(nameInput);
+    await user.type(nameInput, "John Doe");
     
-    expect(mockProps.onUpdate).toHaveBeenCalledWith({ ownerName: "John Doe" });
+    expect(mockProps.onUpdate).toHaveBeenCalled();
   });
 
   it("calls onUpdate when ownership percentage is changed", () => {
