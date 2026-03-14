@@ -267,7 +267,9 @@ export function useEligibilityAssessment() {
           company_name: companyName || null,
           user_id: user?.id || null,
           status: 'analyzing',
-        })
+          base_reporting_currency: baseReportingCurrency,
+          multi_currency_flag: accountConfigs.some(a => a.statementCurrencyCode !== baseReportingCurrency),
+        } as any)
         .select()
         .single();
 
