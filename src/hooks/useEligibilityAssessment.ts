@@ -437,7 +437,9 @@ export function useEligibilityAssessment() {
       setVatAnalysis(vatResults);
 
       // Generate combined summary
-      const combined = AssessmentAnalysisEngine.generateCombinedSummary(
+      const combined = { ...AssessmentAnalysisEngine.generateCombinedSummary(
+        bankFiles, vatFiles, summaries, vatResults, companyName
+      ), baseReportingCurrency, multiCurrencyFlag: accountConfigs.some(a => a.statementCurrencyCode !== baseReportingCurrency), currenciesUsed: [...new Set(accountConfigs.map(a => a.statementCurrencyCode))] };
         bankFiles, vatFiles, summaries, vatResults, companyName
       );
       setCombinedSummary(combined);
