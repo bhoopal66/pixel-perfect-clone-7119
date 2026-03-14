@@ -88,7 +88,7 @@ const EligibilityEngine: React.FC = () => {
             const step = STEPS.find(s => s.key === v);
             if (step && (!step.requiresAnalysis || hasAnalysis)) {
               setActiveTab(v);
-              if (v !== 'funding' && v !== 'bank_risk') {
+              if (v !== 'funding' && v !== 'bank_risk' && v !== 'account_setup') {
                 assessment.setCurrentStep(v as AssessmentStep);
               }
             }
