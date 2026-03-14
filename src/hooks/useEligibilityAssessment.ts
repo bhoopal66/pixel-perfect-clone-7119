@@ -404,11 +404,31 @@ export function useEligibilityAssessment() {
         }
       }
 
+      // Save currency conversion rates
+      await CurrencyConversionService.saveConversionRates(caseData.id, accountConfigs, baseReportingCurrency);
+
       // Calculate bank monthly summaries
-      const allTransactions = bankFiles
-        .filter(f => f.isValid)
-        .flatMap(f => f.transactions);
-      
+      // For multi-currency cases, apply conversion to get base currency values
+      const validFiles = bankFiles.filter(f => f.isValid);
+      const allTransactions: ParsedTransaction[] = [];
+      for (let i = 0; i < validFiles.length; i++) {
+        const bf = validFiles[i];
+        const ac = accountConfigs[i];
+        const needsConversion = ac && ac.statementCurrencyCode !== baseReportingCurrency && ac.exchangeRate > 0;
+        
+        if (needsConversion) {
+          // Convert transactions to base currency for consolidated analysis
+          allTransactions.push(...bf.transactions.map(t => ({
+            ...t,
+            debit: Math.round(t.debit * ac.exchangeRate * 100) / 100,
+            credit: Math.round(t.credit * ac.exchangeRate * 100) / 100,
+            balance: Math.round(t.balance * ac.exchangeRate * 100) / 100,
+          })));
+        } else {
+          allTransactions.push(...bf.transactions);
+        }
+      }
+      const allTransactionsRaw = allTransactions;
       const summaries = AssessmentAnalysisEngine.calculateMonthlySummaries(allTransactions);
       setMonthlySummaries(summaries);
 
