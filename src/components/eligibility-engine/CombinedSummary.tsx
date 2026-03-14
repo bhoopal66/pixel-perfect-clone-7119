@@ -25,7 +25,7 @@ interface CombinedSummaryProps {
   } | null;
 }
 
-const fmt = (v: number) => CurrencyService.format(v, 'AED');
+import type { CurrencyCode } from '@/services/currencyService';
 
 const varianceTagConfig = {
   strong_match: { label: 'Strong Match', color: 'bg-success/10 text-success border-success/30' },
