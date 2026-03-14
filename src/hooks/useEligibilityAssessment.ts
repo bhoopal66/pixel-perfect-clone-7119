@@ -250,6 +250,11 @@ export function useEligibilityAssessment() {
     setVatFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
+  // Update account config
+  const updateAccountConfig = useCallback((index: number, updates: Partial<AccountCurrencyConfig>) => {
+    setAccountConfigs(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c));
+  }, []);
+
   // Run analysis
   const runAnalysis = useCallback(async () => {
     setIsProcessing(true);
