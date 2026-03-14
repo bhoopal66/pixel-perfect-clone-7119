@@ -24,10 +24,11 @@ import { BankingRiskAnalysis } from '@/components/eligibility-engine/BankingRisk
 import { useEligibilityAssessment } from '@/hooks/useEligibilityAssessment';
 import type { AssessmentStep } from '@/types/assessment.types';
 
-type ExtendedStep = AssessmentStep | 'funding' | 'bank_risk';
+type ExtendedStep = AssessmentStep | 'funding' | 'bank_risk' | 'account_setup';
 
 const STEPS: { key: ExtendedStep; label: string; icon: React.ReactNode; requiresAnalysis: boolean }[] = [
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" />, requiresAnalysis: false },
+  { key: 'account_setup', label: 'Account Setup', icon: <Settings2 className="h-4 w-4" />, requiresAnalysis: false },
   { key: 'extraction', label: 'Extraction', icon: <Eye className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'bank_analysis', label: 'Bank Analysis', icon: <BarChart3 className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'bank_risk', label: 'Banking Risk', icon: <ShieldAlert className="h-4 w-4" />, requiresAnalysis: true },
