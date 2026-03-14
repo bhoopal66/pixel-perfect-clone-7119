@@ -99,10 +99,9 @@ describe("OwnerCard", () => {
   });
 
   it("disables move up button for first owner", () => {
-    render(<OwnerCard {...mockProps} index={0} />);
+    const { container } = render(<OwnerCard {...mockProps} index={0} />);
     
-    const moveUpButtons = screen.getAllByRole("button");
-    const upButton = moveUpButtons.find(btn => btn.querySelector('.lucide-chevron-up'));
+    const upButton = container.querySelector('button svg.lucide-chevron-up')?.closest('button');
     expect(upButton).toBeDisabled();
   });
 
