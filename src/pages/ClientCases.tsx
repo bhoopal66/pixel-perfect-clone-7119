@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,95 +31,13 @@ import {
   ShieldX
 } from 'lucide-react';
 import { format } from 'date-fns';
-
-// Mock data for demonstration
-const MOCK_CASES = [
-  {
-    id: '1',
-    caseId: 'BL-2024-001',
-    companyName: 'Tech Solutions LLC',
-    loanType: 'Term Loan',
-    loanAmount: 500000,
-    status: 'submitted',
-    updatedAt: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: '2',
-    caseId: 'BL-2024-002',
-    companyName: 'Global Trading FZE',
-    loanType: 'Working Capital',
-    loanAmount: 750000,
-    status: 'under_process',
-    updatedAt: '2024-01-14T15:45:00Z'
-  },
-  {
-    id: '3',
-    caseId: 'BL-2024-003',
-    companyName: 'Emirates Retail Group',
-    loanType: 'POS Finance',
-    loanAmount: 300000,
-    status: 'approved',
-    updatedAt: '2024-01-13T09:00:00Z'
-  },
-  {
-    id: '4',
-    caseId: 'BL-2024-004',
-    companyName: 'Dubai Imports Co.',
-    loanType: 'Overdraft',
-    loanAmount: 1000000,
-    status: 'declined',
-    updatedAt: '2024-01-12T14:20:00Z'
-  },
-  {
-    id: '5',
-    caseId: 'BL-2024-005',
-    companyName: 'Al Madina Services',
-    loanType: 'Term Loan',
-    loanAmount: 250000,
-    status: 'open',
-    updatedAt: '2024-01-11T11:15:00Z'
-  },
-  {
-    id: '6',
-    caseId: 'BL-2024-006',
-    companyName: 'Gulf Logistics LLC',
-    loanType: 'Term Loan',
-    loanAmount: 600000,
-    status: 'checked',
-    updatedAt: '2024-01-10T08:30:00Z'
-  },
-  {
-    id: '7',
-    caseId: 'BL-2024-007',
-    companyName: 'Sharjah Motors',
-    loanType: 'Working Capital',
-    loanAmount: 450000,
-    status: 'eligible',
-    updatedAt: '2024-01-09T12:00:00Z'
-  },
-  {
-    id: '8',
-    caseId: 'BL-2024-008',
-    companyName: 'Desert Construction Co.',
-    loanType: 'POS Finance',
-    loanAmount: 200000,
-    status: 'not_eligible',
-    updatedAt: '2024-01-08T16:45:00Z'
-  },
-  {
-    id: '9',
-    caseId: 'BL-2024-009',
-    companyName: 'Falcon Trading FZE',
-    loanType: 'Term Loan',
-    loanAmount: 800000,
-    status: 'to_submit',
-    updatedAt: '2024-01-07T10:00:00Z'
-  }
-];
+import { getUserCases, type OnboardingCaseSummary } from '@/services/onboardingService';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: React.ReactNode; className?: string }> = {
+  draft: { label: 'Draft', variant: 'outline', icon: <FolderOpen className="h-3 w-3" />, className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' },
   open: { label: 'Open', variant: 'outline', icon: <FolderOpen className="h-3 w-3" />, className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' },
   checked: { label: 'Checked', variant: 'secondary', icon: <ClipboardCheck className="h-3 w-3" />, className: 'border-violet-500/30 text-violet-600 bg-violet-500/10' },
+  in_process: { label: 'In Process', variant: 'secondary', icon: <Loader2 className="h-3 w-3" />, className: 'border-orange-500/30 text-orange-600 bg-orange-500/10' },
   eligible: { label: 'Eligible', variant: 'default', icon: <ShieldCheck className="h-3 w-3" />, className: 'border-emerald-500/30 text-emerald-600 bg-emerald-500/10' },
   not_eligible: { label: 'Not Eligible', variant: 'destructive', icon: <ShieldX className="h-3 w-3" />, className: 'border-red-500/30 text-red-600 bg-red-500/10' },
   to_submit: { label: 'To Submit', variant: 'outline', icon: <Send className="h-3 w-3" />, className: 'border-amber-500/30 text-amber-600 bg-amber-500/10' },
@@ -133,17 +51,29 @@ export default function ClientCases() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [cases, setCases] = useState<OnboardingCaseSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredCases = MOCK_CASES.filter(c => {
+  useEffect(() => {
+    async function loadCases() {
+      setIsLoading(true);
+      const data = await getUserCases();
+      setCases(data);
+      setIsLoading(false);
+    }
+    loadCases();
+  }, []);
+
+  const filteredCases = cases.filter(c => {
     const matchesSearch = 
       c.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.caseId.toLowerCase().includes(searchQuery.toLowerCase());
+      (c.caseNumber || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.open;
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
     return (
       <Badge variant="outline" className={`flex items-center gap-1 w-fit ${config.className || ''}`}>
         {config.icon}
@@ -206,103 +136,112 @@ export default function ClientCases() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="checked">Checked</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="in_process">In Process</SelectItem>
                   <SelectItem value="eligible">Eligible</SelectItem>
                   <SelectItem value="not_eligible">Not Eligible</SelectItem>
                   <SelectItem value="to_submit">To Submit</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="under_process">Under Process</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="declined">Declined</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Desktop Table */}
-            <div className="hidden md:block rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Case ID</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Loan Type</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCases.map((c) => (
-                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-medium">{c.caseId}</TableCell>
-                      <TableCell>{c.companyName}</TableCell>
-                      <TableCell>{c.loanType}</TableCell>
-                      <TableCell className="text-right">AED {c.loanAmount.toLocaleString()}</TableCell>
-                      <TableCell>{getStatusBadge(c.status)}</TableCell>
-                      <TableCell>{format(new Date(c.updatedAt), 'dd MMM yyyy')}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/client-cases/${c.id}`)}
-                        >
-                          Open
-                          <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-3">
-              {filteredCases.map((c) => (
-                <Card
-                  key={c.id}
-                  className="cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => navigate(`/client-cases/${c.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-medium text-sm">{c.caseId}</p>
-                        <p className="text-base font-semibold">{c.companyName}</p>
-                      </div>
-                      {getStatusBadge(c.status)}
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>{c.loanType}</span>
-                      <span>AED {c.loanAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                      <span className="text-xs text-muted-foreground">
-                        Updated {format(new Date(c.updatedAt), 'dd MMM yyyy')}
-                      </span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {filteredCases.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-1">No applications found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery || statusFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Start by creating a new application'}
-                </p>
-                <Button onClick={() => navigate('/onboarding')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Application
-                </Button>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
+            ) : (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden md:block rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Case ID</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Loan Type</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCases.map((c) => (
+                        <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50">
+                          <TableCell className="font-medium">{c.caseNumber || '—'}</TableCell>
+                          <TableCell>{c.companyName}</TableCell>
+                          <TableCell>{c.loanType}</TableCell>
+                          <TableCell className="text-right">
+                            {c.loanAmount > 0 ? `AED ${c.loanAmount.toLocaleString()}` : '—'}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(c.status)}</TableCell>
+                          <TableCell>{format(new Date(c.updatedAt), 'dd MMM yyyy')}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/client-cases/${c.id}`)}
+                            >
+                              Open
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden space-y-3">
+                  {filteredCases.map((c) => (
+                    <Card
+                      key={c.id}
+                      className="cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => navigate(`/client-cases/${c.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-medium text-sm">{c.caseNumber || '—'}</p>
+                            <p className="text-base font-semibold">{c.companyName}</p>
+                          </div>
+                          {getStatusBadge(c.status)}
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>{c.loanType}</span>
+                          <span>{c.loanAmount > 0 ? `AED ${c.loanAmount.toLocaleString()}` : '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                          <span className="text-xs text-muted-foreground">
+                            Updated {format(new Date(c.updatedAt), 'dd MMM yyyy')}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {filteredCases.length === 0 && (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-1">No applications found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {searchQuery || statusFilter !== 'all'
+                        ? 'Try adjusting your filters'
+                        : 'Start by creating a new application'}
+                    </p>
+                    <Button onClick={() => navigate('/onboarding')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Application
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
