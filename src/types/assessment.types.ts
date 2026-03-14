@@ -178,6 +178,9 @@ export interface ParsedBankFile {
   isDuplicate: boolean;
   isValid: boolean;
   validationMessage: string | null;
+  // Currency fields
+  detectedCurrency: string;
+  documentId?: string;
 }
 
 export interface ParsedTransaction {
@@ -259,6 +262,11 @@ export interface CombinedFinancialSummary {
   totalBounces: number;
   negativeBalanceDays: number;
   cashDepositRatio: number;
+  // Multi-currency fields
+  baseReportingCurrency?: string;
+  multiCurrencyFlag?: boolean;
+  currenciesUsed?: string[];
+  conversionNotes?: string;
 }
 
 export type AssessmentStep = 

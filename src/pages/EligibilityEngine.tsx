@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Upload, Eye, BarChart3, Receipt, Layers, Shield, Edit3,
-  ArrowLeft, RotateCcw, Briefcase, Trophy, ShieldAlert
+  ArrowLeft, RotateCcw, Briefcase, Trophy, ShieldAlert, Settings2
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { AccountSetupPanel } from '@/components/eligibility-engine/AccountSetupPanel';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
@@ -23,10 +24,11 @@ import { BankingRiskAnalysis } from '@/components/eligibility-engine/BankingRisk
 import { useEligibilityAssessment } from '@/hooks/useEligibilityAssessment';
 import type { AssessmentStep } from '@/types/assessment.types';
 
-type ExtendedStep = AssessmentStep | 'funding' | 'bank_risk';
+type ExtendedStep = AssessmentStep | 'funding' | 'bank_risk' | 'account_setup';
 
 const STEPS: { key: ExtendedStep; label: string; icon: React.ReactNode; requiresAnalysis: boolean }[] = [
   { key: 'upload', label: 'Upload', icon: <Upload className="h-4 w-4" />, requiresAnalysis: false },
+  { key: 'account_setup', label: 'Account Setup', icon: <Settings2 className="h-4 w-4" />, requiresAnalysis: false },
   { key: 'extraction', label: 'Extraction', icon: <Eye className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'bank_analysis', label: 'Bank Analysis', icon: <BarChart3 className="h-4 w-4" />, requiresAnalysis: true },
   { key: 'bank_risk', label: 'Banking Risk', icon: <ShieldAlert className="h-4 w-4" />, requiresAnalysis: true },
@@ -86,7 +88,7 @@ const EligibilityEngine: React.FC = () => {
             const step = STEPS.find(s => s.key === v);
             if (step && (!step.requiresAnalysis || hasAnalysis)) {
               setActiveTab(v);
-              if (v !== 'funding' && v !== 'bank_risk') {
+              if (v !== 'funding' && v !== 'bank_risk' && v !== 'account_setup') {
                 assessment.setCurrentStep(v as AssessmentStep);
               }
             }
@@ -123,6 +125,17 @@ const EligibilityEngine: React.FC = () => {
                   onRemoveVatFile={assessment.removeVatFile}
                   onProceed={assessment.runAnalysis}
                   isProcessing={assessment.isProcessing}
+                />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="account_setup">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AccountSetupPanel
+                  accounts={assessment.accountConfigs}
+                  baseReportingCurrency={assessment.baseReportingCurrency}
+                  onAccountUpdate={assessment.updateAccountConfig}
+                  onBaseReportingCurrencyChange={assessment.setBaseReportingCurrency}
                 />
               </motion.div>
             </TabsContent>

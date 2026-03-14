@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { PDFParser } from '@/services/pdfParser';
 import { parseVATReturn, createVATReturnFromParsed } from '@/services/vatReturnParser';
 import { AssessmentAnalysisEngine } from '@/services/assessmentAnalysisEngine';
+import { CurrencyService } from '@/services/currencyService';
+import { CurrencyConversionService } from '@/services/currencyConversionService';
 // AssessmentRuleEngine is deprecated in favor of the unified RuleEngineExecutor
 import { RelatedPartyService } from '@/services/relatedPartyService';
 import { TransactionAnalyzer } from '@/services/transactionAnalyzer';
@@ -26,6 +28,9 @@ import type {
   CombinedFinancialSummary,
   AssessmentLenderResult,
 } from '@/types/assessment.types';
+import type { AccountCurrencyConfig } from '@/types/currency.types';
+
+
 
 export function useEligibilityAssessment() {
   const [currentStep, setCurrentStep] = useState<AssessmentStep>('upload');
@@ -48,6 +53,11 @@ export function useEligibilityAssessment() {
   const [bankRiskResults, setBankRiskResults] = useState<BankAnalysisResult[]>([]);
   const [bankRiskConsolidated, setBankRiskConsolidated] = useState<ConsolidatedAnalysis | null>(null);
 
+  // Multi-currency state
+  const [accountConfigs, setAccountConfigs] = useState<AccountCurrencyConfig[]>([]);
+  const [baseReportingCurrency, setBaseReportingCurrency] = useState('AED');
+
+
   // Parse bank statement PDF
   const parseBankStatement = useCallback(async (file: File): Promise<ParsedBankFile | null> => {
     try {
@@ -55,6 +65,7 @@ export function useEligibilityAssessment() {
       const detection = PDFParser.detectBank(pdfData.text);
       const transactions = PDFParser.extractTransactions(pdfData.text, detection.detectedBank || undefined);
       const accountInfo = PDFParser.extractAccountInfo(pdfData.text);
+      const detectedCurrency = CurrencyService.detectCurrency(pdfData.text);
 
       const parsedTxns: ParsedTransaction[] = transactions.map(t => ({
         date: t.date,
@@ -91,6 +102,7 @@ export function useEligibilityAssessment() {
           : parsedTxns.length === 0
             ? 'No transactions could be extracted'
             : null,
+        detectedCurrency,
       };
     } catch (error) {
       console.error('Bank statement parse error:', error);
@@ -108,6 +120,7 @@ export function useEligibilityAssessment() {
         isDuplicate: false,
         isValid: false,
         validationMessage: error instanceof Error ? error.message : 'Failed to parse PDF',
+        detectedCurrency: 'AED',
       };
     }
   }, [bankFiles]);
@@ -182,6 +195,23 @@ export function useEligibilityAssessment() {
       const results = await Promise.all(files.map(f => parseBankStatement(f)));
       const valid = results.filter(Boolean) as ParsedBankFile[];
       setBankFiles(prev => [...prev, ...valid]);
+      // Build account configs for new files
+      const newConfigs: AccountCurrencyConfig[] = valid.filter(f => f.isValid).map(f => ({
+        documentId: '',
+        fileName: f.fileName,
+        bankId: null,
+        bankName: f.bankName,
+        bankNameConfirmed: f.bankName,
+        bankDetectionSource: f.bankName ? 'auto' as const : 'manual' as const,
+        accountNumber: f.accountNumber,
+        statementCurrencyCode: f.detectedCurrency || 'AED',
+        currencyDetectionSource: 'auto' as const,
+        currencyConfirmed: false,
+        bankConfirmed: false,
+        exchangeRate: f.detectedCurrency === baseReportingCurrency ? 1 : 0,
+        exchangeRateEntered: f.detectedCurrency === baseReportingCurrency,
+      }));
+      setAccountConfigs(prev => [...prev, ...newConfigs]);
       const validCount = valid.filter(f => f.isValid).length;
       const dupeCount = valid.filter(f => f.isDuplicate).length;
       if (validCount > 0) toast.success(`${validCount} bank statement(s) parsed successfully`);
@@ -189,7 +219,7 @@ export function useEligibilityAssessment() {
     } finally {
       setIsProcessing(false);
     }
-  }, [parseBankStatement]);
+  }, [parseBankStatement, baseReportingCurrency]);
 
   const handleVatFiles = useCallback(async (files: File[]) => {
     setIsProcessing(true);
@@ -206,10 +236,23 @@ export function useEligibilityAssessment() {
 
   const removeBankFile = useCallback((index: number) => {
     setBankFiles(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    // Also remove associated account config
+    setAccountConfigs(prev => {
+      const validFiles = bankFiles.filter(f => f.isValid);
+      if (index < validFiles.length) {
+        return prev.filter((_, i) => i !== index);
+      }
+      return prev;
+    });
+  }, [bankFiles]);
 
   const removeVatFile = useCallback((index: number) => {
     setVatFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Update account config
+  const updateAccountConfig = useCallback((index: number, updates: Partial<AccountCurrencyConfig>) => {
+    setAccountConfigs(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c));
   }, []);
 
   // Run analysis
@@ -224,7 +267,9 @@ export function useEligibilityAssessment() {
           company_name: companyName || null,
           user_id: user?.id || null,
           status: 'analyzing',
-        })
+          base_reporting_currency: baseReportingCurrency,
+          multi_currency_flag: accountConfigs.some(a => a.statementCurrencyCode !== baseReportingCurrency),
+        } as any)
         .select()
         .single();
 
@@ -236,7 +281,10 @@ export function useEligibilityAssessment() {
       await ActivityLogService.log(caseData.id, 'case_status_changed', `Assessment case created: ${caseData.case_number || caseData.id}`);
 
       // Save documents & create extraction runs for bank files
-      for (const bf of bankFiles.filter(f => f.isValid)) {
+      const validBankFiles = bankFiles.filter(f => f.isValid);
+      for (let bfIdx = 0; bfIdx < validBankFiles.length; bfIdx++) {
+        const bf = validBankFiles[bfIdx];
+        const acConfig = accountConfigs[bfIdx];
         // Save document record
         const { data: docRecord } = await supabase
           .from('assessment_documents')
@@ -245,7 +293,7 @@ export function useEligibilityAssessment() {
             document_type: 'bank_statement',
             file_name: bf.fileName,
             original_file_name: bf.fileName,
-            bank_name: bf.bankName,
+            bank_name: acConfig?.bankNameConfirmed || bf.bankName,
             account_holder: bf.accountHolder,
             account_number: bf.accountNumber,
             period_from: bf.periodFrom,
@@ -254,6 +302,14 @@ export function useEligibilityAssessment() {
             validation_status: bf.isValid ? 'valid' : 'invalid',
             validation_message: bf.validationMessage,
             uploaded_by: user?.id || null,
+            statement_currency_code: acConfig?.statementCurrencyCode || bf.detectedCurrency || 'AED',
+            currency_detection_source: acConfig?.currencyDetectionSource || 'auto',
+            currency_confirmed_by: acConfig?.currencyConfirmed ? user?.id : null,
+            currency_confirmed_at: acConfig?.currencyConfirmed ? new Date().toISOString() : null,
+            bank_name_confirmed: acConfig?.bankNameConfirmed || bf.bankName,
+            bank_detection_source: acConfig?.bankDetectionSource || 'auto',
+            bank_confirmed_by: acConfig?.bankConfirmed ? user?.id : null,
+            bank_confirmed_at: acConfig?.bankConfirmed ? new Date().toISOString() : null,
           } as any)
           .select()
           .single();
@@ -266,6 +322,10 @@ export function useEligibilityAssessment() {
 
           // Save bank transactions linked to extraction run
           if (bf.transactions.length > 0) {
+            const stmtCurrency = acConfig?.statementCurrencyCode || bf.detectedCurrency || 'AED';
+            const fxRate = acConfig?.exchangeRate || 1;
+            const needsConversion = stmtCurrency !== baseReportingCurrency;
+            
             await supabase.from('assessment_bank_transactions').insert(
               bf.transactions.map(t => ({
                 case_id: caseData.id,
@@ -274,14 +334,24 @@ export function useEligibilityAssessment() {
                 txn_date: t.date,
                 description: t.description,
                 cheque_no: t.chequeNo || null,
-                debit: t.debit,
-                credit: t.credit,
-                balance: t.balance,
-                bank_name: bf.bankName,
+                debit: needsConversion ? Math.round(t.debit * fxRate * 100) / 100 : t.debit,
+                credit: needsConversion ? Math.round(t.credit * fxRate * 100) / 100 : t.credit,
+                balance: needsConversion ? Math.round(t.balance * fxRate * 100) / 100 : t.balance,
+                bank_name: acConfig?.bankNameConfirmed || bf.bankName,
                 account_name: bf.accountHolder,
                 category: t.category || null,
                 month: t.date ? new Date(t.date).getMonth() + 1 : null,
                 year: t.date ? new Date(t.date).getFullYear() : null,
+                original_currency_code: stmtCurrency,
+                original_debit: t.debit,
+                original_credit: t.credit,
+                original_balance: t.balance,
+                base_currency_code: baseReportingCurrency,
+                converted_debit: needsConversion ? Math.round(t.debit * fxRate * 100) / 100 : t.debit,
+                converted_credit: needsConversion ? Math.round(t.credit * fxRate * 100) / 100 : t.credit,
+                converted_balance: needsConversion ? Math.round(t.balance * fxRate * 100) / 100 : t.balance,
+                applied_exchange_rate: fxRate,
+                conversion_status: needsConversion ? 'converted' : 'not_required',
               } as any))
             );
           }
@@ -334,12 +404,32 @@ export function useEligibilityAssessment() {
         }
       }
 
+      // Save currency conversion rates
+      await CurrencyConversionService.saveConversionRates(caseData.id, accountConfigs, baseReportingCurrency);
+
       // Calculate bank monthly summaries
-      const allTransactions = bankFiles
-        .filter(f => f.isValid)
-        .flatMap(f => f.transactions);
-      
-      const summaries = AssessmentAnalysisEngine.calculateMonthlySummaries(allTransactions);
+      // For multi-currency cases, apply conversion to get base currency values
+      const validFiles = bankFiles.filter(f => f.isValid);
+      const allTransactions: ParsedTransaction[] = [];
+      for (let i = 0; i < validFiles.length; i++) {
+        const bf = validFiles[i];
+        const ac = accountConfigs[i];
+        const needsConversion = ac && ac.statementCurrencyCode !== baseReportingCurrency && ac.exchangeRate > 0;
+        
+        if (needsConversion) {
+          // Convert transactions to base currency for consolidated analysis
+          allTransactions.push(...bf.transactions.map(t => ({
+            ...t,
+            debit: Math.round(t.debit * ac.exchangeRate * 100) / 100,
+            credit: Math.round(t.credit * ac.exchangeRate * 100) / 100,
+            balance: Math.round(t.balance * ac.exchangeRate * 100) / 100,
+          })));
+        } else {
+          allTransactions.push(...bf.transactions);
+        }
+      }
+      const allTransactionsRaw = allTransactions;
+      const summaries = AssessmentAnalysisEngine.calculateMonthlySummaries(allTransactionsRaw);
       setMonthlySummaries(summaries);
 
       // Calculate VAT analysis
@@ -347,9 +437,9 @@ export function useEligibilityAssessment() {
       setVatAnalysis(vatResults);
 
       // Generate combined summary
-      const combined = AssessmentAnalysisEngine.generateCombinedSummary(
+      const combined = { ...AssessmentAnalysisEngine.generateCombinedSummary(
         bankFiles, vatFiles, summaries, vatResults, companyName
-      );
+      ), baseReportingCurrency, multiCurrencyFlag: accountConfigs.some(a => a.statementCurrencyCode !== baseReportingCurrency), currenciesUsed: [...new Set(accountConfigs.map(a => a.statementCurrencyCode))] };
       setCombinedSummary(combined);
 
       // Save bank summaries to DB - associate each summary with the correct bank
@@ -555,7 +645,7 @@ export function useEligibilityAssessment() {
     } finally {
       setIsProcessing(false);
     }
-  }, [bankFiles, vatFiles, companyName]);
+  }, [bankFiles, vatFiles, companyName, accountConfigs, baseReportingCurrency]);
 
   // Run matching engine on demand
   const runMatchingEngine = useCallback(async () => {
@@ -589,6 +679,8 @@ export function useEligibilityAssessment() {
     setMatchResults([]);
     setBankRiskResults([]);
     setBankRiskConsolidated(null);
+    setAccountConfigs([]);
+    setBaseReportingCurrency('AED');
     setCurrentStep('upload');
   }, []);
 
@@ -617,5 +709,10 @@ export function useEligibilityAssessment() {
     runAnalysis,
     runMatchingEngine,
     resetAssessment,
+    // Multi-currency
+    accountConfigs,
+    baseReportingCurrency,
+    setBaseReportingCurrency,
+    updateAccountConfig,
   };
 }
