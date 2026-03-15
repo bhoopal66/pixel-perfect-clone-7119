@@ -409,9 +409,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   );
 }
 
-export function useOnboarding() {
+export function useOnboarding(): OnboardingContextType {
   const context = useContext(OnboardingContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useOnboarding must be used within an OnboardingProvider');
   }
   return context;

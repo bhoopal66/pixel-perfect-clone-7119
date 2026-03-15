@@ -134,10 +134,13 @@ function OnboardingContent() {
   );
 }
 
-export default function BusinessOnboarding() {
+// Wrapped in provider to ensure context is available
+const BusinessOnboarding = () => {
   return (
     <OnboardingProvider>
       <OnboardingContent />
     </OnboardingProvider>
   );
-}
+};
+
+export default BusinessOnboarding;
