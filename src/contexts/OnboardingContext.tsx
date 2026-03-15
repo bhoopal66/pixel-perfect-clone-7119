@@ -225,7 +225,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const updateLoanRequirement = useCallback((data: Partial<LoanRequirement>) => {
     setLocalFormData(prev => {
       const sanitized = { ...data };
-      if (sanitized.requiredLoanAmount !== undefined) sanitized.requiredLoanAmount = clampNumber(sanitized.requiredLoanAmount, 0, 500_000_000);
+      if (sanitized.requiredLoanAmount !== undefined) sanitized.requiredLoanAmount = clampNumber(sanitized.requiredLoanAmount, 0, 999_999_999);
       if (sanitized.purpose !== undefined) sanitized.purpose = clampString(sanitized.purpose, MAX_LENGTHS.purpose);
 
       const updated = {
