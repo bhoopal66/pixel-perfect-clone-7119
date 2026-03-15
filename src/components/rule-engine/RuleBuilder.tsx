@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { NORMALIZED_FIELDS, RULE_OPERATORS, RULE_ACTION_TYPES, RULE_CATEGORIES } from '@/types/ruleEngine.types';
 import type { LenderRule } from '@/types/ruleEngine.types';
 
