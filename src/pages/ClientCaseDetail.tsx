@@ -265,7 +265,7 @@ export default function ClientCaseDetail() {
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <p className="text-muted-foreground">Name</p>
-                        <p className="font-medium">{owner.ownerName}</p>
+                        <p className="font-medium break-words">{owner.ownerName}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Shareholding</p>
