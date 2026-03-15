@@ -24,6 +24,7 @@ import {
 import { CurrencyService } from '@/services/currencyService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { cn } from '@/lib/utils';
 import { usePdfParsing } from '@/hooks/usePdfParsing';
 import { TransactionAnalysisPreview } from './TransactionAnalysisPreview';
