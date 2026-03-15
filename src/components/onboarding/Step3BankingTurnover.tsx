@@ -131,6 +131,8 @@ export function Step3BankingTurnover() {
               <Input
                 type="number"
                 placeholder="e.g., 500000"
+                min="0"
+                max="999999999999"
                 value={bt.monthlyAvgTurnover || ''}
                 onChange={(e) => updateBankingTurnover({ monthlyAvgTurnover: parseFloat(e.target.value) || 0 })}
                 className="h-12"
