@@ -99,6 +99,9 @@ const Index = () => {
                       <DropdownMenuItem onClick={() => navigate('/lender-policy-admin')}>
                         <Cog className="h-4 w-4 mr-2" />Lender Policy Admin
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/executive')}>
+                        <BarChart3 className="h-4 w-4 mr-2" />Executive Dashboard
+                      </DropdownMenuItem>
                     </>
                   )}
                   {canManageUsers && (
