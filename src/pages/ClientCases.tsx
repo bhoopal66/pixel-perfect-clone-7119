@@ -172,7 +172,7 @@ export default function ClientCases() {
                       {filteredCases.map((c) => (
                         <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50">
                           <TableCell className="font-medium">{c.caseNumber || '—'}</TableCell>
-                          <TableCell>{c.companyName}</TableCell>
+                          <TableCell className="max-w-[250px] truncate" title={c.companyName}>{c.companyName}</TableCell>
                           <TableCell>{c.loanType}</TableCell>
                           <TableCell className="text-right">
                             {c.loanAmount > 0 ? `AED ${c.loanAmount.toLocaleString()}` : '—'}
