@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { NORMALIZED_FIELDS, FORMULA_TYPES } from '@/types/ruleEngine.types';
 import type { LenderFormulaConfig } from '@/types/ruleEngine.types';
 
@@ -42,7 +43,7 @@ export const FormulaBuilder = ({ ruleSetId }: Props) => {
       return editing ? FormulaService.update(editing.id, payload) : FormulaService.create({ ...payload, rule_set_id: ruleSetId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['lender-formulas'] }); setOpen(false); toast.success(editing ? 'Updated' : 'Created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMut = useMutation({

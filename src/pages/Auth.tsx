@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 export default function Auth() {
@@ -34,7 +35,7 @@ export default function Auth() {
     const { error } = await signIn(loginEmail, loginPassword);
 
     if (error) {
-      toast.error('Login failed', { description: error.message });
+      toast.error('Login failed', { description: getDisplayError(error) });
     } else {
       toast.success('Logged in successfully');
       navigate('/');
@@ -61,7 +62,7 @@ export default function Auth() {
     const { error } = await signUp(signupEmail, signupPassword, signupFullName);
 
     if (error) {
-      toast.error('Signup failed', { description: error.message });
+      toast.error('Signup failed', { description: getDisplayError(error) });
     } else {
       toast.success('Account created successfully', {
         description: 'You can now log in with your credentials.',
@@ -87,7 +88,7 @@ export default function Auth() {
     });
 
     if (error) {
-      toast.error('Failed to send reset email', { description: error.message });
+      toast.error('Failed to send reset email', { description: getDisplayError(error) });
     } else {
       toast.success('Password reset email sent', {
         description: 'Check your inbox for the reset link.',

@@ -15,6 +15,7 @@ import {
   AlertTriangle, TrendingUp, TrendingDown, Building2, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import {
   RelatedPartyService, ENTITY_TYPES,
   type RelatedParty, type RelatedPartyTransaction, type RelatedPartyFlowSummary,
@@ -83,7 +84,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
       resetForm();
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const updateMutation = useMutation({
@@ -97,13 +98,13 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
       resetForm();
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => RelatedPartyService.deleteParty(id),
     onSuccess: () => { toast.success('Related party removed'); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const detectMutation = useMutation({
@@ -112,7 +113,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
       toast.success(`Detection complete: ${res.matched} transactions matched`);
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const resetForm = () => setForm({

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { Loader2, CheckCircle } from 'lucide-react';
 
 export default function ResetPassword() {
@@ -55,7 +56,7 @@ export default function ResetPassword() {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      toast.error('Failed to reset password', { description: error.message });
+      toast.error('Failed to reset password', { description: getDisplayError(error) });
     } else {
       setIsSuccess(true);
       toast.success('Password updated successfully');

@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { NORMALIZED_FIELDS, RULE_OPERATORS, RULE_ACTION_TYPES, RULE_CATEGORIES } from '@/types/ruleEngine.types';
 import type { LenderRule } from '@/types/ruleEngine.types';
 
@@ -48,7 +49,7 @@ export const RuleBuilder = ({ ruleSetId }: Props) => {
       return editing ? RuleService.update(editing.id, payload) : RuleService.create({ ...payload, rule_set_id: ruleSetId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['lender-rules'] }); setOpen(false); toast.success(editing ? 'Updated' : 'Created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMut = useMutation({

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { DECISION_STATUSES } from '@/types/ruleEngine.types';
 import type { LenderDecisionMatrix } from '@/types/ruleEngine.types';
 
@@ -42,7 +43,7 @@ export const DecisionMatrixEditor = ({ ruleSetId }: Props) => {
       return editing ? DecisionMatrixService.update(editing.id, payload) : DecisionMatrixService.create({ ...payload, rule_set_id: ruleSetId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['decision-matrix'] }); setOpen(false); toast.success('Saved'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMut = useMutation({

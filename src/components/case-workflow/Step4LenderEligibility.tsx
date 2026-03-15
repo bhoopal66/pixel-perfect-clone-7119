@@ -14,6 +14,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, Eye, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { RuleEngineExecutor } from '@/services/ruleEngineExecutor';
@@ -190,7 +191,7 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
       toast.success(`Eligibility checked across ${enriched.length} lender product(s)`);
     } catch (err: any) {
       console.error('Lender eligibility error:', err);
-      toast.error(err.message || 'Failed to run lender eligibility');
+      toast.error(getDisplayError(err));
     } finally {
       setIsRunning(false);
       runLockRef.current = false;

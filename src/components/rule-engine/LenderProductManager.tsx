@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { PRODUCT_TYPES } from '@/types/ruleEngine.types';
 import type { LenderProduct } from '@/types/ruleEngine.types';
 
@@ -41,7 +42,7 @@ export const LenderProductManager = ({ lenderId }: Props) => {
       return editing ? ProductService.update(editing.id, payload) : ProductService.create({ ...payload, lender_id: lenderId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['lender-products'] }); setOpen(false); toast.success(editing ? 'Updated' : 'Created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const toggleMut = useMutation({

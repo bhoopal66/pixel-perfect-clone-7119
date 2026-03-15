@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { ArrowLeft, Loader2, User, Mail, Shield, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -83,7 +84,7 @@ export default function UserProfile() {
 
     if (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile', { description: error.message });
+      toast.error('Failed to update profile', { description: getDisplayError(error) });
     } else {
       toast.success('Profile updated successfully');
       setProfile(prev => prev ? { ...prev, full_name: fullName.trim() } : prev);

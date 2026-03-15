@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Copy, CheckCircle, Archive } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import type { LenderRuleSet } from '@/types/ruleEngine.types';
 
 interface Props {
@@ -39,19 +40,19 @@ export const RuleSetManager = ({ lenderId, productId, onSelectRuleSet }: Props) 
       });
     },
     onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['rule-sets'] }); setOpen(false); onSelectRuleSet(data.id); toast.success('Rule set created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const duplicateMut = useMutation({
     mutationFn: (id: string) => RuleSetService.duplicate(id),
     onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['rule-sets'] }); onSelectRuleSet(data.id); toast.success('Rule set duplicated'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const activateMut = useMutation({
     mutationFn: (id: string) => RuleSetService.activate(id, productId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['rule-sets'] }); toast.success('Rule set activated'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   if (!productId) return <Card><CardContent className="py-10 text-center text-muted-foreground">Select a product to manage rule sets</CardContent></Card>;

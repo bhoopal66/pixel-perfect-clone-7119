@@ -24,6 +24,7 @@ import {
 import { CurrencyService } from '@/services/currencyService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { cn } from '@/lib/utils';
 import { usePdfParsing } from '@/hooks/usePdfParsing';
 import { TransactionAnalysisPreview } from './TransactionAnalysisPreview';
@@ -119,7 +120,7 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
 
       if (error) {
         console.error('Upload error:', error);
-        toast.error('Failed to upload file: ' + error.message);
+        toast.error('Unable to upload document. Please try again.');
         return;
       }
 

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Play, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { NORMALIZED_FIELDS, DECISION_STATUSES } from '@/types/ruleEngine.types';
 
 interface Props {
@@ -33,7 +34,7 @@ export const TestRuleEngine = ({ lenderId, productId, ruleSetId }: Props) => {
   const executeMut = useMutation({
     mutationFn: () => RuleEngineExecutor.executeForTest(selectedCaseId, lenderId, productId, ruleSetId),
     onSuccess: (data) => { setResult(data); toast.success('Test execution complete'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const canRun = selectedCaseId && lenderId && productId && ruleSetId;

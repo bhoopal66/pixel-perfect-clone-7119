@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { ArrowLeft, Loader2, Shield, User, Users, Crown, Eye, UserCheck, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -117,7 +118,7 @@ export default function UserManagement() {
 
     if (error) {
       console.error('Error updating role:', error);
-      toast.error('Failed to update role', { description: error.message });
+      toast.error('Failed to update role', { description: getDisplayError(error) });
     } else {
       toast.success('Role updated successfully');
       setUsers(users.map(u => 

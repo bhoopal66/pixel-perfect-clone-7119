@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X, Trash2, Info, Eye } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -254,7 +255,7 @@ export default function AgentManagement() {
 
     if (error) {
       console.error('Error updating agent:', error);
-      toast.error('Failed to update agent', { description: error.message });
+      toast.error('Failed to update agent', { description: getDisplayError(error) });
     } else {
       toast.success('Agent updated successfully');
       setAgents(agents.map(a =>
@@ -282,7 +283,7 @@ export default function AgentManagement() {
 
     if (error) {
       console.error('Error toggling agent status:', error);
-      toast.error('Failed to update agent status', { description: error.message });
+      toast.error('Failed to update agent status', { description: getDisplayError(error) });
     } else {
       toast.success(newStatus ? 'Agent activated' : 'Agent deactivated');
       setAgents(agents.map(a =>
@@ -307,7 +308,7 @@ export default function AgentManagement() {
 
     if (error) {
       console.error('Error deleting agent:', error);
-      toast.error('Failed to delete agent', { description: error.message });
+      toast.error('Failed to delete agent', { description: getDisplayError(error) });
     } else {
       toast.success('Agent deleted successfully');
       setAgents(agents.filter(a => a.id !== agent.id));
