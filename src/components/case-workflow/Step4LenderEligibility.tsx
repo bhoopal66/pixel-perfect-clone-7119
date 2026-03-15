@@ -145,6 +145,8 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
   }, [assessmentCaseId, caseData]);
 
   const runLenderEligibility = useCallback(async () => {
+    if (runLockRef.current) return;
+    runLockRef.current = true;
     setIsRunning(true);
     try {
       const acId = await ensureAssessmentCase();
