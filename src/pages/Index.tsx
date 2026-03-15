@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { motion } from 'framer-motion';
-import { Shield, Zap, Briefcase, Users, LogOut, User, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings, Cog, FlaskConical, FileText, ArrowRight, CheckCircle2, Building2 } from 'lucide-react';
+import { Shield, Zap, Briefcase, Users, LogOut, User, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings, Cog, FlaskConical, FileText, ArrowRight, CheckCircle2, Building2, BarChart3 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
