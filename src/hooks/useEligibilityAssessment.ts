@@ -258,6 +258,13 @@ export function useEligibilityAssessment() {
 
   // Run analysis
   const runAnalysis = useCallback(async () => {
+    // Pre-flight checks
+    const validBankFilesCheck = bankFiles.filter(f => f.isValid);
+    if (validBankFilesCheck.length === 0) {
+      toast.error('Please upload at least one valid bank statement before running analysis.');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Create assessment case in DB
