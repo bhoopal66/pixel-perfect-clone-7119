@@ -25,10 +25,10 @@ function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequi
   const completedDocs = existingDocs.filter(d => d.status === 'completed');
   const canUploadMore = isMulti ? completedDocs.length < maxFiles : completedDocs.length === 0;
 
-  const validateAndFilter = (files: File[]): File[] => {
+  const validateAndFilter = async (files: File[]): Promise<File[]> => {
     const validFiles: File[] = [];
     for (const file of files) {
-      const result = validateFile(file);
+      const result = await validateFileDeep(file);
       if (result.valid) {
         validFiles.push(file);
       } else {
@@ -38,11 +38,11 @@ function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequi
     return validFiles;
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const rawFiles = Array.from(e.dataTransfer.files).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
-    const files = validateAndFilter(rawFiles);
+    const files = await validateAndFilter(rawFiles);
     if (files.length > 0) {
       onUpload(files, docType.id);
     }
