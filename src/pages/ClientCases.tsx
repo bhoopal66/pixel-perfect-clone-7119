@@ -28,10 +28,12 @@ import {
   Send,
   Loader2,
   ShieldCheck,
-  ShieldX
+  ShieldX,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getUserCases, type OnboardingCaseSummary } from '@/services/onboardingService';
+import { getUserCases, deleteOnboardingCase, type OnboardingCaseSummary } from '@/services/onboardingService';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: React.ReactNode; className?: string }> = {
   draft: { label: 'Draft', variant: 'outline', icon: <FolderOpen className="h-3 w-3" />, className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' },
@@ -55,14 +57,26 @@ export default function ClientCases() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadCases() {
-      setIsLoading(true);
-      const data = await getUserCases();
-      setCases(data);
-      setIsLoading(false);
-    }
     loadCases();
   }, []);
+
+  async function loadCases() {
+    setIsLoading(true);
+    const data = await getUserCases();
+    setCases(data);
+    setIsLoading(false);
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete case "${name}"? This cannot be undone.`)) return;
+    const result = await deleteOnboardingCase(id);
+    if (result.success) {
+      setCases(prev => prev.filter(c => c.id !== id));
+      toast.success('Case deleted');
+    } else {
+      toast.error(result.error || 'Failed to delete case');
+    }
+  };
 
   const filteredCases = cases.filter(c => {
     const matchesSearch = 
@@ -180,14 +194,24 @@ export default function ClientCases() {
                           <TableCell>{getStatusBadge(c.status)}</TableCell>
                           <TableCell>{format(new Date(c.updatedAt), 'dd MMM yyyy')}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/client-cases/${c.id}`)}
-                            >
-                              Open
-                              <ChevronRight className="h-4 w-4 ml-1" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/client-cases/${c.id}`)}
+                              >
+                                Open
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={(e) => { e.stopPropagation(); handleDelete(c.id, c.companyName); }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

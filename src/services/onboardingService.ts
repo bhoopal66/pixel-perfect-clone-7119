@@ -658,3 +658,16 @@ export async function getUserCases(): Promise<OnboardingCaseSummary[]> {
     submittedAt: c.submitted_at
   }));
 }
+
+export async function deleteOnboardingCase(caseId: string): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('onboarding_cases')
+    .delete()
+    .eq('id', caseId);
+
+  if (error) {
+    console.error('Error deleting case:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
