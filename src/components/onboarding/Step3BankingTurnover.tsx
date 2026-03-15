@@ -167,6 +167,8 @@ export function Step3BankingTurnover() {
                 <Input
                   type="number"
                   placeholder="As per VAT returns"
+                  min="0"
+                  max="999999999999"
                   value={bt.annualVatTurnover || ''}
                   onChange={(e) => updateBankingTurnover({ annualVatTurnover: parseFloat(e.target.value) || 0 })}
                   className="h-12"
