@@ -219,11 +219,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const updateBankingTurnover = useCallback((data: Partial<BankingTurnover>) => {
     setLocalFormData(prev => {
-      // Clamp numeric values
+      // Clamp numeric values: floor at 0, cap at 999,999,999,999
       const sanitized = { ...data };
-      if (sanitized.monthlyAvgTurnover !== undefined) sanitized.monthlyAvgTurnover = Math.max(sanitized.monthlyAvgTurnover, 0);
-      if (sanitized.annualVatTurnover !== undefined && sanitized.annualVatTurnover !== null) sanitized.annualVatTurnover = Math.max(sanitized.annualVatTurnover, 0);
-      if (sanitized.posMonthlyTurnover !== undefined && sanitized.posMonthlyTurnover !== null) sanitized.posMonthlyTurnover = Math.max(sanitized.posMonthlyTurnover, 0);
+      if (sanitized.monthlyAvgTurnover !== undefined) sanitized.monthlyAvgTurnover = clampNumber(sanitized.monthlyAvgTurnover, 0, 999_999_999_999);
+      if (sanitized.annualVatTurnover !== undefined && sanitized.annualVatTurnover !== null) sanitized.annualVatTurnover = clampNumber(sanitized.annualVatTurnover, 0, 999_999_999_999);
+      if (sanitized.posMonthlyTurnover !== undefined && sanitized.posMonthlyTurnover !== null) sanitized.posMonthlyTurnover = clampNumber(sanitized.posMonthlyTurnover, 0, 999_999_999_999);
 
       const updated = {
         ...prev,

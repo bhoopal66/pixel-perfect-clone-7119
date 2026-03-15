@@ -204,6 +204,8 @@ export function Step3BankingTurnover() {
                 <Input
                   type="number"
                   placeholder="Average monthly POS volume"
+                  min="0"
+                  max="999999999999"
                   value={bt.posMonthlyTurnover || ''}
                   onChange={(e) => updateBankingTurnover({ posMonthlyTurnover: parseFloat(e.target.value) || 0 })}
                   className="h-12"
