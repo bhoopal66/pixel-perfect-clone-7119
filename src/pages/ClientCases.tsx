@@ -28,10 +28,12 @@ import {
   Send,
   Loader2,
   ShieldCheck,
-  ShieldX
+  ShieldX,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getUserCases, type OnboardingCaseSummary } from '@/services/onboardingService';
+import { getUserCases, deleteOnboardingCase, type OnboardingCaseSummary } from '@/services/onboardingService';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: React.ReactNode; className?: string }> = {
   draft: { label: 'Draft', variant: 'outline', icon: <FolderOpen className="h-3 w-3" />, className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' },
