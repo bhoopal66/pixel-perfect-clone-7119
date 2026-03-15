@@ -8,7 +8,7 @@ import type {
   DocumentUpload 
 } from '@/types/onboarding.types';
 import type { Database } from '@/integrations/supabase/types';
-import { validateFile } from '@/utils/validation';
+import { validateFileDeep } from '@/utils/validation';
 
 type CaseStatus = Database['public']['Enums']['case_status'];
 
@@ -421,8 +421,8 @@ export async function uploadDocument(
   documentType: string,
   onProgress?: (progress: number) => void
 ): Promise<{ success: boolean; document?: DocumentUpload; error?: string }> {
-  // Server-side file validation
-  const fileValidation = validateFile(file);
+  // Deep file validation (extension + MIME + magic bytes + size)
+  const fileValidation = await validateFileDeep(file);
   if (!fileValidation.valid) {
     return { success: false, error: fileValidation.error };
   }

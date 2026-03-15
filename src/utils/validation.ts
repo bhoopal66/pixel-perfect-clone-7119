@@ -69,13 +69,22 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const ALLOWED_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png']);
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+
+// Magic byte signatures for file type verification
+const MAGIC_BYTES: Record<string, number[]> = {
+  pdf: [0x25, 0x50, 0x44, 0x46],       // %PDF
+  jpg: [0xFF, 0xD8, 0xFF],              // JPEG SOI
+  jpeg: [0xFF, 0xD8, 0xFF],
+  png: [0x89, 0x50, 0x4E, 0x47],        // PNG signature
+};
 
 export interface FileValidationResult {
   valid: boolean;
   error?: string;
 }
 
+/** Synchronous pre-checks (extension, MIME, size) */
 export function validateFile(file: File): FileValidationResult {
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
   
@@ -84,16 +93,45 @@ export function validateFile(file: File): FileValidationResult {
   }
 
   if (!ALLOWED_MIME_TYPES.has(file.type) && file.type !== '') {
-    return { valid: false, error: `Invalid file format. Please upload PDF, JPG, or PNG files.` };
+    return { valid: false, error: 'Invalid file type. Only PDF, JPG, and PNG files up to 15MB are allowed.' };
   }
 
   if (file.size > MAX_FILE_SIZE) {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-    return { valid: false, error: `File is ${sizeMB} MB. Maximum allowed size is 20 MB.` };
+    return { valid: false, error: `File is ${sizeMB} MB. Maximum allowed size is 15 MB.` };
   }
 
   if (file.size === 0) {
     return { valid: false, error: 'File appears to be empty.' };
+  }
+
+  return { valid: true };
+}
+
+/** Deep validation: reads file header bytes to verify magic signature */
+export async function validateFileDeep(file: File): Promise<FileValidationResult> {
+  // Run basic checks first
+  const basic = validateFile(file);
+  if (!basic.valid) return basic;
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const expectedBytes = MAGIC_BYTES[ext];
+  if (!expectedBytes) {
+    return { valid: false, error: 'Invalid file type. Only PDF, JPG, and PNG files up to 15MB are allowed.' };
+  }
+
+  try {
+    const headerSlice = file.slice(0, expectedBytes.length);
+    const buffer = await headerSlice.arrayBuffer();
+    const header = new Uint8Array(buffer);
+
+    for (let i = 0; i < expectedBytes.length; i++) {
+      if (header[i] !== expectedBytes[i]) {
+        return { valid: false, error: 'Invalid file type. Only PDF, JPG, and PNG files up to 15MB are allowed.' };
+      }
+    }
+  } catch {
+    return { valid: false, error: 'Unable to read file. Please try again.' };
   }
 
   return { valid: true };
