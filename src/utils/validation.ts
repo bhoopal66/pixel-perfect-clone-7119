@@ -46,7 +46,7 @@ export function isValidOwnership(pct: number): boolean {
 }
 
 export function isValidLoanAmount(amount: number): boolean {
-  return amount > 0 && amount <= 500_000_000; // 500M cap
+  return amount > 0 && amount < 1_000_000_000; // under 1 billion
 }
 
 export function isValidYear(year: string): boolean {
