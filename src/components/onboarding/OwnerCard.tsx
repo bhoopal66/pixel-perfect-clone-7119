@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from './FormField';
 import { OwnerDetails, OWNER_ROLES } from '@/types/onboarding.types';
-import { MAX_LENGTHS } from '@/utils/validation';
+import { MAX_LENGTHS, isValidEmail, isValidPhone } from '@/utils/validation';
 import { Trash2, User, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -32,6 +33,12 @@ const NATIONALITIES = [
 const RESIDENT_STATUSES = ['UAE Resident', 'Non-Resident', 'GCC National'];
 
 export function OwnerCard({ owner, index, totalOwners, onUpdate, onRemove, onMoveUp, onMoveDown, canRemove, duplicateWarnings }: OwnerCardProps) {
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+
+  const emailError = emailTouched && owner.email && !isValidEmail(owner.email) ? 'Please enter a valid email address' : '';
+  const phoneError = phoneTouched && owner.mobile && !isValidPhone(owner.mobile) ? 'Please enter a valid phone number' : '';
+
   return (
     <Card className="relative">
       <CardHeader className="pb-4">
@@ -119,11 +126,13 @@ export function OwnerCard({ owner, index, totalOwners, onUpdate, onRemove, onMov
           </FormField>
 
           <FormField label="Mobile Number" required>
-            <Input type="tel" placeholder="+971 XX XXX XXXX" value={owner.mobile} onChange={(e) => onUpdate({ mobile: e.target.value })} maxLength={MAX_LENGTHS.phone} className="h-11" />
+            <Input type="tel" placeholder="+971 XX XXX XXXX" value={owner.mobile} onChange={(e) => onUpdate({ mobile: e.target.value })} onBlur={() => setPhoneTouched(true)} maxLength={MAX_LENGTHS.phone} className="h-11" />
+            {phoneError && <p className="text-xs text-destructive mt-1">{phoneError}</p>}
           </FormField>
 
           <FormField label="Email" required>
-            <Input type="email" placeholder="email@example.com" value={owner.email} onChange={(e) => onUpdate({ email: e.target.value })} maxLength={MAX_LENGTHS.email} className="h-11" />
+            <Input type="email" placeholder="email@example.com" value={owner.email} onChange={(e) => onUpdate({ email: e.target.value })} onBlur={() => setEmailTouched(true)} maxLength={MAX_LENGTHS.email} className="h-11" />
+            {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
           </FormField>
         </div>
 
