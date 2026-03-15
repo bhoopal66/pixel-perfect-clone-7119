@@ -194,14 +194,24 @@ export default function ClientCases() {
                           <TableCell>{getStatusBadge(c.status)}</TableCell>
                           <TableCell>{format(new Date(c.updatedAt), 'dd MMM yyyy')}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/client-cases/${c.id}`)}
-                            >
-                              Open
-                              <ChevronRight className="h-4 w-4 ml-1" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/client-cases/${c.id}`)}
+                              >
+                                Open
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={(e) => { e.stopPropagation(); handleDelete(c.id, c.companyName); }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
