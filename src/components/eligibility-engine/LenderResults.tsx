@@ -150,7 +150,7 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Risk Flags */}
-              {result.risk_flags.length > 0 && (
+              {(result.risk_flags?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3 text-warning" /> Risk Flags
