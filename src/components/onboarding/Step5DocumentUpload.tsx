@@ -6,7 +6,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { DOCUMENT_TYPES, DocumentUpload } from '@/types/onboarding.types';
 import { Upload, File, X, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { validateFile } from '@/utils/validation';
+import { validateFileDeep } from '@/utils/validation';
 import { toast } from 'sonner';
 
 interface DocumentUploadCardProps {

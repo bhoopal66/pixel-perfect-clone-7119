@@ -421,8 +421,8 @@ export async function uploadDocument(
   documentType: string,
   onProgress?: (progress: number) => void
 ): Promise<{ success: boolean; document?: DocumentUpload; error?: string }> {
-  // Server-side file validation
-  const fileValidation = validateFile(file);
+  // Deep file validation (extension + MIME + magic bytes + size)
+  const fileValidation = await validateFileDeep(file);
   if (!fileValidation.valid) {
     return { success: false, error: fileValidation.error };
   }
