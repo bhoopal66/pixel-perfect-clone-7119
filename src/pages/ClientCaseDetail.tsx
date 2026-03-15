@@ -187,7 +187,7 @@ export default function ClientCaseDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Purpose</p>
-                  <p className="font-medium">{lr.purpose || '—'}</p>
+                  <p className="font-medium break-words">{lr.purpose || '—'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Preferred Tenure</p>
