@@ -98,7 +98,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
       resetForm();
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMutation = useMutation({
