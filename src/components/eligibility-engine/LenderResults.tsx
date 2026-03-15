@@ -124,7 +124,7 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Key Reasons */}
-              {result.key_reasons.length > 0 && (
+              {(result.key_reasons?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Key Reasons</p>
                   <div className="space-y-1">
