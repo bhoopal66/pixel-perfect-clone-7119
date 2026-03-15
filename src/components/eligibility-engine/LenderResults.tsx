@@ -136,10 +136,10 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Rule-by-Rule Breakdown */}
-              {result.rule_details.length > 0 && (
+              {(result.rule_details?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Rule Assessment ({result.passed_rules.length} passed, {result.failed_rules.length} failed)
+                    Rule Assessment ({result.passed_rules?.length || 0} passed, {result.failed_rules?.length || 0} failed)
                   </p>
                   <div className="space-y-1.5">
                     {result.rule_details.map((rule, idx) => (
