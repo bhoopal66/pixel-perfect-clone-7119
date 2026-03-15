@@ -166,7 +166,7 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Deviations */}
-              {result.required_deviations.length > 0 && (
+              {(result.required_deviations?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Required Deviations</p>
                   <div className="space-y-1">
