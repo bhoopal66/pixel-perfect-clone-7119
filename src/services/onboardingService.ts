@@ -188,7 +188,7 @@ export async function getBusinessDetails(caseId: string): Promise<BusinessDetail
 
 export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promise<SaveResult> {
   try {
-    // 1. Fetch existing owners from DB
+    // 1. Fetch existing owner IDs from DB
     const { data: existingOwners, error: fetchError } = await supabase
       .from('business_owners')
       .select('id')
@@ -202,24 +202,25 @@ export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promis
     const existingIds = new Set((existingOwners || []).map(o => o.id));
     const incomingIds = new Set(owners.map(o => o.id));
 
-    // 2. Delete owners that were removed (only those not in incoming set)
+    // 2. Delete ONLY owners that were removed (never delete-all)
     const toDelete = [...existingIds].filter(id => !incomingIds.has(id));
     if (toDelete.length > 0) {
       const { error: deleteError } = await supabase
         .from('business_owners')
         .delete()
         .in('id', toDelete);
-      
+
       if (deleteError) {
         console.error('Error deleting removed owners:', deleteError);
         return { success: false, error: 'Unable to remove owners. Please try again.' };
       }
     }
 
-    // 3. Upsert each owner (update existing, insert new)
+    // 3. Upsert each owner individually (atomic per-owner, won't corrupt siblings)
     for (let index = 0; index < owners.length; index++) {
       const owner = owners[index];
       const payload = {
+        id: owner.id,
         case_id: caseId,
         owner_name: owner.ownerName.slice(0, 150),
         role: owner.role || 'Partner',
@@ -236,27 +237,13 @@ export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promis
         display_order: index + 1
       };
 
-      if (existingIds.has(owner.id)) {
-        // Update existing
-        const { error } = await supabase
-          .from('business_owners')
-          .update(payload)
-          .eq('id', owner.id);
-        
-        if (error) {
-          console.error('Error updating owner:', error);
-          return { success: false, error: 'Unable to update owner details. Please try again.' };
-        }
-      } else {
-        // Insert new
-        const { error } = await supabase
-          .from('business_owners')
-          .insert({ id: owner.id, ...payload });
-        
-        if (error) {
-          console.error('Error inserting owner:', error);
-          return { success: false, error: 'Unable to add owner. Please try again.' };
-        }
+      const { error } = await supabase
+        .from('business_owners')
+        .upsert(payload, { onConflict: 'id' });
+
+      if (error) {
+        console.error(`Error upserting owner ${owner.id}:`, error);
+        return { success: false, error: `Unable to save owner "${owner.ownerName || 'New Owner'}". Please try again.` };
       }
     }
 
