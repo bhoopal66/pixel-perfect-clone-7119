@@ -589,7 +589,7 @@ export function useEligibilityAssessment() {
         }
       } catch (lenderErr) {
         console.error('Lender rule engine error:', lenderErr);
-        toast.error('Lender rule engine failed - check rule configuration');
+        toast.error('Lender rule engine encountered an issue. Results may be incomplete.');
       }
 
       // Update case summary + mark analysis completed
