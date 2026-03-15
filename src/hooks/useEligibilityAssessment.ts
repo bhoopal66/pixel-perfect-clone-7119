@@ -649,7 +649,7 @@ export function useEligibilityAssessment() {
       setCurrentStep('extraction');
     } catch (error) {
       console.error('Analysis error:', error);
-      toast.error('Failed to run analysis');
+      toast.error(getDisplayError(error));
     } finally {
       setIsProcessing(false);
     }
