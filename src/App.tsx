@@ -22,7 +22,19 @@ import EligibilityEngine from "./pages/EligibilityEngine";
 import LenderPolicyAdmin from "./pages/LenderPolicyAdmin";
 import AssessmentCaseDetail from "./pages/AssessmentCaseDetail";
 
-const queryClient = new QueryClient();
+// Production-hardened React Query defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30 * 1000, // 30 seconds
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

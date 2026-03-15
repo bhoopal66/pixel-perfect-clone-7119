@@ -6,6 +6,8 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { DOCUMENT_TYPES, DocumentUpload } from '@/types/onboarding.types';
 import { Upload, File, X, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { validateFile } from '@/utils/validation';
+import { toast } from 'sonner';
 
 interface DocumentUploadCardProps {
   docType: { id: string; label: string; description: string; conditional?: boolean; multiFile?: boolean; maxFiles?: number };
@@ -23,17 +25,32 @@ function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequi
   const completedDocs = existingDocs.filter(d => d.status === 'completed');
   const canUploadMore = isMulti ? completedDocs.length < maxFiles : completedDocs.length === 0;
 
+  const validateAndFilter = (files: File[]): File[] => {
+    const validFiles: File[] = [];
+    for (const file of files) {
+      const result = validateFile(file);
+      if (result.valid) {
+        validFiles.push(file);
+      } else {
+        toast.error(result.error || `"${file.name}" is not a valid file`);
+      }
+    }
+    return validFiles;
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
+    const rawFiles = Array.from(e.dataTransfer.files).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
+    const files = validateAndFilter(rawFiles);
     if (files.length > 0) {
       onUpload(files, docType.id);
     }
   }, [onUpload, docType.id, isMulti, maxFiles, completedDocs.length]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
+    const rawFiles = Array.from(e.target.files || []).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
+    const files = validateAndFilter(rawFiles);
     if (files.length > 0) {
       onUpload(files, docType.id);
     }
@@ -48,9 +65,9 @@ function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequi
       <CardContent className="p-4">
         <div className="space-y-3">
           <div className="flex items-start gap-4">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-sm">{docType.label}</span>
+                <span className="font-medium text-sm truncate">{docType.label}</span>
                 {isRequired && <span className="text-destructive text-xs">*</span>}
                 {isMulti && (
                   <span className="text-xs text-muted-foreground">
@@ -63,7 +80,7 @@ function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequi
 
             {canUploadMore && (
               <div
-                className="relative"
+                className="relative shrink-0"
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
@@ -150,7 +167,13 @@ export function Step5DocumentUpload() {
   }, [removeDocument]);
 
   const getDocsForType = (type: string) => {
-    return formData.documents.filter(doc => doc.type === type);
+    // Deduplicate by id
+    const seen = new Set<string>();
+    return formData.documents.filter(doc => {
+      if (doc.type !== type || seen.has(doc.id)) return false;
+      seen.add(doc.id);
+      return true;
+    });
   };
 
   // Filter conditional documents
@@ -171,7 +194,7 @@ export function Step5DocumentUpload() {
             </div>
             <div>
               <CardTitle>Document Upload</CardTitle>
-              <CardDescription>Upload required documents for verification</CardDescription>
+              <CardDescription>Upload required documents for verification. Accepted formats: PDF, JPG, PNG (max 20 MB).</CardDescription>
             </div>
           </div>
         </CardHeader>

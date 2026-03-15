@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingProvider, useOnboarding } from '@/contexts/OnboardingContext';
 import {
@@ -28,6 +28,8 @@ function OnboardingContent() {
   const navigate = useNavigate();
   const { currentStep, setCurrentStep, isStepValid, resetForm, formData, submitApplication } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
+  const navLockRef = useRef(false);
 
   const handleNext = () => {
     if (!isStepValid(currentStep)) {
@@ -53,17 +55,27 @@ function OnboardingContent() {
       return;
     }
 
+    // Ref-based double-submit guard
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setIsSubmitting(true);
     
-    const success = await submitApplication();
-    
-    if (success) {
-      toast.success('Application submitted successfully! Redirecting to Eligibility Engine…');
-      resetForm();
-      navigate('/eligibility-engine');
+    try {
+      const success = await submitApplication();
+      
+      if (success) {
+        toast.success('Application submitted successfully! Redirecting to Eligibility Engine…');
+        resetForm();
+        // Navigation lock to prevent double-click
+        if (!navLockRef.current) {
+          navLockRef.current = true;
+          navigate('/eligibility-engine');
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
+      submitLockRef.current = false;
     }
-    
-    setIsSubmitting(false);
   };
 
   const renderStep = () => {
@@ -93,7 +105,7 @@ function OnboardingContent() {
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
-            <h1 className="text-lg font-semibold">Business Loan Application</h1>
+            <h1 className="text-lg font-semibold truncate">Business Loan Application</h1>
           </div>
           <OnboardingProgress
             currentStep={currentStep}

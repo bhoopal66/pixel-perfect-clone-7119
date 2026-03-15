@@ -5,24 +5,12 @@ import { OwnerCard } from './OwnerCard';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Users, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 
 export function Step2OwnerDetails() {
-  const { formData, updateOwner, addOwner, removeOwner, getTotalShareholding } = useOnboarding();
+  const { formData, updateOwner, addOwner, removeOwner, moveOwner, getTotalShareholding } = useOnboarding();
   const totalShareholding = getTotalShareholding();
   const isShareholdingValid = totalShareholding === 100;
-
-  // Reorder helpers
-  const moveOwner = useCallback((fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= formData.owners.length) return;
-    const newOwners = [...formData.owners];
-    const [moved] = newOwners.splice(fromIndex, 1);
-    newOwners.splice(toIndex, 0, moved);
-    // Update all owners with new order by triggering updates
-    newOwners.forEach((owner, idx) => {
-      updateOwner(owner.id, { ...owner });
-    });
-  }, [formData.owners, updateOwner]);
 
   // Duplicate detection
   const duplicateWarningsMap = useMemo(() => {
