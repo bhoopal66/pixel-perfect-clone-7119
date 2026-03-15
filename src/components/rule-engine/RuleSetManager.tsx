@@ -40,7 +40,7 @@ export const RuleSetManager = ({ lenderId, productId, onSelectRuleSet }: Props) 
       });
     },
     onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['rule-sets'] }); setOpen(false); onSelectRuleSet(data.id); toast.success('Rule set created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const duplicateMut = useMutation({
