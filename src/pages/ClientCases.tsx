@@ -48,7 +48,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 };
 
 export default function ClientCases() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [cases, setCases] = useState<OnboardingCaseSummary[]>([]);

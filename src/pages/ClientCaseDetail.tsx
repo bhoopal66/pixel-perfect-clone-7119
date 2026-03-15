@@ -37,7 +37,7 @@ const STATUS_STEPS = [
 ];
 
 export default function ClientCaseDetail() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { id } = useParams<{ id: string }>();
   const [caseData, setCaseData] = useState<OnboardingCase | null>(null);
   const [formData, setFormData] = useState<OnboardingFormData | null>(null);
