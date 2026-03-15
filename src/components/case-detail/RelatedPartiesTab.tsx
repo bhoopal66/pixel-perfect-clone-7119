@@ -15,6 +15,7 @@ import {
   AlertTriangle, TrendingUp, TrendingDown, Building2, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import {
   RelatedPartyService, ENTITY_TYPES,
   type RelatedParty, type RelatedPartyTransaction, type RelatedPartyFlowSummary,
