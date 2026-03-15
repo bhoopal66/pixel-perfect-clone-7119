@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField } from './FormField';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { LOAN_TYPES, TENURE_OPTIONS } from '@/types/onboarding.types';
+import { MAX_LENGTHS } from '@/utils/validation';
 import { FileText } from 'lucide-react';
 
 export function Step4LoanRequirement() {
@@ -53,17 +54,25 @@ export function Step4LoanRequirement() {
                 placeholder="e.g., 500000"
                 value={lr.requiredLoanAmount || ''}
                 onChange={(e) => updateLoanRequirement({ requiredLoanAmount: parseFloat(e.target.value) || 0 })}
+                min="0"
+                max="999999999"
                 className="h-12"
               />
             </FormField>
 
             <FormField label="Purpose" required className="md:col-span-2">
-              <Textarea
-                placeholder="Describe the purpose of the loan (e.g., working capital, expansion, equipment purchase)"
-                value={lr.purpose}
-                onChange={(e) => updateLoanRequirement({ purpose: e.target.value })}
-                rows={3}
-              />
+              <div className="relative">
+                <Textarea
+                  placeholder="Describe the purpose of the loan (e.g., working capital, expansion, equipment purchase)"
+                  value={lr.purpose}
+                  onChange={(e) => updateLoanRequirement({ purpose: e.target.value })}
+                  maxLength={MAX_LENGTHS.purpose}
+                  rows={3}
+                />
+                <span className="absolute bottom-1.5 right-2 text-xs text-muted-foreground">
+                  {lr.purpose.length}/{MAX_LENGTHS.purpose}
+                </span>
+              </div>
             </FormField>
 
             <FormField label="Preferred Tenure" required>
