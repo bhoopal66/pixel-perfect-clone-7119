@@ -104,7 +104,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => RelatedPartyService.deleteParty(id),
     onSuccess: () => { toast.success('Related party removed'); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const detectMutation = useMutation({
