@@ -27,7 +27,7 @@ import type {
 import { createEmptyFormData } from '@/types/onboarding.types';
 import { toast } from 'sonner';
 import { SaveMutex } from '@/utils/saveMutex';
-import { validateFile } from '@/utils/validation';
+import { validateFile, validateCaseData } from '@/utils/validation';
 
 interface UseOnboardingPersistenceReturn {
   caseId: string | null;
