@@ -10,10 +10,14 @@ export function useNavigateOnce(lockMs = 2000) {
   const lockRef = useRef(false);
 
   const safeNavigate = useCallback(
-    (to: To, options?: NavigateOptions) => {
+    (to: To | number, options?: NavigateOptions) => {
       if (lockRef.current) return;
       lockRef.current = true;
-      navigate(to, options);
+      if (typeof to === 'number') {
+        navigate(to);
+      } else {
+        navigate(to, options);
+      }
       setTimeout(() => {
         lockRef.current = false;
       }, lockMs);
