@@ -34,7 +34,7 @@ export const TestRuleEngine = ({ lenderId, productId, ruleSetId }: Props) => {
   const executeMut = useMutation({
     mutationFn: () => RuleEngineExecutor.executeForTest(selectedCaseId, lenderId, productId, ruleSetId),
     onSuccess: (data) => { setResult(data); toast.success('Test execution complete'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const canRun = selectedCaseId && lenderId && productId && ruleSetId;

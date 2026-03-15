@@ -43,7 +43,7 @@ export const DecisionMatrixEditor = ({ ruleSetId }: Props) => {
       return editing ? DecisionMatrixService.update(editing.id, payload) : DecisionMatrixService.create({ ...payload, rule_set_id: ruleSetId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['decision-matrix'] }); setOpen(false); toast.success('Saved'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMut = useMutation({

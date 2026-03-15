@@ -43,7 +43,7 @@ export const FormulaBuilder = ({ ruleSetId }: Props) => {
       return editing ? FormulaService.update(editing.id, payload) : FormulaService.create({ ...payload, rule_set_id: ruleSetId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['lender-formulas'] }); setOpen(false); toast.success(editing ? 'Updated' : 'Created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const deleteMut = useMutation({

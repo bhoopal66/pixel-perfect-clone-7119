@@ -52,7 +52,7 @@ export const RuleSetManager = ({ lenderId, productId, onSelectRuleSet }: Props) 
   const activateMut = useMutation({
     mutationFn: (id: string) => RuleSetService.activate(id, productId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['rule-sets'] }); toast.success('Rule set activated'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   if (!productId) return <Card><CardContent className="py-10 text-center text-muted-foreground">Select a product to manage rule sets</CardContent></Card>;

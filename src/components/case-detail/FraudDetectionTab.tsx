@@ -60,7 +60,7 @@ export const FraudDetectionTab: React.FC<Props> = ({ caseId }) => {
       toast.success('Fraud detection analysis complete');
       qc.invalidateQueries({ queryKey: ['fraud-detection', caseId] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const riskFlags: RiskFlag[] = result

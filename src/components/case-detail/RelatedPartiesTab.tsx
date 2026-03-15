@@ -113,7 +113,7 @@ export const RelatedPartiesTab: React.FC<Props> = ({ caseId }) => {
       toast.success(`Detection complete: ${res.matched} transactions matched`);
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const resetForm = () => setForm({

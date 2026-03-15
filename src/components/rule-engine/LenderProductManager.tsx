@@ -42,7 +42,7 @@ export const LenderProductManager = ({ lenderId }: Props) => {
       return editing ? ProductService.update(editing.id, payload) : ProductService.create({ ...payload, lender_id: lenderId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['lender-products'] }); setOpen(false); toast.success(editing ? 'Updated' : 'Created'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const toggleMut = useMutation({
