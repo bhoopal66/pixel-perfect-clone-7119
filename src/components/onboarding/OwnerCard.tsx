@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from './FormField';
 import { OwnerDetails, OWNER_ROLES } from '@/types/onboarding.types';
+import { MAX_LENGTHS } from '@/utils/validation';
 import { Trash2, User, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -71,7 +72,7 @@ export function OwnerCard({ owner, index, totalOwners, onUpdate, onRemove, onMov
       <CardContent className="space-y-4">
         <div className="grid gap-4 md:grid-cols-3">
           <FormField label="Full Name" required>
-            <Input placeholder="Full name as per passport" value={owner.ownerName} onChange={(e) => onUpdate({ ownerName: e.target.value })} className="h-11" />
+            <Input placeholder="Full name as per passport" value={owner.ownerName} onChange={(e) => onUpdate({ ownerName: e.target.value })} maxLength={MAX_LENGTHS.ownerName} className="h-11" />
           </FormField>
 
           <FormField label="Role" required>
@@ -108,26 +109,31 @@ export function OwnerCard({ owner, index, totalOwners, onUpdate, onRemove, onMov
           </FormField>
 
           <FormField label="Emirates ID" helperText="784-XXXX-XXXXXXX-X">
-            <Input placeholder="784-XXXX-XXXXXXX-X" value={owner.emiratesId} onChange={(e) => onUpdate({ emiratesId: e.target.value })} className="h-11" />
+            <Input placeholder="784-XXXX-XXXXXXX-X" value={owner.emiratesId} onChange={(e) => onUpdate({ emiratesId: e.target.value })} maxLength={MAX_LENGTHS.emiratesId} className="h-11" />
           </FormField>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           <FormField label="Passport Number">
-            <Input placeholder="Passport number" value={owner.passportNumber} onChange={(e) => onUpdate({ passportNumber: e.target.value })} className="h-11" />
+            <Input placeholder="Passport number" value={owner.passportNumber} onChange={(e) => onUpdate({ passportNumber: e.target.value })} maxLength={MAX_LENGTHS.passportNumber} className="h-11" />
           </FormField>
 
           <FormField label="Mobile Number" required>
-            <Input type="tel" placeholder="+971 XX XXX XXXX" value={owner.mobile} onChange={(e) => onUpdate({ mobile: e.target.value })} className="h-11" />
+            <Input type="tel" placeholder="+971 XX XXX XXXX" value={owner.mobile} onChange={(e) => onUpdate({ mobile: e.target.value })} maxLength={MAX_LENGTHS.phone} className="h-11" />
           </FormField>
 
           <FormField label="Email" required>
-            <Input type="email" placeholder="email@example.com" value={owner.email} onChange={(e) => onUpdate({ email: e.target.value })} className="h-11" />
+            <Input type="email" placeholder="email@example.com" value={owner.email} onChange={(e) => onUpdate({ email: e.target.value })} maxLength={MAX_LENGTHS.email} className="h-11" />
           </FormField>
         </div>
 
         <FormField label="Address">
-          <Textarea placeholder="Full address" value={owner.address} onChange={(e) => onUpdate({ address: e.target.value })} className="min-h-[60px]" />
+          <div className="relative">
+            <Textarea placeholder="Full address" value={owner.address} onChange={(e) => onUpdate({ address: e.target.value })} maxLength={MAX_LENGTHS.address} className="min-h-[60px]" />
+            <span className="absolute bottom-1.5 right-2 text-xs text-muted-foreground">
+              {(owner.address || '').length}/{MAX_LENGTHS.address}
+            </span>
+          </div>
         </FormField>
 
         <div className="flex items-center gap-8 pt-2">

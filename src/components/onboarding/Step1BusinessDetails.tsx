@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField } from './FormField';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { EMIRATES, LEGAL_STRUCTURES } from '@/types/onboarding.types';
+import { MAX_LENGTHS } from '@/utils/validation';
 import { Building2 } from 'lucide-react';
 
 export function Step1BusinessDetails() {
@@ -34,6 +35,7 @@ export function Step1BusinessDetails() {
                 placeholder="Enter company name"
                 value={bd.companyLegalName}
                 onChange={(e) => updateBusinessDetails({ companyLegalName: e.target.value })}
+                maxLength={MAX_LENGTHS.companyName}
                 className="h-12"
               />
             </FormField>
@@ -43,6 +45,7 @@ export function Step1BusinessDetails() {
                 placeholder="e.g., 123456"
                 value={bd.tradeLicenseNo}
                 onChange={(e) => updateBusinessDetails({ tradeLicenseNo: e.target.value })}
+                maxLength={MAX_LENGTHS.tradeLicenseNo}
                 className="h-12"
               />
             </FormField>
@@ -52,6 +55,7 @@ export function Step1BusinessDetails() {
                 placeholder="e.g., DED, DMCC, JAFZA"
                 value={bd.licenseIssuingAuthority}
                 onChange={(e) => updateBusinessDetails({ licenseIssuingAuthority: e.target.value })}
+                maxLength={MAX_LENGTHS.licenseAuthority}
                 className="h-12"
               />
             </FormField>
@@ -70,6 +74,7 @@ export function Step1BusinessDetails() {
                 placeholder="Main business activity as per license"
                 value={bd.businessActivity}
                 onChange={(e) => updateBusinessDetails({ businessActivity: e.target.value })}
+                maxLength={MAX_LENGTHS.businessActivity}
                 className="h-12"
               />
             </FormField>
@@ -105,12 +110,18 @@ export function Step1BusinessDetails() {
             </FormField>
 
             <FormField label="Office Address" required className="md:col-span-2">
-              <Textarea
-                placeholder="Full office address including building, street, area"
-                value={bd.officeAddress}
-                onChange={(e) => updateBusinessDetails({ officeAddress: e.target.value })}
-                rows={3}
-              />
+              <div className="relative">
+                <Textarea
+                  placeholder="Full office address including building, street, area"
+                  value={bd.officeAddress}
+                  onChange={(e) => updateBusinessDetails({ officeAddress: e.target.value })}
+                  maxLength={MAX_LENGTHS.address}
+                  rows={3}
+                />
+                <span className="absolute bottom-1.5 right-2 text-xs text-muted-foreground">
+                  {bd.officeAddress.length}/{MAX_LENGTHS.address}
+                </span>
+              </div>
             </FormField>
 
             <FormField label="Emirate" required>
