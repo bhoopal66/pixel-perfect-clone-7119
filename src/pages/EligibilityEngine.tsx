@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { motion } from 'framer-motion';
 import {
   Upload, Eye, BarChart3, Receipt, Layers, Shield, Edit3,
