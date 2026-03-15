@@ -90,6 +90,12 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
     const file = acceptedFiles[0];
     if (!file) return;
 
+    // Pre-flight: ensure case exists
+    if (!caseData.id) {
+      toast.error('No case found. Please create a case first.');
+      return;
+    }
+
     // Validate file type
     if (file.type !== 'application/pdf') {
       toast.error('Please upload a PDF file');

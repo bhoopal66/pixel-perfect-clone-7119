@@ -147,6 +147,13 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
 
   const runLenderEligibility = useCallback(async () => {
     if (runLockRef.current) return;
+
+    // Pre-flight: check that analysis data is available
+    if (!caseData.declared_turnover || caseData.declared_turnover <= 0) {
+      toast.error('Please complete bank statement analysis before running lender eligibility.');
+      return;
+    }
+
     runLockRef.current = true;
     setIsRunning(true);
     try {
