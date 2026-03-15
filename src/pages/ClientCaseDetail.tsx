@@ -221,7 +221,7 @@ export default function ClientCaseDetail() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Company Name</p>
-                  <p className="font-medium">{bd.companyLegalName}</p>
+                  <p className="font-medium break-words">{bd.companyLegalName}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Trade License No.</p>
