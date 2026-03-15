@@ -62,7 +62,7 @@ export default function Auth() {
     const { error } = await signUp(signupEmail, signupPassword, signupFullName);
 
     if (error) {
-      toast.error('Signup failed', { description: error.message });
+      toast.error('Signup failed', { description: getDisplayError(error) });
     } else {
       toast.success('Account created successfully', {
         description: 'You can now log in with your credentials.',
