@@ -79,6 +79,7 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
   const [results, setResults] = useState<ExecutionResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [hasRun, setHasRun] = useState(false);
+  const runLockRef = useRef(false);
   const [assessmentCaseId, setAssessmentCaseId] = useState<string | null>(null);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
 
