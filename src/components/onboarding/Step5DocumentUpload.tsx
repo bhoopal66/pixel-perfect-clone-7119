@@ -48,9 +48,9 @@ function DocumentUploadCard({ docType, existingDocs, onUpload, onRemove, isRequi
     }
   }, [onUpload, docType.id, isMulti, maxFiles, completedDocs.length]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFiles = Array.from(e.target.files || []).slice(0, isMulti ? maxFiles - completedDocs.length : 1);
-    const files = validateAndFilter(rawFiles);
+    const files = await validateAndFilter(rawFiles);
     if (files.length > 0) {
       onUpload(files, docType.id);
     }
