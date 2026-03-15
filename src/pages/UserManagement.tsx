@@ -70,7 +70,7 @@ const ROLE_CONFIG: Record<string, { label: string; icon: React.ReactNode; varian
 
 export default function UserManagement() {
   const { user, isAdmin, isSuperAdmin, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);

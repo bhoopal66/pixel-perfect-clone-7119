@@ -84,7 +84,7 @@ type AgentFormData = z.infer<typeof agentSchema>;
 
 export default function AgentManagement() {
   const { isAdmin, isSuperAdmin, isSupervisor, canManageAgents, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [filteredAgents, setFilteredAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);

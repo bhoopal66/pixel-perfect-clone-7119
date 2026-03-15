@@ -15,7 +15,7 @@ export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
 
   useEffect(() => {
     // Check if we have a recovery session from the URL hash

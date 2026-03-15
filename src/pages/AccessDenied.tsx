@@ -14,7 +14,7 @@ export default function AccessDenied({
   requiredRole = 'administrator', 
   message = 'You do not have permission to access this page.' 
 }: AccessDeniedProps) {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

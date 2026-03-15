@@ -16,7 +16,7 @@ import { MatchConfigEditor } from '@/components/rule-engine/MatchConfigEditor';
 import { ArrowLeft, Shield, Package, Layers, Cog, Calculator, Grid3X3, Play, History, Settings2 } from 'lucide-react';
 
 const LenderPolicyAdmin = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [selectedLenderId, setSelectedLenderId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedRuleSetId, setSelectedRuleSetId] = useState('');

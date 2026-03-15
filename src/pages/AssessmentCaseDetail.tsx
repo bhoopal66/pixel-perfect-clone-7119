@@ -40,7 +40,7 @@ const TABS = [
 ];
 
 export default function AssessmentCaseDetail() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { id } = useParams<{ id: string }>();
 
   const { data: caseData, isLoading } = useQuery({

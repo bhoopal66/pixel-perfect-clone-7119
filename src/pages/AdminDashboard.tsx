@@ -35,7 +35,7 @@ import { toast } from '@/hooks/use-toast';
 import type { LenderPerformance, SupervisorPipeline } from '@/types/dashboard.types';
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { hasAdminPrivileges } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [trendPeriod, setTrendPeriod] = useState<string>('30d');
