@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { motion } from 'framer-motion';
 import { Shield, Zap, Briefcase, Users, LogOut, User, UserCog, Crown, Eye, ClipboardList, LayoutDashboard, Settings, Cog, FlaskConical, FileText, ArrowRight, CheckCircle2, Building2 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
