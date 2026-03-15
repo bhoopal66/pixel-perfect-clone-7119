@@ -33,6 +33,12 @@ const NATIONALITIES = [
 const RESIDENT_STATUSES = ['UAE Resident', 'Non-Resident', 'GCC National'];
 
 export function OwnerCard({ owner, index, totalOwners, onUpdate, onRemove, onMoveUp, onMoveDown, canRemove, duplicateWarnings }: OwnerCardProps) {
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+
+  const emailError = emailTouched && owner.email && !isValidEmail(owner.email) ? 'Please enter a valid email address' : '';
+  const phoneError = phoneTouched && owner.mobile && !isValidPhone(owner.mobile) ? 'Please enter a valid phone number' : '';
+
   return (
     <Card className="relative">
       <CardHeader className="pb-4">
