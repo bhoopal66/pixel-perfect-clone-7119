@@ -118,7 +118,7 @@ export default function UserManagement() {
 
     if (error) {
       console.error('Error updating role:', error);
-      toast.error('Failed to update role', { description: error.message });
+      toast.error('Failed to update role', { description: getDisplayError(error) });
     } else {
       toast.success('Role updated successfully');
       setUsers(users.map(u => 

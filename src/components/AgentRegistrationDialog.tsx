@@ -67,7 +67,7 @@ export const AgentRegistrationDialog: React.FC<AgentRegistrationDialogProps> = (
       onAgentCreated?.(agent);
     } catch (error: any) {
       console.error('Error creating agent:', error);
-      toast.error(error.message || 'Failed to create agent');
+      toast.error(getDisplayError(error));
     } finally {
       setIsSubmitting(false);
       submitLockRef.current = false;

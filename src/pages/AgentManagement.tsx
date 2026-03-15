@@ -308,7 +308,7 @@ export default function AgentManagement() {
 
     if (error) {
       console.error('Error deleting agent:', error);
-      toast.error('Failed to delete agent', { description: error.message });
+      toast.error('Failed to delete agent', { description: getDisplayError(error) });
     } else {
       toast.success('Agent deleted successfully');
       setAgents(agents.filter(a => a.id !== agent.id));

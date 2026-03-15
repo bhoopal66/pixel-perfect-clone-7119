@@ -84,7 +84,7 @@ export default function UserProfile() {
 
     if (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile', { description: error.message });
+      toast.error('Failed to update profile', { description: getDisplayError(error) });
     } else {
       toast.success('Profile updated successfully');
       setProfile(prev => prev ? { ...prev, full_name: fullName.trim() } : prev);

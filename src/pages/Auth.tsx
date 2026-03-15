@@ -88,7 +88,7 @@ export default function Auth() {
     });
 
     if (error) {
-      toast.error('Failed to send reset email', { description: error.message });
+      toast.error('Failed to send reset email', { description: getDisplayError(error) });
     } else {
       toast.success('Password reset email sent', {
         description: 'Check your inbox for the reset link.',

@@ -120,7 +120,7 @@ export const Step2StatementAnalysis: React.FC<Step2StatementAnalysisProps> = ({
 
       if (error) {
         console.error('Upload error:', error);
-        toast.error('Failed to upload file: ' + error.message);
+        toast.error('Unable to upload document. Please try again.');
         return;
       }
 
