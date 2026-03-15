@@ -126,11 +126,13 @@ export function OwnerCard({ owner, index, totalOwners, onUpdate, onRemove, onMov
           </FormField>
 
           <FormField label="Mobile Number" required>
-            <Input type="tel" placeholder="+971 XX XXX XXXX" value={owner.mobile} onChange={(e) => onUpdate({ mobile: e.target.value })} maxLength={MAX_LENGTHS.phone} className="h-11" />
+            <Input type="tel" placeholder="+971 XX XXX XXXX" value={owner.mobile} onChange={(e) => onUpdate({ mobile: e.target.value })} onBlur={() => setPhoneTouched(true)} maxLength={MAX_LENGTHS.phone} className="h-11" />
+            {phoneError && <p className="text-xs text-destructive mt-1">{phoneError}</p>}
           </FormField>
 
           <FormField label="Email" required>
-            <Input type="email" placeholder="email@example.com" value={owner.email} onChange={(e) => onUpdate({ email: e.target.value })} maxLength={MAX_LENGTHS.email} className="h-11" />
+            <Input type="email" placeholder="email@example.com" value={owner.email} onChange={(e) => onUpdate({ email: e.target.value })} onBlur={() => setEmailTouched(true)} maxLength={MAX_LENGTHS.email} className="h-11" />
+            {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
           </FormField>
         </div>
 
