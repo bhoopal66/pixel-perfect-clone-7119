@@ -283,7 +283,7 @@ export default function AgentManagement() {
 
     if (error) {
       console.error('Error toggling agent status:', error);
-      toast.error('Failed to update agent status', { description: error.message });
+      toast.error('Failed to update agent status', { description: getDisplayError(error) });
     } else {
       toast.success(newStatus ? 'Agent activated' : 'Agent deactivated');
       setAgents(agents.map(a =>
