@@ -146,7 +146,7 @@ const PipelineChart = React.memo(function PipelineChart({
         />
         <Bar dataKey="count" radius={[0, 6, 6, 0]}>
           {chartData.map((entry, i) => (
-            <rect key={i} fill={entry.fill} />
+            <Cell key={`cell-${i}`} fill={entry.fill} />
           ))}
         </Bar>
       </BarChart>
