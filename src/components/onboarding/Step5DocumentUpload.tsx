@@ -194,7 +194,7 @@ export function Step5DocumentUpload() {
             </div>
             <div>
               <CardTitle>Document Upload</CardTitle>
-              <CardDescription>Upload required documents for verification. Accepted formats: PDF, JPG, PNG (max 20 MB).</CardDescription>
+              <CardDescription>Upload required documents for verification. Accepted formats: PDF, JPG, PNG (max 15 MB).</CardDescription>
             </div>
           </div>
         </CardHeader>
