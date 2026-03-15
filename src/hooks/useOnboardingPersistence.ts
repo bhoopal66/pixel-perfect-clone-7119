@@ -173,6 +173,18 @@ export function useOnboardingPersistence(): UseOnboardingPersistenceReturn {
 
     setIsSaving(true);
     try {
+      // Pre-save validation
+      const validationErrors = validateCaseData({
+        businessDetails: formData.businessDetails,
+        owners: formData.owners,
+        loanRequirement: formData.loanRequirement,
+        bankingTurnover: formData.bankingTurnover,
+      });
+      if (validationErrors.length > 0) {
+        toast.error(validationErrors[0].message);
+        return false;
+      }
+
       // Save all data first (sequential)
       const saveResult = await saveCompleteFormData(caseId, formData);
       if (!saveResult.success) {
