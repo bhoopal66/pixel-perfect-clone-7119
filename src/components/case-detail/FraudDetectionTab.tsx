@@ -11,6 +11,7 @@ import {
   TrendingDown, ArrowRightLeft, Banknote, Timer, Split, Users, Search, BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { FraudDetectionEngine, type FraudDetectionResult, type RiskFlag, type FlaggedTransaction } from '@/services/fraudDetectionEngine';
 import { CurrencyService } from '@/services/currencyService';
 
