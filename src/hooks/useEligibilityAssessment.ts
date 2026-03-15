@@ -617,7 +617,7 @@ export function useEligibilityAssessment() {
       
       if (updateError) {
         console.error('Failed to update case status:', updateError);
-        toast.error('Warning: Case status update failed');
+        toast.error('Unable to save analysis results. Please try again.');
       }
 
       // Auto-run fraud detection after analysis
