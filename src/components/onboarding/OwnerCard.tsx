@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from './FormField';
 import { OwnerDetails, OWNER_ROLES } from '@/types/onboarding.types';
-import { MAX_LENGTHS } from '@/utils/validation';
+import { MAX_LENGTHS, isValidEmail, isValidPhone } from '@/utils/validation';
 import { Trash2, User, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
