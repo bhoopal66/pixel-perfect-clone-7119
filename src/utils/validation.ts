@@ -155,7 +155,7 @@ export function validateLoanRequirement(data: {
 }): ValidationError[] {
   const errors: ValidationError[] = [];
   if (!isValidLoanAmount(data.requiredLoanAmount)) {
-    errors.push({ field: 'requiredLoanAmount', message: 'Loan amount must be a positive number up to 500,000,000' });
+    errors.push({ field: 'requiredLoanAmount', message: 'Loan amount must be between 1 and 999,999,999' });
   }
   if (data.purpose && data.purpose.length > MAX_LENGTHS.purpose) {
     errors.push({ field: 'purpose', message: `Purpose must be under ${MAX_LENGTHS.purpose} characters` });

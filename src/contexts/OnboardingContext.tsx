@@ -330,7 +330,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         return !!(
           lr.loanType &&
           lr.requiredLoanAmount > 0 &&
-          lr.requiredLoanAmount <= 500_000_000 &&
+          lr.requiredLoanAmount < 1_000_000_000 &&
           lr.purpose &&
           lr.preferredTenure &&
           lr.urgentFunding !== null
