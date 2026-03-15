@@ -17,6 +17,7 @@ import {
   FinancialSummaryService,
 } from '@/services/permanentStorageService';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import type {
   AssessmentCase,
   AssessmentStep,
@@ -257,6 +258,13 @@ export function useEligibilityAssessment() {
 
   // Run analysis
   const runAnalysis = useCallback(async () => {
+    // Pre-flight checks
+    const validBankFilesCheck = bankFiles.filter(f => f.isValid);
+    if (validBankFilesCheck.length === 0) {
+      toast.error('Please upload at least one valid bank statement before running analysis.');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Create assessment case in DB
@@ -581,7 +589,7 @@ export function useEligibilityAssessment() {
         }
       } catch (lenderErr) {
         console.error('Lender rule engine error:', lenderErr);
-        toast.error('Lender rule engine failed - check rule configuration');
+        toast.error('Lender rule engine encountered an issue. Results may be incomplete.');
       }
 
       // Update case summary + mark analysis completed
@@ -609,7 +617,7 @@ export function useEligibilityAssessment() {
       
       if (updateError) {
         console.error('Failed to update case status:', updateError);
-        toast.error('Warning: Case status update failed');
+        toast.error('Unable to save analysis results. Please try again.');
       }
 
       // Auto-run fraud detection after analysis
@@ -641,7 +649,7 @@ export function useEligibilityAssessment() {
       setCurrentStep('extraction');
     } catch (error) {
       console.error('Analysis error:', error);
-      toast.error('Failed to run analysis');
+      toast.error(getDisplayError(error));
     } finally {
       setIsProcessing(false);
     }
@@ -659,7 +667,7 @@ export function useEligibilityAssessment() {
       toast.success('Funding options updated');
     } catch (error) {
       console.error('Matching engine error:', error);
-      toast.error('Failed to run matching engine');
+      toast.error(getDisplayError(error));
     } finally {
       setIsMatchingRunning(false);
     }

@@ -124,7 +124,7 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Key Reasons */}
-              {result.key_reasons.length > 0 && (
+              {(result.key_reasons?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Key Reasons</p>
                   <div className="space-y-1">
@@ -136,10 +136,10 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Rule-by-Rule Breakdown */}
-              {result.rule_details.length > 0 && (
+              {(result.rule_details?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Rule Assessment ({result.passed_rules.length} passed, {result.failed_rules.length} failed)
+                    Rule Assessment ({result.passed_rules?.length || 0} passed, {result.failed_rules?.length || 0} failed)
                   </p>
                   <div className="space-y-1.5">
                     {result.rule_details.map((rule, idx) => (
@@ -150,7 +150,7 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Risk Flags */}
-              {result.risk_flags.length > 0 && (
+              {(result.risk_flags?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3 text-warning" /> Risk Flags
@@ -166,7 +166,7 @@ const LenderCard: React.FC<{ result: LenderResult }> = ({ result }) => {
               )}
 
               {/* Deviations */}
-              {result.required_deviations.length > 0 && (
+              {(result.required_deviations?.length || 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Required Deviations</p>
                   <div className="space-y-1">
