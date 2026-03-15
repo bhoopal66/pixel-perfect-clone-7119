@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import {
   OnboardingFormData,
   BusinessDetails,
@@ -10,43 +10,31 @@ import {
   createEmptyOwner
 } from '@/types/onboarding.types';
 import { useOnboardingPersistence } from '@/hooks/useOnboardingPersistence';
-import { useDebouncedCallback } from '@/hooks/useDebounce';
+import { MAX_LENGTHS, clampString, clampNumber, isValidEmail, isValidPhone } from '@/utils/validation';
 
 interface OnboardingContextType {
-  // Case info
   caseId: string | null;
   caseNumber: string | null;
   isLoading: boolean;
   isSaving: boolean;
   lastSaved: Date | null;
-  
-  // Step management
   currentStep: number;
   setCurrentStep: (step: number) => void;
-  
-  // Form data
   formData: OnboardingFormData;
   updateBusinessDetails: (data: Partial<BusinessDetails>) => void;
   updateOwner: (id: string, data: Partial<OwnerDetails>) => void;
   addOwner: () => void;
   removeOwner: (id: string) => void;
+  moveOwner: (fromIndex: number, toIndex: number) => void;
   updateBankingTurnover: (data: Partial<BankingTurnover>) => void;
   updateLoanRequirement: (data: Partial<LoanRequirement>) => void;
-  
-  // Document management
   uploadDocument: (file: File, documentType: string) => Promise<DocumentUpload | null>;
   removeDocument: (id: string) => Promise<boolean>;
   refreshDocuments: () => Promise<void>;
-  
-  // Confirmations
   setDeclarationConfirmed: (confirmed: boolean) => void;
   setAuthorizationConfirmed: (confirmed: boolean) => void;
-  
-  // Validation
   getTotalShareholding: () => number;
   isStepValid: (step: number) => boolean;
-  
-  // Actions
   saveCurrentStep: () => Promise<boolean>;
   submitApplication: () => Promise<boolean>;
   resetForm: () => void;
@@ -82,6 +70,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const [declarationConfirmed, setDeclarationConfirmedState] = useState(false);
   const [authorizationConfirmed, setAuthorizationConfirmedState] = useState(false);
 
+  // Track pending debounce data for flush-on-unmount
+  const pendingDataRef = useRef<OnboardingFormData | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Sync persisted form data to local state
   useEffect(() => {
     if (persistedFormData) {
@@ -94,38 +86,89 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     localStorage.setItem(STEP_KEY, currentStep.toString());
   }, [currentStep]);
 
-  const setCurrentStep = useCallback((step: number) => {
-    setCurrentStepState(step);
-  }, []);
+  // Flush pending save on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (pendingDataRef.current) {
+        // Fire-and-forget flush
+        updateFormData(pendingDataRef.current);
+        pendingDataRef.current = null;
+      }
+    };
+  }, [updateFormData]);
 
-  // Debounced auto-save to database
-  const debouncedSyncToDatabase = useDebouncedCallback((data: OnboardingFormData) => {
-    updateFormData(data);
-  }, 1000);
+  const setCurrentStep = useCallback((step: number) => {
+    // Flush pending save before navigating steps
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (pendingDataRef.current) {
+      updateFormData(pendingDataRef.current);
+      pendingDataRef.current = null;
+    }
+    setCurrentStepState(step);
+  }, [updateFormData]);
+
+  // Debounced auto-save with flush support
+  const scheduleSyncToDatabase = useCallback((data: OnboardingFormData) => {
+    pendingDataRef.current = data;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      if (pendingDataRef.current) {
+        updateFormData(pendingDataRef.current);
+        pendingDataRef.current = null;
+      }
+    }, 1000);
+  }, [updateFormData]);
 
   const updateBusinessDetails = useCallback((data: Partial<BusinessDetails>) => {
     setLocalFormData(prev => {
+      // Enforce length limits on input
+      const sanitized = { ...data };
+      if (sanitized.companyLegalName !== undefined) sanitized.companyLegalName = clampString(sanitized.companyLegalName, MAX_LENGTHS.companyName);
+      if (sanitized.officeAddress !== undefined) sanitized.officeAddress = clampString(sanitized.officeAddress, MAX_LENGTHS.address);
+      if (sanitized.tradeLicenseNo !== undefined) sanitized.tradeLicenseNo = clampString(sanitized.tradeLicenseNo, MAX_LENGTHS.tradeLicenseNo);
+      if (sanitized.licenseIssuingAuthority !== undefined) sanitized.licenseIssuingAuthority = clampString(sanitized.licenseIssuingAuthority, MAX_LENGTHS.licenseAuthority);
+      if (sanitized.businessActivity !== undefined) sanitized.businessActivity = clampString(sanitized.businessActivity, MAX_LENGTHS.businessActivity);
+
       const updated = {
         ...prev,
-        businessDetails: { ...prev.businessDetails, ...data }
+        businessDetails: { ...prev.businessDetails, ...sanitized }
       };
-      debouncedSyncToDatabase(updated);
+      scheduleSyncToDatabase(updated);
       return updated;
     });
-  }, [debouncedSyncToDatabase]);
+  }, [scheduleSyncToDatabase]);
 
   const updateOwner = useCallback((id: string, data: Partial<OwnerDetails>) => {
     setLocalFormData(prev => {
+      // Enforce limits
+      const sanitized = { ...data };
+      if (sanitized.ownerName !== undefined) sanitized.ownerName = clampString(sanitized.ownerName, MAX_LENGTHS.ownerName);
+      if (sanitized.email !== undefined) sanitized.email = clampString(sanitized.email, MAX_LENGTHS.email);
+      if (sanitized.mobile !== undefined) sanitized.mobile = clampString(sanitized.mobile, MAX_LENGTHS.phone);
+      if (sanitized.address !== undefined) sanitized.address = clampString(sanitized.address, MAX_LENGTHS.address);
+      if (sanitized.emiratesId !== undefined) sanitized.emiratesId = clampString(sanitized.emiratesId, MAX_LENGTHS.emiratesId);
+      if (sanitized.passportNumber !== undefined) sanitized.passportNumber = clampString(sanitized.passportNumber, MAX_LENGTHS.passportNumber);
+      if (sanitized.nationality !== undefined) sanitized.nationality = clampString(sanitized.nationality, MAX_LENGTHS.nationality);
+      if (sanitized.shareholdingPercent !== undefined) sanitized.shareholdingPercent = clampNumber(sanitized.shareholdingPercent, 0, 100);
+
       const updated = {
         ...prev,
         owners: prev.owners.map(owner =>
-          owner.id === id ? { ...owner, ...data } : owner
+          owner.id === id ? { ...owner, ...sanitized } : owner
         )
       };
-      debouncedSyncToDatabase(updated);
+      scheduleSyncToDatabase(updated);
       return updated;
     });
-  }, [debouncedSyncToDatabase]);
+  }, [scheduleSyncToDatabase]);
 
   const addOwner = useCallback(() => {
     setLocalFormData(prev => {
@@ -133,10 +176,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         ...prev,
         owners: [...prev.owners, createEmptyOwner()]
       };
-      debouncedSyncToDatabase(updated);
+      scheduleSyncToDatabase(updated);
       return updated;
     });
-  }, [debouncedSyncToDatabase]);
+  }, [scheduleSyncToDatabase]);
 
   const removeOwner = useCallback((id: string) => {
     setLocalFormData(prev => {
@@ -144,40 +187,68 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         ...prev,
         owners: prev.owners.filter(owner => owner.id !== id)
       };
-      debouncedSyncToDatabase(updated);
+      scheduleSyncToDatabase(updated);
       return updated;
     });
-  }, [debouncedSyncToDatabase]);
+  }, [scheduleSyncToDatabase]);
+
+  // Proper owner reorder that actually swaps array positions
+  const moveOwner = useCallback((fromIndex: number, toIndex: number) => {
+    setLocalFormData(prev => {
+      if (toIndex < 0 || toIndex >= prev.owners.length) return prev;
+      const newOwners = [...prev.owners];
+      const [moved] = newOwners.splice(fromIndex, 1);
+      newOwners.splice(toIndex, 0, moved);
+      const updated = { ...prev, owners: newOwners };
+      scheduleSyncToDatabase(updated);
+      return updated;
+    });
+  }, [scheduleSyncToDatabase]);
 
   const updateBankingTurnover = useCallback((data: Partial<BankingTurnover>) => {
     setLocalFormData(prev => {
+      // Clamp numeric values
+      const sanitized = { ...data };
+      if (sanitized.monthlyAvgTurnover !== undefined) sanitized.monthlyAvgTurnover = Math.max(sanitized.monthlyAvgTurnover, 0);
+      if (sanitized.annualVatTurnover !== undefined && sanitized.annualVatTurnover !== null) sanitized.annualVatTurnover = Math.max(sanitized.annualVatTurnover, 0);
+      if (sanitized.posMonthlyTurnover !== undefined && sanitized.posMonthlyTurnover !== null) sanitized.posMonthlyTurnover = Math.max(sanitized.posMonthlyTurnover, 0);
+
       const updated = {
         ...prev,
-        bankingTurnover: { ...prev.bankingTurnover, ...data }
+        bankingTurnover: { ...prev.bankingTurnover, ...sanitized }
       };
-      debouncedSyncToDatabase(updated);
+      scheduleSyncToDatabase(updated);
       return updated;
     });
-  }, [debouncedSyncToDatabase]);
+  }, [scheduleSyncToDatabase]);
 
   const updateLoanRequirement = useCallback((data: Partial<LoanRequirement>) => {
     setLocalFormData(prev => {
+      const sanitized = { ...data };
+      if (sanitized.requiredLoanAmount !== undefined) sanitized.requiredLoanAmount = clampNumber(sanitized.requiredLoanAmount, 0, 500_000_000);
+      if (sanitized.purpose !== undefined) sanitized.purpose = clampString(sanitized.purpose, MAX_LENGTHS.purpose);
+
       const updated = {
         ...prev,
-        loanRequirement: { ...prev.loanRequirement, ...data }
+        loanRequirement: { ...prev.loanRequirement, ...sanitized }
       };
-      debouncedSyncToDatabase(updated);
+      scheduleSyncToDatabase(updated);
       return updated;
     });
-  }, [debouncedSyncToDatabase]);
+  }, [scheduleSyncToDatabase]);
 
-  const uploadDocument = useCallback(async (file: File, documentType: string): Promise<DocumentUpload | null> => {
+  const uploadDocumentHandler = useCallback(async (file: File, documentType: string): Promise<DocumentUpload | null> => {
     const doc = await uploadDoc(file, documentType);
     if (doc) {
-      setLocalFormData(prev => ({
-        ...prev,
-        documents: [...prev.documents, doc]
-      }));
+      setLocalFormData(prev => {
+        // Deduplicate by id
+        const existingIds = new Set(prev.documents.map(d => d.id));
+        if (existingIds.has(doc.id)) return prev;
+        return {
+          ...prev,
+          documents: [...prev.documents, doc]
+        };
+      });
     }
     return doc;
   }, [uploadDoc]);
@@ -234,7 +305,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
             owner.shareholdingPercent > 0 &&
             owner.residentStatus &&
             owner.mobile &&
-            owner.email
+            owner.email &&
+            isValidEmail(owner.email) &&
+            isValidPhone(owner.mobile)
           ) &&
           totalShareholding === 100
         );
@@ -257,13 +330,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         return !!(
           lr.loanType &&
           lr.requiredLoanAmount > 0 &&
+          lr.requiredLoanAmount <= 500_000_000 &&
           lr.purpose &&
           lr.preferredTenure &&
           lr.urgentFunding !== null
         );
       }
       case 5: {
-        // Check mandatory documents
         const mandatoryTypes = ['trade_license', 'owner_passport', 'bank_statements'];
         if (localFormData.bankingTurnover.vatRegistered) {
           mandatoryTypes.push('vat_certificate');
@@ -295,7 +368,6 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     localStorage.removeItem(STEP_KEY);
   }, []);
 
-  // Merge local confirmations into formData for consumers
   const formDataWithConfirmations = {
     ...localFormData,
     declarationConfirmed,
@@ -317,9 +389,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         updateOwner,
         addOwner,
         removeOwner,
+        moveOwner,
         updateBankingTurnover,
         updateLoanRequirement,
-        uploadDocument,
+        uploadDocument: uploadDocumentHandler,
         removeDocument,
         refreshDocuments,
         setDeclarationConfirmed,

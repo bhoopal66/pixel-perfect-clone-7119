@@ -8,6 +8,7 @@ import type {
   DocumentUpload 
 } from '@/types/onboarding.types';
 import type { Database } from '@/integrations/supabase/types';
+import { validateFile } from '@/utils/validation';
 
 type CaseStatus = Database['public']['Enums']['case_status'];
 
@@ -50,7 +51,7 @@ export async function createOnboardingCase(): Promise<SaveResult> {
 
   if (error) {
     console.error('Error creating case:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: 'Unable to create application. Please try again.' };
   }
 
   return { success: true, caseId: data.id };
@@ -104,7 +105,7 @@ export async function updateCaseStatus(caseId: string, status: CaseStatus): Prom
 
   if (error) {
     console.error('Error updating case status:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: 'Unable to update application status. Please try again.' };
   }
 
   return { success: true, caseId };
@@ -117,14 +118,14 @@ export async function updateCaseStatus(caseId: string, status: CaseStatus): Prom
 export async function saveBusinessDetails(caseId: string, data: BusinessDetails): Promise<SaveResult> {
   const payload = {
     case_id: caseId,
-    company_legal_name: data.companyLegalName,
-    trade_license_no: data.tradeLicenseNo,
-    license_issuing_authority: data.licenseIssuingAuthority,
+    company_legal_name: data.companyLegalName.slice(0, 200),
+    trade_license_no: data.tradeLicenseNo.slice(0, 50),
+    license_issuing_authority: data.licenseIssuingAuthority.slice(0, 100),
     tl_expiry_date: data.tlExpiryDate || null,
-    business_activity: data.businessActivity,
+    business_activity: data.businessActivity.slice(0, 200),
     legal_structure: data.legalStructure,
     year_of_establishment: data.yearOfEstablishment ? parseInt(data.yearOfEstablishment) : null,
-    office_address: data.officeAddress,
+    office_address: data.officeAddress.slice(0, 300),
     emirate: data.emirate,
     ejari_available: data.ejariAvailable
   };
@@ -150,7 +151,7 @@ export async function saveBusinessDetails(caseId: string, data: BusinessDetails)
 
   if (result.error) {
     console.error('Error saving business details:', result.error);
-    return { success: false, error: result.error.message };
+    return { success: false, error: 'Unable to save business details. Please try again.' };
   }
 
   return { success: true, caseId };
@@ -182,47 +183,88 @@ export async function getBusinessDetails(caseId: string): Promise<BusinessDetail
 }
 
 // =====================================================
-// OWNERS (business_owners table)
+// OWNERS — SAFE DIFF-BASED UPSERT (replaces delete-all-insert-all)
 // =====================================================
 
 export async function saveOwners(caseId: string, owners: OwnerDetails[]): Promise<SaveResult> {
-  // Delete existing owners first
-  await supabase
-    .from('business_owners')
-    .delete()
-    .eq('case_id', caseId);
+  try {
+    // 1. Fetch existing owners from DB
+    const { data: existingOwners, error: fetchError } = await supabase
+      .from('business_owners')
+      .select('id')
+      .eq('case_id', caseId);
 
-  if (owners.length === 0) {
+    if (fetchError) {
+      console.error('Error fetching existing owners:', fetchError);
+      return { success: false, error: 'Unable to save owner details. Please try again.' };
+    }
+
+    const existingIds = new Set((existingOwners || []).map(o => o.id));
+    const incomingIds = new Set(owners.map(o => o.id));
+
+    // 2. Delete owners that were removed (only those not in incoming set)
+    const toDelete = [...existingIds].filter(id => !incomingIds.has(id));
+    if (toDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('business_owners')
+        .delete()
+        .in('id', toDelete);
+      
+      if (deleteError) {
+        console.error('Error deleting removed owners:', deleteError);
+        return { success: false, error: 'Unable to remove owners. Please try again.' };
+      }
+    }
+
+    // 3. Upsert each owner (update existing, insert new)
+    for (let index = 0; index < owners.length; index++) {
+      const owner = owners[index];
+      const payload = {
+        case_id: caseId,
+        owner_name: owner.ownerName.slice(0, 150),
+        role: owner.role || 'Partner',
+        nationality: owner.nationality.slice(0, 60),
+        emirates_id: owner.emiratesId.slice(0, 20),
+        passport_number: owner.passportNumber.slice(0, 20),
+        shareholding_percent: Math.min(Math.max(owner.shareholdingPercent, 0), 100),
+        resident_status: owner.residentStatus,
+        mobile: owner.mobile.slice(0, 20),
+        email: owner.email.slice(0, 150),
+        address: (owner.address || '').slice(0, 300),
+        is_signatory: owner.isSignatory || false,
+        is_ubo: owner.isUbo || false,
+        display_order: index + 1
+      };
+
+      if (existingIds.has(owner.id)) {
+        // Update existing
+        const { error } = await supabase
+          .from('business_owners')
+          .update(payload)
+          .eq('id', owner.id);
+        
+        if (error) {
+          console.error('Error updating owner:', error);
+          return { success: false, error: 'Unable to update owner details. Please try again.' };
+        }
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('business_owners')
+          .insert({ id: owner.id, ...payload });
+        
+        if (error) {
+          console.error('Error inserting owner:', error);
+          return { success: false, error: 'Unable to add owner. Please try again.' };
+        }
+      }
+    }
+
     return { success: true, caseId };
-  }
-
-  const payload = owners.map((owner, index) => ({
-    case_id: caseId,
-    owner_name: owner.ownerName,
-    role: owner.role || 'Partner',
-    nationality: owner.nationality,
-    emirates_id: owner.emiratesId,
-    passport_number: owner.passportNumber,
-    shareholding_percent: owner.shareholdingPercent,
-    resident_status: owner.residentStatus,
-    mobile: owner.mobile,
-    email: owner.email,
-    address: owner.address || '',
-    is_signatory: owner.isSignatory || false,
-    is_ubo: owner.isUbo || false,
-    display_order: index + 1
-  }));
-
-  const { error } = await supabase
-    .from('business_owners')
-    .insert(payload);
-
-  if (error) {
+  } catch (error) {
     console.error('Error saving owners:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: 'Unable to save owner details. Please try again.' };
   }
-
-  return { success: true, caseId };
 }
 
 export async function getOwners(caseId: string): Promise<OwnerDetails[]> {
@@ -239,7 +281,7 @@ export async function getOwners(caseId: string): Promise<OwnerDetails[]> {
   return data.map(owner => ({
     id: owner.id,
     ownerName: owner.owner_name,
-    role: (owner as any).role || 'Partner',
+    role: owner.role || 'Partner',
     nationality: owner.nationality,
     emiratesId: owner.emirates_id,
     passportNumber: owner.passport_number,
@@ -247,9 +289,9 @@ export async function getOwners(caseId: string): Promise<OwnerDetails[]> {
     residentStatus: owner.resident_status,
     mobile: owner.mobile,
     email: owner.email,
-    address: (owner as any).address || '',
-    isSignatory: (owner as any).is_signatory || false,
-    isUbo: (owner as any).is_ubo || false
+    address: owner.address || '',
+    isSignatory: owner.is_signatory || false,
+    isUbo: owner.is_ubo || false
   }));
 }
 
@@ -262,8 +304,8 @@ export async function saveFinancialInputs(caseId: string, data: BankingTurnover)
     case_id: caseId,
     existing_bank_accounts: data.existingBankAccounts || [],
     primary_operating_bank: data.primaryOperatingBank,
-    monthly_avg_turnover: data.monthlyAvgTurnover || 0,
-    declared_turnover: (data.monthlyAvgTurnover || 0) * 12, // Annual declared turnover
+    monthly_avg_turnover: Math.max(data.monthlyAvgTurnover || 0, 0),
+    declared_turnover: Math.max((data.monthlyAvgTurnover || 0) * 12, 0),
     vat_registered: data.vatRegistered,
     annual_vat_turnover: data.annualVatTurnover,
     pos_machine: data.posMachine,
@@ -272,7 +314,6 @@ export async function saveFinancialInputs(caseId: string, data: BankingTurnover)
     sister_concern_exists: data.sisterConcernExists
   };
 
-  // Check if record exists
   const { data: existing } = await supabase
     .from('financial_inputs')
     .select('id')
@@ -293,7 +334,7 @@ export async function saveFinancialInputs(caseId: string, data: BankingTurnover)
 
   if (result.error) {
     console.error('Error saving financial inputs:', result.error);
-    return { success: false, error: result.error.message };
+    return { success: false, error: 'Unable to save financial details. Please try again.' };
   }
 
   return { success: true, caseId };
@@ -331,13 +372,12 @@ export async function saveLoanRequirements(caseId: string, data: LoanRequirement
   const payload = {
     case_id: caseId,
     loan_type: data.loanType,
-    required_loan_amount: data.requiredLoanAmount,
-    purpose: data.purpose,
+    required_loan_amount: Math.max(data.requiredLoanAmount, 0),
+    purpose: (data.purpose || '').slice(0, 500),
     preferred_tenure: data.preferredTenure,
     urgent_funding: data.urgentFunding
   };
 
-  // Check if record exists
   const { data: existing } = await supabase
     .from('onboarding_loan_requirements')
     .select('id')
@@ -358,7 +398,7 @@ export async function saveLoanRequirements(caseId: string, data: LoanRequirement
 
   if (result.error) {
     console.error('Error saving loan requirements:', result.error);
-    return { success: false, error: result.error.message };
+    return { success: false, error: 'Unable to save loan requirements. Please try again.' };
   }
 
   return { success: true, caseId };
@@ -394,17 +434,21 @@ export async function uploadDocument(
   documentType: string,
   onProgress?: (progress: number) => void
 ): Promise<{ success: boolean; document?: DocumentUpload; error?: string }> {
+  // Server-side file validation
+  const fileValidation = validateFile(file);
+  if (!fileValidation.valid) {
+    return { success: false, error: fileValidation.error };
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
     return { success: false, error: 'User not authenticated' };
   }
 
-  // Generate unique file path
   const fileExt = file.name.split('.').pop();
   const fileName = `${caseId}/${documentType}/${Date.now()}.${fileExt}`;
 
-  // Upload to storage
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from('case-documents')
     .upload(fileName, file, {
@@ -414,10 +458,9 @@ export async function uploadDocument(
 
   if (uploadError) {
     console.error('Error uploading file:', uploadError);
-    return { success: false, error: uploadError.message };
+    return { success: false, error: 'Unable to upload file. Please try again.' };
   }
 
-  // Create document record
   const { data: docData, error: docError } = await supabase
     .from('onboarding_documents')
     .insert({
@@ -436,7 +479,7 @@ export async function uploadDocument(
 
   if (docError) {
     console.error('Error saving document record:', docError);
-    return { success: false, error: docError.message };
+    return { success: false, error: 'File uploaded but record creation failed. Please try again.' };
   }
 
   return {
@@ -454,7 +497,6 @@ export async function uploadDocument(
 }
 
 export async function deleteDocument(documentId: string): Promise<SaveResult> {
-  // Get document path first
   const { data: doc } = await supabase
     .from('onboarding_documents')
     .select('file_path')
@@ -462,13 +504,11 @@ export async function deleteDocument(documentId: string): Promise<SaveResult> {
     .single();
 
   if (doc?.file_path) {
-    // Delete from storage
     await supabase.storage
       .from('case-documents')
       .remove([doc.file_path]);
   }
 
-  // Delete record
   const { error } = await supabase
     .from('onboarding_documents')
     .delete()
@@ -476,7 +516,7 @@ export async function deleteDocument(documentId: string): Promise<SaveResult> {
 
   if (error) {
     console.error('Error deleting document:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: 'Unable to remove document. Please try again.' };
   }
 
   return { success: true };
@@ -506,7 +546,7 @@ export async function getDocuments(caseId: string): Promise<DocumentUpload[]> {
 }
 
 // =====================================================
-// COMPLETE FORM DATA OPERATIONS
+// COMPLETE FORM DATA OPERATIONS (serialized saves)
 // =====================================================
 
 export async function loadCompleteFormData(caseId: string): Promise<OnboardingFormData | null> {
@@ -519,7 +559,6 @@ export async function loadCompleteFormData(caseId: string): Promise<OnboardingFo
       getDocuments(caseId)
     ]);
 
-    // Import the factory functions
     const { createEmptyBusinessDetails, createEmptyBankingTurnover, createEmptyLoanRequirement, createEmptyOwner } = await import('@/types/onboarding.types');
 
     return {
@@ -537,24 +576,28 @@ export async function loadCompleteFormData(caseId: string): Promise<OnboardingFo
   }
 }
 
+/**
+ * Save all form data SEQUENTIALLY (not in parallel) to prevent race conditions.
+ */
 export async function saveCompleteFormData(caseId: string, formData: OnboardingFormData): Promise<SaveResult> {
   try {
-    const results = await Promise.all([
-      saveBusinessDetails(caseId, formData.businessDetails),
-      saveOwners(caseId, formData.owners),
-      saveFinancialInputs(caseId, formData.bankingTurnover),
-      saveLoanRequirements(caseId, formData.loanRequirement)
-    ]);
+    // Sequential saves to prevent race conditions
+    const bizResult = await saveBusinessDetails(caseId, formData.businessDetails);
+    if (!bizResult.success) return bizResult;
 
-    const failed = results.find(r => !r.success);
-    if (failed) {
-      return failed;
-    }
+    const ownerResult = await saveOwners(caseId, formData.owners);
+    if (!ownerResult.success) return ownerResult;
+
+    const finResult = await saveFinancialInputs(caseId, formData.bankingTurnover);
+    if (!finResult.success) return finResult;
+
+    const loanResult = await saveLoanRequirements(caseId, formData.loanRequirement);
+    if (!loanResult.success) return loanResult;
 
     return { success: true, caseId };
   } catch (error) {
     console.error('Error saving complete form data:', error);
-    return { success: false, error: 'Failed to save form data' };
+    return { success: false, error: 'Unable to save changes. Please try again.' };
   }
 }
 
@@ -569,7 +612,7 @@ export async function submitOnboardingCase(caseId: string): Promise<SaveResult> 
 
   if (error) {
     console.error('Error submitting case:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: 'Unable to submit application. Please try again.' };
   }
 
   return { success: true, caseId };
