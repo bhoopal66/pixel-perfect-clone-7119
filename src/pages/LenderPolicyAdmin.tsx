@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { useQuery } from '@tanstack/react-query';
 import { LenderService } from '@/services/lenderService';
 import { ProductService, RuleSetService } from '@/services/ruleEngineCrud';
