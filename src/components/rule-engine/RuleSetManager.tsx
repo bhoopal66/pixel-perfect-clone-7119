@@ -46,7 +46,7 @@ export const RuleSetManager = ({ lenderId, productId, onSelectRuleSet }: Props) 
   const duplicateMut = useMutation({
     mutationFn: (id: string) => RuleSetService.duplicate(id),
     onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['rule-sets'] }); onSelectRuleSet(data.id); toast.success('Rule set duplicated'); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(getDisplayError(e)),
   });
 
   const activateMut = useMutation({
