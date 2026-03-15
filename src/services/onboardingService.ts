@@ -8,7 +8,7 @@ import type {
   DocumentUpload 
 } from '@/types/onboarding.types';
 import type { Database } from '@/integrations/supabase/types';
-import { validateFile } from '@/utils/validation';
+import { validateFileDeep } from '@/utils/validation';
 
 type CaseStatus = Database['public']['Enums']['case_status'];
 
