@@ -41,7 +41,10 @@ export const AgentRegistrationDialog: React.FC<AgentRegistrationDialogProps> = (
     }
   });
 
+  const submitLockRef = useRef(false);
   const onSubmit = async (data: AgentFormData) => {
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       const { data: agent, error } = await supabase
