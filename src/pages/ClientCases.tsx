@@ -205,14 +205,16 @@ export default function ClientCases() {
                                 Open
                                 <ChevronRight className="h-4 w-4 ml-1" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={(e) => { e.stopPropagation(); handleDelete(c.id, c.companyName); }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {hasAdminPrivileges && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(c.id, c.companyName); }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
