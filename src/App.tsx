@@ -210,6 +210,8 @@ const AppRoutes = () => (
     <Route path="/assessment-case/:id" element={<SupervisorRoute><AssessmentCaseDetail /></SupervisorRoute>} />
     {/* Lender Policy Administration */}
     <Route path="/lender-policy-admin" element={<AdminRoute><LenderPolicyAdmin /></AdminRoute>} />
+    {/* Executive Dashboard - Admin only */}
+    <Route path="/executive" element={<AdminRoute><ExecutiveDashboard /></AdminRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>
