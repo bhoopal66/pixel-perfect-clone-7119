@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -79,6 +79,7 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
   const [results, setResults] = useState<ExecutionResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [hasRun, setHasRun] = useState(false);
+  const runLockRef = useRef(false);
   const [assessmentCaseId, setAssessmentCaseId] = useState<string | null>(null);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
 
@@ -144,6 +145,8 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
   }, [assessmentCaseId, caseData]);
 
   const runLenderEligibility = useCallback(async () => {
+    if (runLockRef.current) return;
+    runLockRef.current = true;
     setIsRunning(true);
     try {
       const acId = await ensureAssessmentCase();
@@ -190,6 +193,7 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
       toast.error(err.message || 'Failed to run lender eligibility');
     } finally {
       setIsRunning(false);
+      runLockRef.current = false;
     }
   }, [ensureAssessmentCase]);
 

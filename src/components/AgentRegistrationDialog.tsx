@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +41,10 @@ export const AgentRegistrationDialog: React.FC<AgentRegistrationDialogProps> = (
     }
   });
 
+  const submitLockRef = useRef(false);
   const onSubmit = async (data: AgentFormData) => {
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       const { data: agent, error } = await supabase
@@ -66,6 +69,7 @@ export const AgentRegistrationDialog: React.FC<AgentRegistrationDialogProps> = (
       toast.error(error.message || 'Failed to create agent');
     } finally {
       setIsSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
