@@ -57,14 +57,26 @@ export default function ClientCases() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadCases() {
-      setIsLoading(true);
-      const data = await getUserCases();
-      setCases(data);
-      setIsLoading(false);
-    }
     loadCases();
   }, []);
+
+  async function loadCases() {
+    setIsLoading(true);
+    const data = await getUserCases();
+    setCases(data);
+    setIsLoading(false);
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete case "${name}"? This cannot be undone.`)) return;
+    const result = await deleteOnboardingCase(id);
+    if (result.success) {
+      setCases(prev => prev.filter(c => c.id !== id));
+      toast.success('Case deleted');
+    } else {
+      toast.error(result.error || 'Failed to delete case');
+    }
+  };
 
   const filteredCases = cases.filter(c => {
     const matchesSearch = 
