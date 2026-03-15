@@ -162,3 +162,38 @@ export function validateLoanRequirement(data: {
   }
   return errors;
 }
+
+export function validateTurnover(value: number | null | undefined): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (value !== null && value !== undefined && value < 0) {
+    errors.push({ field: 'turnover', message: 'Turnover must be a positive value' });
+  }
+  return errors;
+}
+
+/**
+ * Validate entire case data before save. Returns all errors found.
+ */
+export function validateCaseData(formData: {
+  businessDetails: { companyLegalName: string; yearOfEstablishment: string; officeAddress: string };
+  owners: Array<{ ownerName: string; email: string; mobile: string; shareholdingPercent: number; address: string }>;
+  loanRequirement: { requiredLoanAmount: number; purpose: string };
+  bankingTurnover: { monthlyAvgTurnover: number; annualVatTurnover?: number | null; posMonthlyTurnover?: number | null };
+}): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  errors.push(...validateBusinessDetails(formData.businessDetails));
+
+  formData.owners.forEach((owner, i) => {
+    const ownerErrors = validateOwner(owner);
+    ownerErrors.forEach(e => errors.push({ field: `owner[${i}].${e.field}`, message: e.message }));
+  });
+
+  errors.push(...validateLoanRequirement(formData.loanRequirement));
+
+  errors.push(...validateTurnover(formData.bankingTurnover.monthlyAvgTurnover));
+  errors.push(...validateTurnover(formData.bankingTurnover.annualVatTurnover));
+  errors.push(...validateTurnover(formData.bankingTurnover.posMonthlyTurnover));
+
+  return errors;
+}
