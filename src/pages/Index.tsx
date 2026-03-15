@@ -11,7 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 
 const Index = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, signOut } = useAuth();
 
   const roleConfig = {
