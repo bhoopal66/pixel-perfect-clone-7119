@@ -35,7 +35,7 @@ export default function Auth() {
     const { error } = await signIn(loginEmail, loginPassword);
 
     if (error) {
-      toast.error('Login failed', { description: error.message });
+      toast.error('Login failed', { description: getDisplayError(error) });
     } else {
       toast.success('Logged in successfully');
       navigate('/');
