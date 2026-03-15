@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import EligibilityEngine from "./pages/EligibilityEngine";
 import LenderPolicyAdmin from "./pages/LenderPolicyAdmin";
 import AssessmentCaseDetail from "./pages/AssessmentCaseDetail";
+import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 
 // Production-hardened React Query defaults
 const queryClient = new QueryClient({
