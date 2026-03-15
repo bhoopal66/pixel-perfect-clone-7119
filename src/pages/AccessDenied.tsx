@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { motion } from 'framer-motion';
 import { ShieldX, ArrowLeft, Home, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
