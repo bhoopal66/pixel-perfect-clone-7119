@@ -59,9 +59,9 @@ function DataRow({ label, value }: { label: string; value: string | number | boo
   }
 
   return (
-    <div className="flex justify-between py-1.5 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right max-w-[60%]">{String(displayValue)}</span>
+    <div className="flex justify-between py-1.5 text-sm gap-4">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="font-medium text-right max-w-[60%] truncate break-words" title={String(displayValue)}>{String(displayValue)}</span>
     </div>
   );
 }

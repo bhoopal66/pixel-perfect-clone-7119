@@ -357,7 +357,7 @@ export function SLAMonitoringPanel({ onViewCase }: { onViewCase: (caseId: string
                             {c.stage ? getStageLabel(c.stage) : CASE_STATUS_LABELS[c.status]}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{c.companyName}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]" title={c.companyName}>{c.companyName}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">

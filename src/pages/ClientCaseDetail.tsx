@@ -187,7 +187,7 @@ export default function ClientCaseDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Purpose</p>
-                  <p className="font-medium">{lr.purpose || '—'}</p>
+                  <p className="font-medium break-words">{lr.purpose || '—'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Preferred Tenure</p>
@@ -221,7 +221,7 @@ export default function ClientCaseDetail() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Company Name</p>
-                  <p className="font-medium">{bd.companyLegalName}</p>
+                  <p className="font-medium break-words">{bd.companyLegalName}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Trade License No.</p>
@@ -265,7 +265,7 @@ export default function ClientCaseDetail() {
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <p className="text-muted-foreground">Name</p>
-                        <p className="font-medium">{owner.ownerName}</p>
+                        <p className="font-medium break-words">{owner.ownerName}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Shareholding</p>
@@ -277,7 +277,7 @@ export default function ClientCaseDetail() {
                       </div>
                       <div>
                         <p className="text-muted-foreground">Contact</p>
-                        <p className="font-medium">{owner.email || '—'}</p>
+                        <p className="font-medium break-words">{owner.email || '—'}</p>
                       </div>
                     </div>
                   </div>
