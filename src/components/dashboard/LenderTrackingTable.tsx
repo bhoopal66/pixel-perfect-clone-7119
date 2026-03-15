@@ -280,7 +280,7 @@ export function LenderTrackingTable({ onViewCase }: { onViewCase: (caseId: strin
                           <RAGIndicator status={app.ragStatus} />
                         </TableCell>
                         <TableCell className="font-mono text-sm">{app.caseNumber}</TableCell>
-                        <TableCell className="font-medium max-w-[200px] truncate">{app.companyName}</TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate" title={app.companyName}>{app.companyName}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">{app.lenderShortCode}</Badge>
                         </TableCell>

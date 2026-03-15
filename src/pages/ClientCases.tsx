@@ -207,7 +207,7 @@ export default function ClientCases() {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <p className="font-medium text-sm">{c.caseNumber || '—'}</p>
-                            <p className="text-base font-semibold">{c.companyName}</p>
+                            <p className="text-base font-semibold truncate" title={c.companyName}>{c.companyName}</p>
                           </div>
                           {getStatusBadge(c.status)}
                         </div>
