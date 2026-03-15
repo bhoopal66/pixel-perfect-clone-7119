@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { ArrowLeft, Loader2, Users, Pencil, UserX, UserCheck, Mail, Phone, Search, RefreshCw, TrendingUp, Briefcase, Calendar, X, Trash2, Info, Eye } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
