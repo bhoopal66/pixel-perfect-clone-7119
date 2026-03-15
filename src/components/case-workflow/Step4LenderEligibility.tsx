@@ -193,6 +193,7 @@ export const Step4LenderEligibility: React.FC<Step4LenderEligibilityProps> = ({
       toast.error(err.message || 'Failed to run lender eligibility');
     } finally {
       setIsRunning(false);
+      runLockRef.current = false;
     }
   }, [ensureAssessmentCase]);
 
