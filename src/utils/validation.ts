@@ -46,7 +46,7 @@ export function isValidOwnership(pct: number): boolean {
 }
 
 export function isValidLoanAmount(amount: number): boolean {
-  return amount > 0 && amount <= 500_000_000; // 500M cap
+  return amount > 0 && amount < 1_000_000_000; // under 1 billion
 }
 
 export function isValidYear(year: string): boolean {
@@ -155,10 +155,45 @@ export function validateLoanRequirement(data: {
 }): ValidationError[] {
   const errors: ValidationError[] = [];
   if (!isValidLoanAmount(data.requiredLoanAmount)) {
-    errors.push({ field: 'requiredLoanAmount', message: 'Loan amount must be a positive number up to 500,000,000' });
+    errors.push({ field: 'requiredLoanAmount', message: 'Loan amount must be between 1 and 999,999,999' });
   }
   if (data.purpose && data.purpose.length > MAX_LENGTHS.purpose) {
     errors.push({ field: 'purpose', message: `Purpose must be under ${MAX_LENGTHS.purpose} characters` });
   }
+  return errors;
+}
+
+export function validateTurnover(value: number | null | undefined): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (value !== null && value !== undefined && value < 0) {
+    errors.push({ field: 'turnover', message: 'Turnover must be a positive value' });
+  }
+  return errors;
+}
+
+/**
+ * Validate entire case data before save. Returns all errors found.
+ */
+export function validateCaseData(formData: {
+  businessDetails: { companyLegalName: string; yearOfEstablishment: string; officeAddress: string };
+  owners: Array<{ ownerName: string; email: string; mobile: string; shareholdingPercent: number; address: string }>;
+  loanRequirement: { requiredLoanAmount: number; purpose: string };
+  bankingTurnover: { monthlyAvgTurnover: number; annualVatTurnover?: number | null; posMonthlyTurnover?: number | null };
+}): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  errors.push(...validateBusinessDetails(formData.businessDetails));
+
+  formData.owners.forEach((owner, i) => {
+    const ownerErrors = validateOwner(owner);
+    ownerErrors.forEach(e => errors.push({ field: `owner[${i}].${e.field}`, message: e.message }));
+  });
+
+  errors.push(...validateLoanRequirement(formData.loanRequirement));
+
+  errors.push(...validateTurnover(formData.bankingTurnover.monthlyAvgTurnover));
+  errors.push(...validateTurnover(formData.bankingTurnover.annualVatTurnover));
+  errors.push(...validateTurnover(formData.bankingTurnover.posMonthlyTurnover));
+
   return errors;
 }
