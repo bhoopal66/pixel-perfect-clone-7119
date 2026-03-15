@@ -667,7 +667,7 @@ export function useEligibilityAssessment() {
       toast.success('Funding options updated');
     } catch (error) {
       console.error('Matching engine error:', error);
-      toast.error('Failed to run matching engine');
+      toast.error(getDisplayError(error));
     } finally {
       setIsMatchingRunning(false);
     }
