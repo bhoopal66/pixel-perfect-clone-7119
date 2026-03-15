@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const { signIn, signUp } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');

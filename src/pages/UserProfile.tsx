@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ interface Profile {
 
 export default function UserProfile() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

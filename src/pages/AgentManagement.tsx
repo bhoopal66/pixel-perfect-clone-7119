@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AccessDenied from './AccessDenied';
@@ -84,7 +84,7 @@ type AgentFormData = z.infer<typeof agentSchema>;
 
 export default function AgentManagement() {
   const { isAdmin, isSuperAdmin, isSupervisor, canManageAgents, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [filteredAgents, setFilteredAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);

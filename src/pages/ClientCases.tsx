@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 };
 
 export default function ClientCases() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [cases, setCases] = useState<OnboardingCaseSummary[]>([]);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
 
   useEffect(() => {
     // Check if we have a recovery session from the URL hash

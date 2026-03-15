@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { OnboardingProvider, useOnboarding } from '@/contexts/OnboardingContext';
 import {
   OnboardingProgress,
@@ -25,7 +25,7 @@ const STEP_LABELS = [
 ];
 
 function OnboardingContent() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { currentStep, setCurrentStep, isStepValid, resetForm, formData, submitApplication } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitLockRef = useRef(false);

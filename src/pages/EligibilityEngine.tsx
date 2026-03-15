@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { motion } from 'framer-motion';
 import {
   Upload, Eye, BarChart3, Receipt, Layers, Shield, Edit3,
@@ -40,7 +40,7 @@ const STEPS: { key: ExtendedStep; label: string; icon: React.ReactNode; requires
 ];
 
 const EligibilityEngine: React.FC = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const assessment = useEligibilityAssessment();
   const hasAnalysis = assessment.monthlySummaries.length > 0 || assessment.caseId !== null;
   const [activeTab, setActiveTab] = React.useState<string>(assessment.currentStep);

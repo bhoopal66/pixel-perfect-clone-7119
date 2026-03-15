@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,7 @@ const STATUS_STEPS = [
 ];
 
 export default function ClientCaseDetail() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { id } = useParams<{ id: string }>();
   const [caseData, setCaseData] = useState<OnboardingCase | null>(null);
   const [formData, setFormData] = useState<OnboardingFormData | null>(null);

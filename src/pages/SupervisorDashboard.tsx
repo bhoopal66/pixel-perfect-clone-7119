@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateOnce } from '@/hooks/useNavigateOnce';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
@@ -28,7 +28,7 @@ import { toast } from '@/hooks/use-toast';
 import type { PipelineMetrics } from '@/types/dashboard.types';
 
 export default function SupervisorDashboard() {
-  const navigate = useNavigate();
+  const navigate = useNavigateOnce();
   const { user, isSupervisor } = useAuth();
 
   // Enable real-time updates for all dashboard data
