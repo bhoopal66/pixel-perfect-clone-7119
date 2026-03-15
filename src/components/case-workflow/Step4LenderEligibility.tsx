@@ -14,6 +14,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, Eye, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { RuleEngineExecutor } from '@/services/ruleEngineExecutor';
