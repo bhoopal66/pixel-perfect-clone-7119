@@ -17,6 +17,7 @@ import {
   FinancialSummaryService,
 } from '@/services/permanentStorageService';
 import { toast } from 'sonner';
+import { getDisplayError } from '@/utils/errorHandler';
 import type {
   AssessmentCase,
   AssessmentStep,
