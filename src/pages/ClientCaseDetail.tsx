@@ -277,7 +277,7 @@ export default function ClientCaseDetail() {
                       </div>
                       <div>
                         <p className="text-muted-foreground">Contact</p>
-                        <p className="font-medium">{owner.email || '—'}</p>
+                        <p className="font-medium break-words">{owner.email || '—'}</p>
                       </div>
                     </div>
                   </div>
