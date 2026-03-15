@@ -100,6 +100,18 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     };
   }, [updateFormData]);
 
+  // Warn user before closing tab with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (pendingDataRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
   const setCurrentStep = useCallback((step: number) => {
     // Flush pending save before navigating steps
     if (debounceTimerRef.current) {
