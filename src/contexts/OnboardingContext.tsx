@@ -148,6 +148,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       if (sanitized.tradeLicenseNo !== undefined) sanitized.tradeLicenseNo = clampString(sanitized.tradeLicenseNo, MAX_LENGTHS.tradeLicenseNo);
       if (sanitized.licenseIssuingAuthority !== undefined) sanitized.licenseIssuingAuthority = clampString(sanitized.licenseIssuingAuthority, MAX_LENGTHS.licenseAuthority);
       if (sanitized.businessActivity !== undefined) sanitized.businessActivity = clampString(sanitized.businessActivity, MAX_LENGTHS.businessActivity);
+      // Clamp year to 4 digits, 1900–current year
+      if (sanitized.yearOfEstablishment !== undefined && sanitized.yearOfEstablishment !== '') {
+        const numYear = parseInt(sanitized.yearOfEstablishment, 10);
+        if (!isNaN(numYear)) {
+          sanitized.yearOfEstablishment = String(clampNumber(numYear, 1900, new Date().getFullYear()));
+        }
+      }
 
       const updated = {
         ...prev,
