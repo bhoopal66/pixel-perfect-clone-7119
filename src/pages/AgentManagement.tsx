@@ -255,7 +255,7 @@ export default function AgentManagement() {
 
     if (error) {
       console.error('Error updating agent:', error);
-      toast.error('Failed to update agent', { description: error.message });
+      toast.error('Failed to update agent', { description: getDisplayError(error) });
     } else {
       toast.success('Agent updated successfully');
       setAgents(agents.map(a =>
