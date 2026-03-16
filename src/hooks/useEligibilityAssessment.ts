@@ -457,8 +457,8 @@ export function useEligibilityAssessment() {
         const monthToBankMap = new Map<string, { bankName: string | null; accountNumber: string | null }>();
         bankFiles.filter(f => f.isValid).forEach(bf => {
           bf.transactions.forEach(t => {
-            const d = new Date(t.date);
-            if (!isNaN(d.getTime())) {
+            const d = parseBankDate(t.date);
+            if (d && !isNaN(d.getTime())) {
               const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
               if (bf.bankName || bf.accountNumber) {
                 monthToBankMap.set(key, { bankName: bf.bankName, accountNumber: bf.accountNumber });
