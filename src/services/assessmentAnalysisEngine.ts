@@ -75,8 +75,8 @@ export class AssessmentAnalysisEngine {
     const monthMap = new Map<string, ParsedTransaction[]>();
 
     transactions.forEach(txn => {
-      const d = new Date(txn.date);
-      if (isNaN(d.getTime())) return;
+      const d = parseBankDate(txn.date);
+      if (!d || isNaN(d.getTime())) return;
       const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
       if (!monthMap.has(key)) monthMap.set(key, []);
       monthMap.get(key)!.push(txn);
