@@ -199,7 +199,8 @@ const Index = () => {
             {/* Step 2: Eligibility (auto after onboarding) */}
             <motion.div
               whileHover={{ scale: 1.02, y: -4 }}
-              className="relative"
+              className="relative cursor-pointer"
+              onClick={() => (isCoordinator || isSupervisor || hasAdminPrivileges) && navigate('/eligibility-engine')}
             >
               <div className="absolute -top-3 -left-3 z-10 w-10 h-10 rounded-full bg-accent/50 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 2
