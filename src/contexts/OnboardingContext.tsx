@@ -356,7 +356,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         );
       }
       case 5: {
-        const mandatoryTypes = ['trade_license', 'owner_passport', 'bank_statements'];
+        const mandatoryTypes = ['trade_license', 'owner_passport'];
         if (localFormData.bankingTurnover.vatRegistered) {
           mandatoryTypes.push('vat_certificate');
         }
