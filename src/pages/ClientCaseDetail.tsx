@@ -440,10 +440,17 @@ export default function ClientCaseDetail() {
         {eligibility.length === 0 && caseData.status !== 'draft' && (
           <Card className="border-dashed">
             <CardContent className="pt-6">
-              <div className="flex flex-col items-center gap-2 text-center py-4">
+              <div className="flex flex-col items-center gap-3 text-center py-4">
                 <AlertTriangle className="h-8 w-8 text-muted-foreground" />
                 <p className="text-sm font-medium">Eligibility Not Yet Calculated</p>
                 <p className="text-xs text-muted-foreground">Eligibility criteria will appear here once the analysis is complete.</p>
+                <Button
+                  onClick={() => navigate('/eligibility-engine')}
+                  className="mt-2"
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Proceed to Eligibility Engine
+                </Button>
               </div>
             </CardContent>
           </Card>
