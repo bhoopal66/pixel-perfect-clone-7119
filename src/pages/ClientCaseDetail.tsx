@@ -18,7 +18,10 @@ import {
   User,
   Loader2,
   Landmark,
-  Users
+  Users,
+  Calculator,
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -27,6 +30,7 @@ import {
   loadCompleteFormData,
   type OnboardingCase,
 } from '@/services/onboardingService';
+import { supabase } from '@/integrations/supabase/client';
 import type { OnboardingFormData } from '@/types/onboarding.types';
 
 const STATUS_STEPS = [
@@ -41,6 +45,7 @@ export default function ClientCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const [caseData, setCaseData] = useState<OnboardingCase | null>(null);
   const [formData, setFormData] = useState<OnboardingFormData | null>(null);
+  const [eligibility, setEligibility] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -53,6 +58,15 @@ export default function ClientCaseDetail() {
       ]);
       setCaseData(caseResult);
       setFormData(formResult);
+
+      // Load eligibility data
+      const { data: eligData } = await supabase
+        .from('onboarding_eligibility')
+        .select('*')
+        .eq('case_id', id)
+        .order('created_at', { ascending: false });
+      setEligibility(eligData || []);
+
       setIsLoading(false);
     }
     load();
@@ -319,7 +333,123 @@ export default function ClientCaseDetail() {
           </Card>
         )}
 
-        {/* Documents */}
+        {/* Eligibility Criteria */}
+        {eligibility.length > 0 && (
+          <Card className="border-primary/20">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Eligibility Criteria</CardTitle>
+              </div>
+              <CardDescription>Calculated eligibility based on submitted turnover data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {eligibility.map((elig, index) => {
+                const statusColor = elig.eligibility_status === 'Eligible'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : elig.eligibility_status === 'Not Eligible'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+
+                return (
+                  <div key={elig.id}>
+                    {index > 0 && <Separator className="my-4" />}
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge className={statusColor}>
+                        {elig.eligibility_status || 'Pending'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {elig.eligibility_method || 'Standard'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">VAT Turnover</p>
+                        <p className="font-semibold">AED {(elig.vat_turnover || 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Adjusted Turnover</p>
+                        <p className="font-semibold">AED {(elig.adjusted_turnover || 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Turnover Basis</p>
+                        <p className="font-semibold">AED {(elig.turnover_basis || 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Variance</p>
+                        <p className="font-semibold flex items-center gap-1">
+                          {elig.variance_percent != null ? `${elig.variance_percent.toFixed(1)}%` : '—'}
+                          {elig.variance_bucket && (
+                            <span className="text-xs text-muted-foreground">({elig.variance_bucket})</span>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Multiplier</p>
+                        <p className="font-semibold">{elig.eligible_multiplier || elig.base_multiplier || '—'}×</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          Eligible Loan Amount
+                        </p>
+                        <p className="font-bold text-primary">
+                          AED {(elig.eligible_loan_amount || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    {(elig.pos_eligible_turnover != null && elig.pos_eligible_turnover > 0) && (
+                      <div className="mt-3 p-3 rounded-lg bg-muted/30">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">POS Breakdown</p>
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <p className="text-muted-foreground text-xs">POS Annual</p>
+                            <p className="font-medium">AED {(elig.pos_annual_turnover || 0).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">POS Cap %</p>
+                            <p className="font-medium">{elig.pos_cap_percent || 0}%</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">POS Eligible</p>
+                            <p className="font-medium">AED {(elig.pos_eligible_turnover || 0).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {(elig.abcd_fee_amount != null && elig.abcd_fee_amount > 0) && (
+                      <div className="mt-2 flex items-center justify-between text-sm p-2 rounded bg-muted/20">
+                        <span className="text-muted-foreground">ABCD Fee ({((elig.abcd_fee_percent || 0.01) * 100).toFixed(0)}%)</span>
+                        <span className="font-medium">AED {(elig.abcd_fee_amount || 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(elig.total_with_abcd != null && elig.total_with_abcd > 0) && (
+                      <div className="mt-1 flex items-center justify-between text-sm p-2 rounded bg-primary/5">
+                        <span className="font-medium">Total with ABCD</span>
+                        <span className="font-bold text-primary">AED {(elig.total_with_abcd || 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Eligibility Yet */}
+        {eligibility.length === 0 && caseData.status !== 'draft' && (
+          <Card className="border-dashed">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-2 text-center py-4">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">Eligibility Not Yet Calculated</p>
+                <p className="text-xs text-muted-foreground">Eligibility criteria will appear here once the analysis is complete.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Uploaded Documents</CardTitle>
