@@ -19,7 +19,7 @@ const MONTH_ABBR_MAP: Record<string, number> = {
  * Parse date strings in common bank statement formats:
  * DD-MMM-YYYY, DD/MM/YYYY, DD.MM.YYYY, YYYY-MM-DD, DD-MMM-YY, DD/MM/YY
  */
-function parseBankDate(dateStr: string): Date | null {
+export function parseBankDate(dateStr: string): Date | null {
   if (!dateStr) return null;
   const s = dateStr.trim();
 
