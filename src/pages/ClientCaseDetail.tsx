@@ -45,6 +45,7 @@ export default function ClientCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const [caseData, setCaseData] = useState<OnboardingCase | null>(null);
   const [formData, setFormData] = useState<OnboardingFormData | null>(null);
+  const [eligibility, setEligibility] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,6 +58,15 @@ export default function ClientCaseDetail() {
       ]);
       setCaseData(caseResult);
       setFormData(formResult);
+
+      // Load eligibility data
+      const { data: eligData } = await supabase
+        .from('onboarding_eligibility')
+        .select('*')
+        .eq('case_id', id)
+        .order('created_at', { ascending: false });
+      setEligibility(eligData || []);
+
       setIsLoading(false);
     }
     load();
