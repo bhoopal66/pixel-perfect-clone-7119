@@ -133,7 +133,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Supervisor route (supervisor, admin, super_admin)
+// Supervisor route (supervisor, admin, super_admin) - for dashboards only
 function SupervisorRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isSupervisor, hasAdminPrivileges } = useAuth();
   
@@ -154,6 +154,34 @@ function SupervisorRoute({ children }: { children: React.ReactNode }) {
       <AccessDenied 
         requiredRole="Supervisor, Admin, or Super Admin" 
         message="You need supervisor privileges to access this dashboard."
+      />
+    );
+  }
+  
+  return <>{children}</>;
+}
+
+// Staff route (coordinator/analyst, supervisor, admin, super_admin) - for operational pages
+function StaffRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, isCoordinator, isSupervisor, hasAdminPrivileges } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  if (!isCoordinator && !isSupervisor && !hasAdminPrivileges) {
+    return (
+      <AccessDenied 
+        requiredRole="Coordinator, Supervisor, Admin, or Super Admin" 
+        message="You need staff privileges to access this page."
       />
     );
   }
@@ -206,8 +234,8 @@ const AppRoutes = () => (
     <Route path="/client-cases" element={<ProtectedRoute><ClientCases /></ProtectedRoute>} />
     <Route path="/client-cases/:id" element={<ProtectedRoute><ClientCaseDetail /></ProtectedRoute>} />
     {/* Eligibility Assessment Engine */}
-    <Route path="/eligibility-engine" element={<SupervisorRoute><EligibilityEngine /></SupervisorRoute>} />
-    <Route path="/assessment-case/:id" element={<SupervisorRoute><AssessmentCaseDetail /></SupervisorRoute>} />
+    <Route path="/eligibility-engine" element={<StaffRoute><EligibilityEngine /></StaffRoute>} />
+    <Route path="/assessment-case/:id" element={<StaffRoute><AssessmentCaseDetail /></StaffRoute>} />
     {/* Lender Policy Administration */}
     <Route path="/lender-policy-admin" element={<AdminRoute><LenderPolicyAdmin /></AdminRoute>} />
     {/* Executive Dashboard - Admin only */}
