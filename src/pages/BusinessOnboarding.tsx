@@ -64,13 +64,12 @@ function OnboardingContent() {
       const success = await submitApplication();
       
       if (success) {
-        const submittedCaseId = caseId;
-        toast.success('Application submitted successfully! Redirecting to case details…');
+        toast.success('Application submitted successfully! Redirecting to eligibility engine…');
         resetForm();
         // Navigation lock to prevent double-click
         if (!navLockRef.current) {
           navLockRef.current = true;
-          navigate(submittedCaseId ? `/client-cases/${submittedCaseId}` : '/client-cases');
+          navigate('/eligibility-engine');
         }
       }
     } finally {
