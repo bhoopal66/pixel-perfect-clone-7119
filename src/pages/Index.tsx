@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 
 const Index = () => {
   const navigate = useNavigateOnce();
-  const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, signOut } = useAuth();
+  const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, isCoordinator, signOut } = useAuth();
 
   const roleConfig = {
     super_admin: { label: 'Super Admin', icon: Crown, variant: 'default' as const, className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0', description: 'Full system access' },
@@ -83,6 +83,11 @@ const Index = () => {
                   <DropdownMenuItem onClick={() => navigate('/client-cases')}>
                     <FileText className="h-4 w-4 mr-2" />My Cases
                   </DropdownMenuItem>
+                  {(isCoordinator || isSupervisor || hasAdminPrivileges) && (
+                    <DropdownMenuItem onClick={() => navigate('/eligibility-engine')}>
+                      <FlaskConical className="h-4 w-4 mr-2" />Eligibility Engine
+                    </DropdownMenuItem>
+                  )}
                   {(isSupervisor || hasAdminPrivileges) && (
                     <>
                       <DropdownMenuSeparator />
@@ -194,7 +199,8 @@ const Index = () => {
             {/* Step 2: Eligibility (auto after onboarding) */}
             <motion.div
               whileHover={{ scale: 1.02, y: -4 }}
-              className="relative"
+              className="relative cursor-pointer"
+              onClick={() => (isCoordinator || isSupervisor || hasAdminPrivileges) && navigate('/eligibility-engine')}
             >
               <div className="absolute -top-3 -left-3 z-10 w-10 h-10 rounded-full bg-accent/50 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 2
