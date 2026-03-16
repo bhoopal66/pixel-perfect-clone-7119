@@ -234,8 +234,8 @@ const AppRoutes = () => (
     <Route path="/client-cases" element={<ProtectedRoute><ClientCases /></ProtectedRoute>} />
     <Route path="/client-cases/:id" element={<ProtectedRoute><ClientCaseDetail /></ProtectedRoute>} />
     {/* Eligibility Assessment Engine */}
-    <Route path="/eligibility-engine" element={<SupervisorRoute><EligibilityEngine /></SupervisorRoute>} />
-    <Route path="/assessment-case/:id" element={<SupervisorRoute><AssessmentCaseDetail /></SupervisorRoute>} />
+    <Route path="/eligibility-engine" element={<StaffRoute><EligibilityEngine /></StaffRoute>} />
+    <Route path="/assessment-case/:id" element={<StaffRoute><AssessmentCaseDetail /></StaffRoute>} />
     {/* Lender Policy Administration */}
     <Route path="/lender-policy-admin" element={<AdminRoute><LenderPolicyAdmin /></AdminRoute>} />
     {/* Executive Dashboard - Admin only */}
