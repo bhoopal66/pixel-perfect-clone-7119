@@ -18,7 +18,10 @@ import {
   User,
   Loader2,
   Landmark,
-  Users
+  Users,
+  Calculator,
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -27,6 +30,7 @@ import {
   loadCompleteFormData,
   type OnboardingCase,
 } from '@/services/onboardingService';
+import { supabase } from '@/integrations/supabase/client';
 import type { OnboardingFormData } from '@/types/onboarding.types';
 
 const STATUS_STEPS = [
