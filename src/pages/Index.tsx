@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 
 const Index = () => {
   const navigate = useNavigateOnce();
-  const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, signOut } = useAuth();
+  const { user, canManageUsers, canManageAgents, userRole, hasAdminPrivileges, isSupervisor, isCoordinator, signOut } = useAuth();
 
   const roleConfig = {
     super_admin: { label: 'Super Admin', icon: Crown, variant: 'default' as const, className: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0', description: 'Full system access' },
