@@ -10,6 +10,60 @@ import type {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const MONTH_ABBR_MAP: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+/**
+ * Parse date strings in common bank statement formats:
+ * DD-MMM-YYYY, DD/MM/YYYY, DD.MM.YYYY, YYYY-MM-DD, DD-MMM-YY, DD/MM/YY
+ */
+function parseBankDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const s = dateStr.trim();
+
+  // DD-MMM-YYYY  e.g. 01-Jan-2024
+  let m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  if (m) {
+    const mon = MONTH_ABBR_MAP[m[2].toLowerCase()];
+    if (mon !== undefined) return new Date(parseInt(m[3]), mon, parseInt(m[1]));
+  }
+
+  // DD-MMM-YY  e.g. 01-Jan-24
+  m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
+  if (m) {
+    const mon = MONTH_ABBR_MAP[m[2].toLowerCase()];
+    const yr = parseInt(m[3]);
+    const fullYear = yr >= 50 ? 1900 + yr : 2000 + yr;
+    if (mon !== undefined) return new Date(fullYear, mon, parseInt(m[1]));
+  }
+
+  // DD/MM/YYYY  e.g. 01/10/2025
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+
+  // DD/MM/YY  e.g. 01/10/25
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if (m) {
+    const yr = parseInt(m[3]);
+    const fullYear = yr >= 50 ? 1900 + yr : 2000 + yr;
+    return new Date(fullYear, parseInt(m[2]) - 1, parseInt(m[1]));
+  }
+
+  // DD.MM.YYYY  e.g. 01.10.2025
+  m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (m) return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+
+  // YYYY-MM-DD (ISO)
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+
+  // Fallback
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export class AssessmentAnalysisEngine {
   /**
    * Calculate monthly summaries from parsed bank transactions
