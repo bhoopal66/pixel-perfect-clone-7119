@@ -241,6 +241,8 @@ const AppRoutes = () => (
     <Route path="/lender-policy-admin" element={<AdminRoute><LenderPolicyAdmin /></AdminRoute>} />
     {/* Executive Dashboard - Admin only */}
     <Route path="/executive" element={<AdminRoute><ExecutiveDashboard /></AdminRoute>} />
+    {/* COMFI Policy Engine */}
+    <Route path="/comfi-policy" element={<ProtectedRoute><ComfiPolicyEngine /></ProtectedRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
     <Route path="*" element={<NotFound />} />
   </Routes>
