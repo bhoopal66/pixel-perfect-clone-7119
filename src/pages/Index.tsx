@@ -84,9 +84,14 @@ const Index = () => {
                     <FileText className="h-4 w-4 mr-2" />My Cases
                   </DropdownMenuItem>
                   {(isCoordinator || isSupervisor || hasAdminPrivileges) && (
-                    <DropdownMenuItem onClick={() => navigate('/eligibility-engine')}>
-                      <FlaskConical className="h-4 w-4 mr-2" />Eligibility Engine
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/eligibility-engine')}>
+                        <FlaskConical className="h-4 w-4 mr-2" />Eligibility Engine
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/comfi-policy')}>
+                        <FileText className="h-4 w-4 mr-2" />COMFI Policy Engine
+                      </DropdownMenuItem>
+                    </>
                   )}
                   {(isSupervisor || hasAdminPrivileges) && (
                     <>
