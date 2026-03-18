@@ -3650,6 +3650,219 @@ export type Database = {
           },
         ]
       }
+      policy_evaluation_audit_logs: {
+        Row: {
+          action_at: string
+          action_by: string | null
+          action_label: string | null
+          action_type: string
+          case_id: string | null
+          evaluation_id: string
+          id: string
+          new_value_json: Json | null
+          old_value_json: Json | null
+          remarks: string | null
+        }
+        Insert: {
+          action_at?: string
+          action_by?: string | null
+          action_label?: string | null
+          action_type: string
+          case_id?: string | null
+          evaluation_id: string
+          id?: string
+          new_value_json?: Json | null
+          old_value_json?: Json | null
+          remarks?: string | null
+        }
+        Update: {
+          action_at?: string
+          action_by?: string | null
+          action_label?: string | null
+          action_type?: string
+          case_id?: string | null
+          evaluation_id?: string
+          id?: string
+          new_value_json?: Json | null
+          old_value_json?: Json | null
+          remarks?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_evaluation_audit_logs_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "policy_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_evaluation_rule_logs: {
+        Row: {
+          created_at: string
+          evaluation_id: string
+          id: string
+          input_value_json: Json | null
+          is_hard_decline: boolean
+          message: string | null
+          output_value_json: Json | null
+          rule_code: string
+          rule_name: string
+          sequence_no: number
+          status: string
+          threshold_json: Json | null
+        }
+        Insert: {
+          created_at?: string
+          evaluation_id: string
+          id?: string
+          input_value_json?: Json | null
+          is_hard_decline?: boolean
+          message?: string | null
+          output_value_json?: Json | null
+          rule_code: string
+          rule_name: string
+          sequence_no?: number
+          status?: string
+          threshold_json?: Json | null
+        }
+        Update: {
+          created_at?: string
+          evaluation_id?: string
+          id?: string
+          input_value_json?: Json | null
+          is_hard_decline?: boolean
+          message?: string | null
+          output_value_json?: Json | null
+          rule_code?: string
+          rule_name?: string
+          sequence_no?: number
+          status?: string
+          threshold_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_evaluation_rule_logs_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "policy_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_evaluations: {
+        Row: {
+          adjusted_turnover: number
+          analyst_notes: string | null
+          applicant_name: string
+          application_status: string
+          average_sales: number
+          case_id: string | null
+          company_name: string
+          created_at: string
+          created_by: string | null
+          current_payments: number
+          eligible_finance: number
+          eligible_sales: number
+          engine_status: string | null
+          engine_version: string | null
+          existing_monthly_obligations: number | null
+          final_recommendation: string | null
+          gross_turnover: number
+          id: string
+          industry: string | null
+          nationality: string | null
+          outward_cheque_returns: number
+          overridden_at: string | null
+          overridden_by: string | null
+          override_reason: string | null
+          override_status: string | null
+          policy_name: string
+          product_code: string
+          reject_reason: string | null
+          turnover_already_excludes_vat: boolean
+          updated_at: string
+          updated_by: string | null
+          vat_component: number
+        }
+        Insert: {
+          adjusted_turnover?: number
+          analyst_notes?: string | null
+          applicant_name: string
+          application_status?: string
+          average_sales?: number
+          case_id?: string | null
+          company_name: string
+          created_at?: string
+          created_by?: string | null
+          current_payments?: number
+          eligible_finance?: number
+          eligible_sales?: number
+          engine_status?: string | null
+          engine_version?: string | null
+          existing_monthly_obligations?: number | null
+          final_recommendation?: string | null
+          gross_turnover?: number
+          id?: string
+          industry?: string | null
+          nationality?: string | null
+          outward_cheque_returns?: number
+          overridden_at?: string | null
+          overridden_by?: string | null
+          override_reason?: string | null
+          override_status?: string | null
+          policy_name?: string
+          product_code?: string
+          reject_reason?: string | null
+          turnover_already_excludes_vat?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          vat_component?: number
+        }
+        Update: {
+          adjusted_turnover?: number
+          analyst_notes?: string | null
+          applicant_name?: string
+          application_status?: string
+          average_sales?: number
+          case_id?: string | null
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          current_payments?: number
+          eligible_finance?: number
+          eligible_sales?: number
+          engine_status?: string | null
+          engine_version?: string | null
+          existing_monthly_obligations?: number | null
+          final_recommendation?: string | null
+          gross_turnover?: number
+          id?: string
+          industry?: string | null
+          nationality?: string | null
+          outward_cheque_returns?: number
+          overridden_at?: string | null
+          overridden_by?: string | null
+          override_reason?: string | null
+          override_status?: string | null
+          policy_name?: string
+          product_code?: string
+          reject_reason?: string | null
+          turnover_already_excludes_vat?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          vat_component?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_evaluations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
