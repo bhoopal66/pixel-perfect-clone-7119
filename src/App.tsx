@@ -22,6 +22,7 @@ import EligibilityEngine from "./pages/EligibilityEngine";
 import LenderPolicyAdmin from "./pages/LenderPolicyAdmin";
 import AssessmentCaseDetail from "./pages/AssessmentCaseDetail";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
+import ComfiPolicyEngine from "./pages/ComfiPolicyEngine";
 
 // Production-hardened React Query defaults
 const queryClient = new QueryClient({
