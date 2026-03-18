@@ -1863,6 +1863,81 @@ export type Database = {
           },
         ]
       }
+      comfi_policy_evaluations: {
+        Row: {
+          adjusted_turnover: number
+          analyst_notes: string | null
+          applicant_name: string
+          application_status: string
+          average_sales: number
+          company_name: string
+          created_at: string
+          current_payments: number
+          eligible_finance: number
+          eligible_sales: number
+          existing_monthly_obligations: number
+          final_recommendation: string | null
+          gross_turnover: number
+          id: string
+          industry: string
+          nationality: string
+          outward_cheque_returns: number
+          reject_reason: string | null
+          rule_log_json: Json
+          updated_at: string
+          user_id: string | null
+          vat_component: number
+        }
+        Insert: {
+          adjusted_turnover?: number
+          analyst_notes?: string | null
+          applicant_name: string
+          application_status?: string
+          average_sales?: number
+          company_name: string
+          created_at?: string
+          current_payments?: number
+          eligible_finance?: number
+          eligible_sales?: number
+          existing_monthly_obligations?: number
+          final_recommendation?: string | null
+          gross_turnover?: number
+          id?: string
+          industry?: string
+          nationality?: string
+          outward_cheque_returns?: number
+          reject_reason?: string | null
+          rule_log_json?: Json
+          updated_at?: string
+          user_id?: string | null
+          vat_component?: number
+        }
+        Update: {
+          adjusted_turnover?: number
+          analyst_notes?: string | null
+          applicant_name?: string
+          application_status?: string
+          average_sales?: number
+          company_name?: string
+          created_at?: string
+          current_payments?: number
+          eligible_finance?: number
+          eligible_sales?: number
+          existing_monthly_obligations?: number
+          final_recommendation?: string | null
+          gross_turnover?: number
+          id?: string
+          industry?: string
+          nationality?: string
+          outward_cheque_returns?: number
+          reject_reason?: string | null
+          rule_log_json?: Json
+          updated_at?: string
+          user_id?: string | null
+          vat_component?: number
+        }
+        Relationships: []
+      }
       currency_master: {
         Row: {
           created_at: string
