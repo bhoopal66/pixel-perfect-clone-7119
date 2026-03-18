@@ -1,30 +1,54 @@
-import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useMemo, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  Play, RotateCcw, Download, CheckCircle, XCircle, AlertTriangle,
-  Minus, User, Building2, ArrowLeft, History, FileText
+  Play, RotateCcw, Download, XCircle, CheckCircle, User, Building2,
+  ArrowLeft, History, FileText, ShieldAlert, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
-interface ComfiInput {
+import {
+  RuleResultsPanel,
+  FinalDecisionCard,
+  EvaluationHistoryTable,
+  AuditTimeline,
+  OverrideDecisionDialog,
+  CalculatedMetricsCard,
+} from '@/components/comfi-policy';
+
+import {
+  evaluateComfiPolicy,
+  persistEvaluation,
+  overrideEvaluation,
+  buildExportPayload,
+  downloadExportJson,
+  fetchEvaluationDetail,
+  type ComfiPolicyInput,
+  type ComfiEvaluationResult,
+} from '@/services/comfiPolicyService';
+
+// ─── Form State ──────────────────────────────────────────────────────────────
+
+interface FormState {
   applicant_name: string;
   company_name: string;
   nationality: string;
   industry: string;
   gross_turnover: string;
   vat_component: string;
+  turnover_already_excludes_vat: boolean;
   average_sales: string;
   current_payments: string;
   outward_cheque_returns: string;
@@ -32,603 +56,433 @@ interface ComfiInput {
   analyst_notes: string;
 }
 
-interface RuleLogEntry {
-  rule_name: string;
-  rule_code: string;
-  status: 'Passed' | 'Failed' | 'Not Applicable' | 'Applied' | 'Completed' | 'Allowed';
-  detail: string;
-}
-
-interface EvaluationResult {
-  application_status: string;
-  reject_reason: string | null;
-  final_recommendation: string;
-  adjusted_turnover: number;
-  eligible_sales: number;
-  eligible_finance: number;
-  rule_log: RuleLogEntry[];
-}
-
-const INITIAL_INPUT: ComfiInput = {
-  applicant_name: '',
-  company_name: '',
-  nationality: '',
-  industry: '',
-  gross_turnover: '',
-  vat_component: '',
-  average_sales: '',
-  current_payments: '',
-  outward_cheque_returns: '',
-  existing_monthly_obligations: '',
-  analyst_notes: '',
+const INITIAL_FORM: FormState = {
+  applicant_name: '', company_name: '', nationality: '', industry: '',
+  gross_turnover: '', vat_component: '', turnover_already_excludes_vat: false,
+  average_sales: '', current_payments: '', outward_cheque_returns: '',
+  existing_monthly_obligations: '', analyst_notes: '',
 };
 
-const SAMPLE_INPUT: ComfiInput = {
+const SAMPLE_FORM: FormState = {
   applicant_name: 'Ahmed Khan',
   company_name: 'Alpha Technical Services LLC',
   nationality: 'Pakistani',
   industry: 'Technical Services',
   gross_turnover: '1000000',
   vat_component: '50000',
+  turnover_already_excludes_vat: false,
   average_sales: '200000',
   current_payments: '40000',
   outward_cheque_returns: '2',
-  existing_monthly_obligations: '0',
+  existing_monthly_obligations: '25000',
   analyst_notes: 'Sample test case for COMFI policy evaluation.',
 };
 
-function evaluateComfiPolicy(input: ComfiInput): EvaluationResult {
-  const grossTurnover = Number(input.gross_turnover) || 0;
-  const vatComponent = Number(input.vat_component) || 0;
-  const averageSales = Number(input.average_sales) || 0;
-  const currentPayments = Number(input.current_payments) || 0;
-  const chequeReturns = Number(input.outward_cheque_returns) || 0;
-
-  const ruleLog: RuleLogEntry[] = [];
-
-  // Rule 1: Outward Cheque Return
-  if (chequeReturns > 3) {
-    ruleLog.push({
-      rule_name: 'Outward Cheque Return Check',
-      rule_code: 'COMFI-R01',
-      status: 'Failed',
-      detail: `Outward cheque returns: ${chequeReturns} (> 3). Application rejected.`,
-    });
-    return {
-      application_status: 'Rejected',
-      reject_reason: 'More than three outward cheque returns',
-      final_recommendation: 'Decline',
-      adjusted_turnover: 0,
-      eligible_sales: 0,
-      eligible_finance: 0,
-      rule_log: ruleLog,
-    };
-  }
-  ruleLog.push({
-    rule_name: 'Outward Cheque Return Check',
-    rule_code: 'COMFI-R01',
-    status: 'Passed',
-    detail: `Outward cheque returns: ${chequeReturns} (≤ 3). Passed.`,
-  });
-
-  // Rule 2: DBR — Not Applicable
-  ruleLog.push({
-    rule_name: 'DBR Rule',
-    rule_code: 'COMFI-R02',
-    status: 'Not Applicable',
-    detail: 'Debt Burden Ratio is not applicable for COMFI product.',
-  });
-
-  // Rule 3: VAT Exclusion
-  const adjustedTurnover = grossTurnover - vatComponent;
-  ruleLog.push({
-    rule_name: 'VAT Exclusion',
-    rule_code: 'COMFI-R03',
-    status: 'Applied',
-    detail: `Adjusted Turnover = ${grossTurnover.toLocaleString()} − ${vatComponent.toLocaleString()} = ${adjustedTurnover.toLocaleString()}`,
-  });
-
-  // Rule 4: Sales Assessment
-  const eligibleSales = averageSales - currentPayments;
-  ruleLog.push({
-    rule_name: 'Eligible Sales Calculation',
-    rule_code: 'COMFI-R04',
-    status: 'Completed',
-    detail: `Eligible Sales = ${averageSales.toLocaleString()} − ${currentPayments.toLocaleString()} = ${eligibleSales.toLocaleString()}`,
-  });
-
-  // Rule 5: Finance Limit
-  const eligibleFinance = adjustedTurnover * 0.60;
-  ruleLog.push({
-    rule_name: 'Finance Limit Calculation',
-    rule_code: 'COMFI-R05',
-    status: 'Completed',
-    detail: `Eligible Finance = ${adjustedTurnover.toLocaleString()} × 60% = ${eligibleFinance.toLocaleString()}`,
-  });
-
-  // Rule 6: Industry Check
-  ruleLog.push({
-    rule_name: 'Industry Check',
-    rule_code: 'COMFI-R06',
-    status: 'Allowed',
-    detail: `Industry "${input.industry || 'N/A'}" is allowed. All industries eligible.`,
-  });
-
-  // Rule 7: Nationality Check
-  ruleLog.push({
-    rule_name: 'Nationality Check',
-    rule_code: 'COMFI-R07',
-    status: 'Allowed',
-    detail: `Nationality "${input.nationality || 'N/A'}" is allowed. No nationality restrictions.`,
-  });
-
+function formToInput(form: FormState): ComfiPolicyInput {
   return {
-    application_status: 'Eligible – Subject to Credit Review',
-    reject_reason: null,
-    final_recommendation: 'Proceed to Credit Review',
-    adjusted_turnover: adjustedTurnover,
-    eligible_sales: eligibleSales,
-    eligible_finance: eligibleFinance,
-    rule_log: ruleLog,
+    applicant_name: form.applicant_name,
+    company_name: form.company_name,
+    nationality: form.nationality,
+    industry: form.industry,
+    gross_turnover: Number(form.gross_turnover) || 0,
+    vat_component: Number(form.vat_component) || 0,
+    turnover_already_excludes_vat: form.turnover_already_excludes_vat,
+    average_sales: Number(form.average_sales) || 0,
+    current_payments: Number(form.current_payments) || 0,
+    outward_cheque_returns: Math.max(0, Math.floor(Number(form.outward_cheque_returns) || 0)),
+    existing_monthly_obligations: Number(form.existing_monthly_obligations) || 0,
+    analyst_notes: form.analyst_notes,
   };
 }
 
-function getStatusColor(status: string) {
-  if (status === 'Rejected') return 'destructive';
-  if (status.includes('Eligible')) return 'default';
-  return 'secondary';
-}
-
-function getRuleStatusIcon(status: string) {
-  switch (status) {
-    case 'Passed':
-    case 'Applied':
-    case 'Completed':
-    case 'Allowed':
-      return <CheckCircle className="h-4 w-4 text-emerald-500" />;
-    case 'Failed':
-      return <XCircle className="h-4 w-4 text-destructive" />;
-    case 'Not Applicable':
-      return <Minus className="h-4 w-4 text-muted-foreground" />;
-    default:
-      return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-  }
-}
-
-function getRuleStatusBadgeClass(status: string) {
-  switch (status) {
-    case 'Passed':
-    case 'Applied':
-    case 'Completed':
-    case 'Allowed':
-      return 'bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:text-emerald-400';
-    case 'Failed':
-      return 'bg-destructive/10 text-destructive border-destructive/20';
-    case 'Not Applicable':
-      return 'bg-muted text-muted-foreground border-border';
-    default:
-      return 'bg-amber-500/10 text-amber-700 border-amber-200';
-  }
-}
+// ─── Page Component ──────────────────────────────────────────────────────────
 
 export default function ComfiPolicyEngine() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [input, setInput] = useState<ComfiInput>(INITIAL_INPUT);
-  const [result, setResult] = useState<EvaluationResult | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const { user, hasAdminPrivileges, isSupervisor, isCoordinator } = useAuth();
+  const queryClient = useQueryClient();
 
-  const { data: history, refetch: refetchHistory } = useQuery({
-    queryKey: ['comfi-history'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comfi_policy_evaluations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: showHistory,
-  });
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [result, setResult] = useState<ComfiEvaluationResult | null>(null);
+  const [evaluationId, setEvaluationId] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [showOverride, setShowOverride] = useState(false);
+  const [overrideStatus, setOverrideStatus] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('evaluate');
 
-  const saveMutation = useMutation({
-    mutationFn: async (evalResult: EvaluationResult) => {
-      const { error } = await supabase.from('comfi_policy_evaluations').insert({
-        user_id: user?.id,
-        applicant_name: input.applicant_name,
-        company_name: input.company_name,
-        nationality: input.nationality,
-        industry: input.industry,
-        gross_turnover: Number(input.gross_turnover) || 0,
-        vat_component: Number(input.vat_component) || 0,
-        adjusted_turnover: evalResult.adjusted_turnover,
-        average_sales: Number(input.average_sales) || 0,
-        current_payments: Number(input.current_payments) || 0,
-        outward_cheque_returns: Number(input.outward_cheque_returns) || 0,
-        existing_monthly_obligations: Number(input.existing_monthly_obligations) || 0,
-        eligible_sales: evalResult.eligible_sales,
-        eligible_finance: evalResult.eligible_finance,
-        application_status: evalResult.application_status,
-        reject_reason: evalResult.reject_reason,
-        final_recommendation: evalResult.final_recommendation,
-        rule_log_json: evalResult.rule_log as any,
-        analyst_notes: input.analyst_notes || null,
-      });
-      if (error) throw error;
+  const canEdit = isCoordinator || isSupervisor || hasAdminPrivileges;
+  const canOverride = hasAdminPrivileges;
+
+  // Parsed numeric values for live calculations
+  const numericValues = useMemo(() => ({
+    grossTurnover: Number(form.gross_turnover) || 0,
+    vatComponent: Number(form.vat_component) || 0,
+    averageSales: Number(form.average_sales) || 0,
+    currentPayments: Number(form.current_payments) || 0,
+    outwardChequeReturns: Math.max(0, Math.floor(Number(form.outward_cheque_returns) || 0)),
+  }), [form.gross_turnover, form.vat_component, form.average_sales, form.current_payments, form.outward_cheque_returns]);
+
+  const updateField = useCallback((field: keyof FormState, value: string | boolean) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  // ─── Run Evaluation ─────────────────────────────────────────────────
+
+  const runMutation = useMutation({
+    mutationFn: async () => {
+      const input = formToInput(form);
+      const evalResult = evaluateComfiPolicy(input);
+      const id = await persistEvaluation(input, evalResult, user!.id);
+      return { evalResult, id };
     },
-    onSuccess: () => {
-      toast.success('Evaluation saved to database');
-      if (showHistory) refetchHistory();
+    onSuccess: async ({ evalResult, id }) => {
+      setResult(evalResult);
+      setEvaluationId(id);
+      setOverrideStatus(null);
+      toast.success(`Evaluation complete — ${evalResult.application_status}`);
+      queryClient.invalidateQueries({ queryKey: ['comfi-evaluation-history'] });
+
+      // Fetch audit logs
+      try {
+        const detail = await fetchEvaluationDetail(id);
+        setAuditLogs(detail.auditLogs);
+      } catch { /* ignore */ }
     },
-    onError: (e: any) => toast.error(`Save failed: ${e.message}`),
+    onError: (e: any) => toast.error(`Evaluation failed: ${e.message}`),
   });
 
   const handleRun = () => {
-    if (!input.applicant_name || !input.company_name) {
+    if (!form.applicant_name.trim() || !form.company_name.trim()) {
       toast.error('Applicant Name and Company Name are required.');
       return;
     }
-    const evalResult = evaluateComfiPolicy(input);
-    setResult(evalResult);
-    saveMutation.mutate(evalResult);
+    if (!form.gross_turnover && !form.turnover_already_excludes_vat) {
+      toast.error('Gross Turnover is required.');
+      return;
+    }
+    runMutation.mutate();
   };
 
   const handleReset = () => {
-    setInput(INITIAL_INPUT);
+    setForm(INITIAL_FORM);
     setResult(null);
+    setEvaluationId(null);
+    setAuditLogs([]);
+    setOverrideStatus(null);
   };
 
   const handleLoadSample = () => {
-    setInput(SAMPLE_INPUT);
+    setForm(SAMPLE_FORM);
     setResult(null);
+    setEvaluationId(null);
     toast.info('Sample test case loaded');
   };
 
   const handleExport = () => {
     if (!result) return;
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      applicant: { name: input.applicant_name, company: input.company_name, nationality: input.nationality, industry: input.industry },
-      financials: {
-        gross_turnover: Number(input.gross_turnover) || 0,
-        vat_component: Number(input.vat_component) || 0,
-        adjusted_turnover: result.adjusted_turnover,
-        average_sales: Number(input.average_sales) || 0,
-        current_payments: Number(input.current_payments) || 0,
-        outward_cheque_returns: Number(input.outward_cheque_returns) || 0,
-      },
-      decision: {
-        application_status: result.application_status,
-        reject_reason: result.reject_reason,
-        final_recommendation: result.final_recommendation,
-        eligible_sales: result.eligible_sales,
-        eligible_finance: result.eligible_finance,
-      },
-      rule_log: result.rule_log,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `comfi-decision-${input.applicant_name.replace(/\s+/g, '_')}-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const payload = buildExportPayload(formToInput(form), result, evaluationId || undefined);
+    downloadExportJson(payload, form.applicant_name);
     toast.success('Decision summary exported');
   };
 
-  const updateField = (field: keyof ComfiInput, value: string) => setInput(prev => ({ ...prev, [field]: value }));
+  const handleOverride = async (status: string, reason: string) => {
+    if (!evaluationId) return;
+    await overrideEvaluation(evaluationId, status, reason, user!.id);
+    setOverrideStatus(status);
+    toast.success('Override applied successfully');
+    queryClient.invalidateQueries({ queryKey: ['comfi-evaluation-history'] });
+
+    // Refresh audit logs
+    try {
+      const detail = await fetchEvaluationDetail(evaluationId);
+      setAuditLogs(detail.auditLogs);
+    } catch { /* ignore */ }
+  };
+
+  const handleViewHistoryDetail = async (id: string) => {
+    try {
+      const detail = await fetchEvaluationDetail(id);
+      const ev = detail.evaluation;
+
+      // Populate form from history
+      setForm({
+        applicant_name: ev.applicant_name || '',
+        company_name: ev.company_name || '',
+        nationality: ev.nationality || '',
+        industry: ev.industry || '',
+        gross_turnover: String(ev.gross_turnover || 0),
+        vat_component: String(ev.vat_component || 0),
+        turnover_already_excludes_vat: ev.turnover_already_excludes_vat || false,
+        average_sales: String(ev.average_sales || 0),
+        current_payments: String(ev.current_payments || 0),
+        outward_cheque_returns: String(ev.outward_cheque_returns || 0),
+        existing_monthly_obligations: String(ev.existing_monthly_obligations || 0),
+        analyst_notes: ev.analyst_notes || '',
+      });
+
+      // Rebuild result from stored data
+      setResult({
+        product_code: 'COMFI',
+        policy_name: 'COMFI Policy',
+        application_status: ev.application_status,
+        engine_status: ev.engine_status || 'Completed',
+        final_recommendation: ev.final_recommendation || '',
+        reject_reason: ev.reject_reason || null,
+        adjusted_turnover: Number(ev.adjusted_turnover) || 0,
+        eligible_sales: Number(ev.eligible_sales) || 0,
+        eligible_finance: Number(ev.eligible_finance) || 0,
+        rule_log: detail.ruleLogs.map((r: any) => ({
+          rule_code: r.rule_code,
+          rule_name: r.rule_name,
+          sequence: r.sequence_no,
+          status: r.status,
+          message: r.message || '',
+          input_value: r.input_value_json,
+          output_value: r.output_value_json,
+          threshold: r.threshold_json,
+          is_hard_decline: r.is_hard_decline,
+        })),
+      });
+
+      setEvaluationId(id);
+      setOverrideStatus(ev.override_status || null);
+      setAuditLogs(detail.auditLogs);
+      setActiveTab('evaluate');
+      toast.info('Historical evaluation loaded');
+    } catch (e: any) {
+      toast.error(`Failed to load evaluation: ${e.message}`);
+    }
+  };
 
   const isRejected = result?.application_status === 'Rejected';
-  const isEligible = result?.application_status.includes('Eligible');
+  const isEligible = result?.application_status?.includes('Eligible') ?? false;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">COMFI Policy Engine</h1>
-              <p className="text-sm text-muted-foreground">Business Rules-Driven Eligibility Assessment</p>
+      <header className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-lg font-bold text-foreground">COMFI Policy Evaluation</h1>
+                <p className="text-xs text-muted-foreground">Internal Credit Screening — Lender Rule Engine</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {result && (
+                <Badge
+                  variant={isRejected ? 'destructive' : isEligible ? 'default' : 'secondary'}
+                  className="hidden sm:flex"
+                >
+                  {overrideStatus || result.application_status}
+                </Badge>
+              )}
+              <ThemeToggle />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
-              <History className="h-4 w-4 mr-1" />
-              {showHistory ? 'Hide History' : 'History'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLoadSample}>
-              <FileText className="h-4 w-4 mr-1" />
-              Load Sample
-            </Button>
-          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Reject Alert */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Status Alerts */}
         {isRejected && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mb-6">
             <XCircle className="h-4 w-4" />
             <AlertTitle>Application Rejected</AlertTitle>
             <AlertDescription>{result?.reject_reason}</AlertDescription>
           </Alert>
         )}
-
-        {/* Eligible Alert */}
         {isEligible && (
-          <Alert className="border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+          <Alert className="mb-6 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
             <CheckCircle className="h-4 w-4 text-emerald-600" />
             <AlertTitle className="text-emerald-800 dark:text-emerald-400">Eligible – Subject to Credit Review</AlertTitle>
             <AlertDescription className="text-emerald-700 dark:text-emerald-300">{result?.final_recommendation}</AlertDescription>
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT: Input Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Applicant Info */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <User className="h-4 w-4" /> Applicant Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Applicant Name *</Label>
-                    <Input value={input.applicant_name} onChange={e => updateField('applicant_name', e.target.value)} placeholder="Full name" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Company Name *</Label>
-                    <Input value={input.company_name} onChange={e => updateField('company_name', e.target.value)} placeholder="Company legal name" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Nationality</Label>
-                    <Input value={input.nationality} onChange={e => updateField('nationality', e.target.value)} placeholder="Nationality" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Industry</Label>
-                    <Input value={input.industry} onChange={e => updateField('industry', e.target.value)} placeholder="e.g. Trading, Technical Services" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Financial Inputs */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Building2 className="h-4 w-4" /> Business Financial Inputs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Gross Turnover (AED)</Label>
-                    <Input type="number" value={input.gross_turnover} onChange={e => updateField('gross_turnover', e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>VAT Component (AED)</Label>
-                    <Input type="number" value={input.vat_component} onChange={e => updateField('vat_component', e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Adjusted Turnover</Label>
-                    <Input readOnly value={((Number(input.gross_turnover) || 0) - (Number(input.vat_component) || 0)).toLocaleString()} className="bg-muted" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Average Sales (AED)</Label>
-                    <Input type="number" value={input.average_sales} onChange={e => updateField('average_sales', e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Current Payments (AED)</Label>
-                    <Input type="number" value={input.current_payments} onChange={e => updateField('current_payments', e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Outward Cheque Returns</Label>
-                    <Input type="number" value={input.outward_cheque_returns} onChange={e => updateField('outward_cheque_returns', e.target.value)} placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Existing Monthly Obligations (AED)</Label>
-                    <Input type="number" value={input.existing_monthly_obligations} onChange={e => updateField('existing_monthly_obligations', e.target.value)} placeholder="0" />
-                  </div>
-                </div>
-                <Separator className="my-4" />
-                <div className="space-y-1.5">
-                  <Label>Analyst Notes / Comments</Label>
-                  <Textarea value={input.analyst_notes} onChange={e => updateField('analyst_notes', e.target.value)} placeholder="Additional notes..." rows={3} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Button onClick={handleRun} className="bg-primary hover:bg-primary/90">
-                <Play className="h-4 w-4 mr-1" /> Run Eligibility Check
-              </Button>
-              <Button variant="outline" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-1" /> Reset
-              </Button>
-              {result && (
-                <Button variant="outline" onClick={handleExport}>
-                  <Download className="h-4 w-4 mr-1" /> Export Decision Summary
-                </Button>
-              )}
-            </div>
-
-            {/* Rule Log Table */}
-            {result && (
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base">Decision Log — Rule-by-Rule</CardTitle>
-                  <CardDescription>Complete audit trail of the COMFI policy evaluation</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10" />
-                        <TableHead>Rule Code</TableHead>
-                        <TableHead>Rule Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Detail</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {result.rule_log.map((entry, i) => (
-                        <TableRow key={i} className={entry.status === 'Failed' ? 'bg-destructive/5' : ''}>
-                          <TableCell>{getRuleStatusIcon(entry.status)}</TableCell>
-                          <TableCell className="font-mono text-xs">{entry.rule_code}</TableCell>
-                          <TableCell className="text-sm font-medium">{entry.rule_name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={getRuleStatusBadgeClass(entry.status)}>{entry.status}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground max-w-xs">{entry.detail}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="evaluate" className="gap-1.5">
+              <Play className="h-3.5 w-3.5" /> Evaluate
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5">
+              <History className="h-3.5 w-3.5" /> History
+            </TabsTrigger>
+            {auditLogs.length > 0 && (
+              <TabsTrigger value="audit" className="gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> Audit Trail
+              </TabsTrigger>
             )}
-          </div>
+          </TabsList>
 
-          {/* RIGHT: Decision Card */}
-          <div className="space-y-6">
-            {/* Final Decision */}
-            <Card className={result ? (isRejected ? 'border-destructive' : isEligible ? 'border-emerald-300 dark:border-emerald-700' : 'border-amber-300') : ''}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Final Decision</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!result ? (
-                  <p className="text-sm text-muted-foreground">Run the eligibility check to see results.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Status indicator */}
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${isRejected ? 'bg-destructive' : isEligible ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                      <Badge variant={getStatusColor(result.application_status)} className="text-sm">
-                        {result.application_status}
-                      </Badge>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Final Recommendation</p>
-                        <p className="text-sm font-semibold text-foreground">{result.final_recommendation}</p>
+          {/* ─── EVALUATE TAB ─────────────────────────────────────────── */}
+          <TabsContent value="evaluate">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* LEFT: Input Form */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Applicant Info */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-4 w-4" /> Applicant Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Applicant Name <span className="text-destructive">*</span></Label>
+                        <Input value={form.applicant_name} onChange={e => updateField('applicant_name', e.target.value)} placeholder="Full name" maxLength={200} disabled={!canEdit} />
                       </div>
+                      <div className="space-y-1.5">
+                        <Label>Company Name <span className="text-destructive">*</span></Label>
+                        <Input value={form.company_name} onChange={e => updateField('company_name', e.target.value)} placeholder="Company legal name" maxLength={200} disabled={!canEdit} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Nationality</Label>
+                        <Input value={form.nationality} onChange={e => updateField('nationality', e.target.value)} placeholder="e.g. Pakistani, Indian, Emirati" disabled={!canEdit} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Industry</Label>
+                        <Input value={form.industry} onChange={e => updateField('industry', e.target.value)} placeholder="e.g. Trading, Technical Services" disabled={!canEdit} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                      {result.reject_reason && (
-                        <div>
-                          <p className="text-xs text-muted-foreground">Reject Reason</p>
-                          <p className="text-sm font-semibold text-destructive">{result.reject_reason}</p>
+                {/* Financial Inputs */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Building2 className="h-4 w-4" /> Business Financial Inputs
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Gross Turnover (AED) <span className="text-destructive">*</span></Label>
+                        <Input type="number" min="0" value={form.gross_turnover} onChange={e => updateField('gross_turnover', e.target.value)} placeholder="0" disabled={!canEdit} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>VAT Component (AED)</Label>
+                        <Input
+                          type="number" min="0"
+                          value={form.vat_component}
+                          onChange={e => updateField('vat_component', e.target.value)}
+                          placeholder="0"
+                          disabled={!canEdit || form.turnover_already_excludes_vat}
+                        />
+                      </div>
+                      <div className="space-y-1.5 flex items-end">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={form.turnover_already_excludes_vat}
+                            onCheckedChange={v => updateField('turnover_already_excludes_vat', v)}
+                            disabled={!canEdit}
+                          />
+                          <Label className="text-xs cursor-pointer">Turnover already excludes VAT</Label>
                         </div>
-                      )}
-
-                      <Separator />
-
-                      <div>
-                        <p className="text-xs text-muted-foreground">Adjusted Turnover</p>
-                        <p className="text-lg font-bold text-foreground">AED {result.adjusted_turnover.toLocaleString()}</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Eligible Sales</p>
-                        <p className="text-lg font-bold text-foreground">AED {result.eligible_sales.toLocaleString()}</p>
+                      <div className="space-y-1.5">
+                        <Label>Average Sales (AED) <span className="text-destructive">*</span></Label>
+                        <Input type="number" min="0" value={form.average_sales} onChange={e => updateField('average_sales', e.target.value)} placeholder="0" disabled={!canEdit} />
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Indicative Eligible Finance (60%)</p>
-                        <p className="text-2xl font-bold text-primary">AED {result.eligible_finance.toLocaleString()}</p>
+                      <div className="space-y-1.5">
+                        <Label>Current Payments (AED)</Label>
+                        <Input type="number" min="0" value={form.current_payments} onChange={e => updateField('current_payments', e.target.value)} placeholder="0" disabled={!canEdit} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Outward Cheque Returns <span className="text-destructive">*</span></Label>
+                        <Input type="number" min="0" step="1" value={form.outward_cheque_returns} onChange={e => updateField('outward_cheque_returns', e.target.value)} placeholder="0" disabled={!canEdit} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Existing Monthly Obligations (AED)</Label>
+                        <Input type="number" min="0" value={form.existing_monthly_obligations} onChange={e => updateField('existing_monthly_obligations', e.target.value)} placeholder="0" disabled={!canEdit} />
                       </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    <Separator className="my-4" />
+                    <div className="space-y-1.5">
+                      <Label>Analyst Notes / Comments</Label>
+                      <Textarea
+                        value={form.analyst_notes}
+                        onChange={e => updateField('analyst_notes', e.target.value)}
+                        placeholder="Additional observations, context, or recommendations..."
+                        rows={3}
+                        maxLength={500}
+                        disabled={!canEdit}
+                      />
+                      <p className="text-[10px] text-muted-foreground">{form.analyst_notes.length}/500 characters</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Auto-Calculated Fields</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Adjusted Turnover</span>
-                  <span className="font-medium text-foreground">AED {((Number(input.gross_turnover) || 0) - (Number(input.vat_component) || 0)).toLocaleString()}</span>
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Button onClick={handleRun} disabled={runMutation.isPending || !canEdit} className="gap-1.5">
+                    <Play className="h-4 w-4" />
+                    {runMutation.isPending ? 'Running...' : 'Run Eligibility Check'}
+                  </Button>
+                  <Button variant="outline" onClick={handleReset} disabled={runMutation.isPending}>
+                    <RotateCcw className="h-4 w-4 mr-1" /> Reset
+                  </Button>
+                  <Button variant="outline" onClick={handleLoadSample} disabled={runMutation.isPending}>
+                    <FileText className="h-4 w-4 mr-1" /> Load Sample
+                  </Button>
+                  {result && (
+                    <Button variant="outline" onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-1" /> Export Decision
+                    </Button>
+                  )}
+                  {result && canOverride && evaluationId && (
+                    <Button variant="outline" onClick={() => setShowOverride(true)} className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30">
+                      <ShieldAlert className="h-4 w-4 mr-1" /> Override
+                    </Button>
+                  )}
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Eligible Sales</span>
-                  <span className="font-medium text-foreground">AED {((Number(input.average_sales) || 0) - (Number(input.current_payments) || 0)).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Eligible Finance (60%)</span>
-                  <span className="font-bold text-primary">AED {(((Number(input.gross_turnover) || 0) - (Number(input.vat_component) || 0)) * 0.6).toLocaleString()}</span>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Cheque Alert */}
-            {Number(input.outward_cheque_returns) > 3 && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Warning</AlertTitle>
-                <AlertDescription>Outward cheque returns exceed 3. Application will be rejected.</AlertDescription>
-              </Alert>
-            )}
-          </div>
-        </div>
+                {/* Rule Results */}
+                {result && <RuleResultsPanel ruleLog={result.rule_log} />}
+              </div>
 
-        {/* History */}
-        {showHistory && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Evaluation History</CardTitle>
-              <CardDescription>Recent COMFI policy evaluations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!history?.length ? (
-                <p className="text-sm text-muted-foreground">No evaluations yet.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Applicant</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Adj. Turnover</TableHead>
-                      <TableHead>Eligible Finance</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {history.map((h: any) => (
-                      <TableRow key={h.id}>
-                        <TableCell className="text-xs">{new Date(h.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-sm">{h.applicant_name}</TableCell>
-                        <TableCell className="text-sm">{h.company_name}</TableCell>
-                        <TableCell className="text-sm">AED {Number(h.adjusted_turnover).toLocaleString()}</TableCell>
-                        <TableCell className="text-sm font-medium">AED {Number(h.eligible_finance).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={h.application_status === 'Rejected' ? 'destructive' : 'default'} className="text-xs">
-                            {h.application_status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        )}
+              {/* RIGHT: Decision + Metrics */}
+              <div className="space-y-6">
+                <FinalDecisionCard result={result} overrideStatus={overrideStatus} />
+                <CalculatedMetricsCard
+                  grossTurnover={numericValues.grossTurnover}
+                  vatComponent={numericValues.vatComponent}
+                  turnoverExcludesVat={form.turnover_already_excludes_vat}
+                  averageSales={numericValues.averageSales}
+                  currentPayments={numericValues.currentPayments}
+                  outwardChequeReturns={numericValues.outwardChequeReturns}
+                />
+                {auditLogs.length > 0 && <AuditTimeline auditLogs={auditLogs} />}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* ─── HISTORY TAB ──────────────────────────────────────────── */}
+          <TabsContent value="history">
+            <EvaluationHistoryTable onViewDetail={handleViewHistoryDetail} />
+          </TabsContent>
+
+          {/* ─── AUDIT TAB ────────────────────────────────────────────── */}
+          <TabsContent value="audit">
+            <AuditTimeline auditLogs={auditLogs} />
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Override Dialog */}
+      <OverrideDecisionDialog
+        open={showOverride}
+        onClose={() => setShowOverride(false)}
+        onConfirm={handleOverride}
+        currentStatus={result?.application_status || ''}
+      />
     </div>
   );
 }
