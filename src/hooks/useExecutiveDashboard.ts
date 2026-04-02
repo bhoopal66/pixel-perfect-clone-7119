@@ -52,75 +52,23 @@ export interface MonthlyFunding {
   amount: number;
 }
 
-const SUCCESS_FEE_PCT = 0.02; // 2% success fee
-
-// Terminal statuses that are no longer active in the pipeline
-const TERMINAL_STATUSES = ['approved', 'declined', 'closed', 'dropped'];
+const SUCCESS_FEE_PCT = 0.02;
 
 function useKPIs() {
   return useQuery({
     queryKey: ['executive-kpis'],
     queryFn: async (): Promise<ExecutiveKPIs> => {
-      // Fetch cases and lender results in parallel for accurate funding data
-      const [casesRes, lenderRes] = await Promise.all([
-        supabase
-          .from('assessment_cases')
-          .select('id, status, estimated_annual_turnover, normalized_turnover'),
-        supabase
-          .from('assessment_lender_results')
-          .select('case_id, recommended_limit, eligibility_status'),
-      ]);
-
-      if (casesRes.error) throw casesRes.error;
-      const all = casesRes.data || [];
-      const lenderResults = lenderRes.data || [];
-
-      // Build a map of best recommended limit per case
-      const bestLimitPerCase = new Map<string, number>();
-      for (const lr of lenderResults) {
-        const current = bestLimitPerCase.get(lr.case_id) || 0;
-        const limit = lr.recommended_limit ?? 0;
-        if (limit > current) bestLimitPerCase.set(lr.case_id, limit);
-      }
-
-      // Active = not in terminal status
-      const activeCases = all.filter(c => !TERMINAL_STATUSES.includes(c.status)).length;
-
-      // Submitted = cases that have reached submission stage or beyond
-      const submitted = all.filter(c =>
-        ['submitted', 'under_review', 'approved', 'declined'].includes(c.status)
-      ).length;
-
-      // Approvals
-      const approved = all.filter(c => c.status === 'approved');
-
-      // Total funding requested = sum of best available amount per case
-      const getFundingAmount = (c: typeof all[0]) => {
-        const lenderLimit = bestLimitPerCase.get(c.id) || 0;
-        return Math.max(
-          lenderLimit,
-          c.normalized_turnover ?? 0,
-          c.estimated_annual_turnover ?? 0
-        );
-      };
-
-      const totalFunding = all.reduce((sum, c) => sum + getFundingAmount(c), 0);
-
-      // Pipeline = active cases funding
-      const pipeline = all
-        .filter(c => !TERMINAL_STATUSES.includes(c.status))
-        .reduce((sum, c) => sum + getFundingAmount(c), 0);
-
-      // Approved funding for revenue calc
-      const approvedFunding = approved.reduce((sum, c) => sum + getFundingAmount(c), 0);
-
+      const { data, error } = await supabase.rpc('get_executive_kpis');
+      if (error) throw error;
+      const d = data as any;
+      const approvedFunding = d.approved_funding ?? 0;
       return {
-        totalCases: all.length,
-        activeCases,
-        casesSubmitted: submitted,
-        approvals: approved.length,
-        totalFundingRequested: totalFunding,
-        fundingPipeline: pipeline,
+        totalCases: d.total_cases ?? 0,
+        activeCases: d.active_cases ?? 0,
+        casesSubmitted: d.cases_submitted ?? 0,
+        approvals: d.approvals ?? 0,
+        totalFundingRequested: d.total_funding_requested ?? 0,
+        fundingPipeline: d.funding_pipeline ?? 0,
         estimatedRevenue: approvedFunding * SUCCESS_FEE_PCT,
       };
     },
@@ -132,45 +80,12 @@ function usePipeline() {
   return useQuery({
     queryKey: ['executive-pipeline'],
     queryFn: async (): Promise<PipelineStage[]> => {
-      const { data, error } = await supabase
-        .from('assessment_cases')
-        .select('status, analysis_completed, lenders_run_completed, ai_matching_completed');
-
+      const { data, error } = await supabase.rpc('get_executive_pipeline');
       if (error) throw error;
-      const cases = data || [];
-
-      // Ordered stages for the funnel
-      const stages = [
-        'New Case',
-        'Documents Uploaded',
-        'Analysis Complete',
-        'Lender Match',
-        'Submitted',
-        'Approved',
-      ];
-      const stageMap: Record<string, number> = {};
-      for (const s of stages) stageMap[s] = 0;
-
-      for (const c of cases) {
-        // Terminal negative statuses are excluded from pipeline funnel
-        if (['declined', 'closed', 'dropped'].includes(c.status)) continue;
-
-        if (c.status === 'approved') {
-          stageMap['Approved']++;
-        } else if (['submitted', 'under_review'].includes(c.status)) {
-          stageMap['Submitted']++;
-        } else if (c.lenders_run_completed || c.ai_matching_completed) {
-          stageMap['Lender Match']++;
-        } else if (c.analysis_completed) {
-          stageMap['Analysis Complete']++;
-        } else if (c.status === 'in_progress') {
-          stageMap['Documents Uploaded']++;
-        } else {
-          stageMap['New Case']++;
-        }
-      }
-
-      return stages.map(stage => ({ stage, count: stageMap[stage] }));
+      return ((data as any[]) || []).map((r: any) => ({
+        stage: r.stage,
+        count: r.count ?? 0,
+      }));
     },
     staleTime: 60_000,
   });
@@ -180,36 +95,14 @@ function useLenderPerformance() {
   return useQuery({
     queryKey: ['executive-lender-performance'],
     queryFn: async (): Promise<LenderPerformance[]> => {
-      const { data, error } = await supabase
-        .from('assessment_lender_results')
-        .select('lender_name, eligibility_status');
-
+      const { data, error } = await supabase.rpc('get_executive_lender_performance');
       if (error) throw error;
-      const results = data || [];
-
-      const map = new Map<string, { sent: number; approved: number }>();
-      for (const r of results) {
-        const name = (r.lender_name || '').trim();
-        if (!name) continue; // Skip records with empty lender name
-
-        const entry = map.get(name) || { sent: 0, approved: 0 };
-        entry.sent++;
-        // Check eligibility_status case-insensitively
-        const status = (r.eligibility_status || '').toLowerCase();
-        if (status === 'eligible' || status === 'approved') {
-          entry.approved++;
-        }
-        map.set(name, entry);
-      }
-
-      return Array.from(map.entries())
-        .map(([lenderName, { sent, approved }]) => ({
-          lenderName,
-          casesSent: sent,
-          approvals: approved,
-          approvalRate: sent > 0 ? Math.round((approved / sent) * 100) : 0,
-        }))
-        .sort((a, b) => b.casesSent - a.casesSent);
+      return ((data as any[]) || []).map((r: any) => ({
+        lenderName: r.lender_name,
+        casesSent: r.cases_sent ?? 0,
+        approvals: r.approvals ?? 0,
+        approvalRate: r.approval_rate ?? 0,
+      }));
     },
     staleTime: 60_000,
   });
@@ -219,41 +112,15 @@ function useRiskMetrics() {
   return useQuery({
     queryKey: ['executive-risk-metrics'],
     queryFn: async (): Promise<RiskMetrics> => {
-      const [fraudRes, bankRes, lenderRes] = await Promise.all([
-        supabase.from('fraud_detection_results').select('fraud_risk_score, fraud_risk_category'),
-        supabase.from('bank_analysis_consolidated').select('total_monthly_credit'),
-        supabase.from('assessment_lender_results').select('recommended_limit'),
-      ]);
-
-      const fraudData = (fraudRes.data || []).filter(f => f.fraud_risk_score != null);
-      const bankData = (bankRes.data || []).filter(b => (b.total_monthly_credit ?? 0) > 0);
-      const lenderData = (lenderRes.data || []).filter(l => (l.recommended_limit ?? 0) > 0);
-
-      // BBRS: fraud_risk_score is 0-100, higher = safer
-      const avgBBRS = fraudData.length > 0
-        ? Math.round(fraudData.reduce((s, f) => s + (f.fraud_risk_score ?? 0), 0) / fraudData.length)
-        : 0;
-
-      const avgTurnover = bankData.length > 0
-        ? Math.round(bankData.reduce((s, b) => s + (b.total_monthly_credit ?? 0), 0) / bankData.length)
-        : 0;
-
-      // Average loan size from lender recommended limits
-      const avgLoan = lenderData.length > 0
-        ? Math.round(lenderData.reduce((s, l) => s + (l.recommended_limit ?? 0), 0) / lenderData.length)
-        : 0;
-
-      const highRisk = fraudData.filter(f =>
-        f.fraud_risk_category === 'high' || f.fraud_risk_category === 'critical'
-      ).length;
-      const alerts = fraudData.filter(f => f.fraud_risk_category === 'critical').length;
-
+      const { data, error } = await supabase.rpc('get_executive_risk_metrics');
+      if (error) throw error;
+      const d = data as any;
       return {
-        avgBBRSScore: avgBBRS,
-        avgMonthlyTurnover: avgTurnover,
-        avgLoanSize: avgLoan,
-        highRiskCases: highRisk,
-        fraudAlerts: alerts,
+        avgBBRSScore: d.avg_bbrs_score ?? 0,
+        avgMonthlyTurnover: d.avg_monthly_turnover ?? 0,
+        avgLoanSize: d.avg_loan_size ?? 0,
+        highRiskCases: d.high_risk_cases ?? 0,
+        fraudAlerts: d.fraud_alerts ?? 0,
       };
     },
     staleTime: 60_000,
@@ -264,26 +131,14 @@ function useOperationalActivity() {
   return useQuery({
     queryKey: ['executive-ops-activity'],
     queryFn: async (): Promise<OperationalActivity> => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayISO = todayStart.toISOString();
-
-      const [casesRes, reportsRes, analysesRes, activityRes] = await Promise.all([
-        supabase.from('assessment_cases').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
-        supabase.from('case_reports').select('id', { count: 'exact', head: true }).gte('generated_at', todayISO),
-        supabase.from('bank_analysis_results').select('id', { count: 'exact', head: true }).gte('created_at', todayISO),
-        supabase.from('case_activity_log').select('done_by').gte('done_at', todayISO),
-      ]);
-
-      const uniqueUsers = new Set(
-        (activityRes.data || []).map(a => a.done_by).filter(Boolean)
-      );
-
+      const { data, error } = await supabase.rpc('get_executive_ops_activity');
+      if (error) throw error;
+      const d = data as any;
       return {
-        casesToday: casesRes.count ?? 0,
-        reportsToday: reportsRes.count ?? 0,
-        analysesToday: analysesRes.count ?? 0,
-        activeUsers: uniqueUsers.size,
+        casesToday: d.cases_today ?? 0,
+        reportsToday: d.reports_today ?? 0,
+        analysesToday: d.analyses_today ?? 0,
+        activeUsers: d.active_users ?? 0,
       };
     },
     staleTime: 30_000,
@@ -294,40 +149,14 @@ function useTopDeals() {
   return useQuery({
     queryKey: ['executive-top-deals'],
     queryFn: async (): Promise<TopDeal[]> => {
-      // Fetch cases with positive turnover, ordered desc
-      const { data, error } = await supabase
-        .from('assessment_cases')
-        .select('id, company_name, estimated_annual_turnover, normalized_turnover, status')
-        .not('estimated_annual_turnover', 'is', null)
-        .gt('estimated_annual_turnover', 0)
-        .order('estimated_annual_turnover', { ascending: false })
-        .limit(10);
-
+      const { data, error } = await supabase.rpc('get_executive_top_deals');
       if (error) throw error;
-      const cases = data || [];
-      if (cases.length === 0) return [];
-
-      // Get best lender recommendation per case
-      const caseIds = cases.map(c => c.id);
-      const { data: lenderData } = await supabase
-        .from('assessment_lender_results')
-        .select('case_id, lender_name, recommended_limit')
-        .in('case_id', caseIds)
-        .order('recommended_limit', { ascending: false });
-
-      const lenderMap = new Map<string, string>();
-      for (const l of (lenderData || [])) {
-        if (!lenderMap.has(l.case_id)) {
-          lenderMap.set(l.case_id, l.lender_name || '—');
-        }
-      }
-
-      return cases.map(c => ({
-        id: c.id,
-        companyName: c.company_name || 'Unnamed Company',
-        loanAmount: c.normalized_turnover ?? c.estimated_annual_turnover ?? 0,
-        recommendedLender: lenderMap.get(c.id) || '—',
-        status: c.status,
+      return ((data as any[]) || []).map((r: any) => ({
+        id: r.id,
+        companyName: r.company_name ?? 'Unnamed Company',
+        loanAmount: r.loan_amount ?? 0,
+        recommendedLender: r.recommended_lender ?? '—',
+        status: r.status,
       }));
     },
     staleTime: 60_000,
@@ -338,35 +167,13 @@ function useMonthlyFunding() {
   return useQuery({
     queryKey: ['executive-monthly-funding'],
     queryFn: async (): Promise<MonthlyFunding[]> => {
-      const { data, error } = await supabase
-        .from('assessment_cases')
-        .select('created_at, estimated_annual_turnover')
-        .not('estimated_annual_turnover', 'is', null)
-        .gt('estimated_annual_turnover', 0)
-        .order('created_at', { ascending: true });
-
+      const { data, error } = await supabase.rpc('get_executive_monthly_funding');
       if (error) throw error;
-
-      const monthMap = new Map<string, number>();
-      for (const c of (data || [])) {
-        const d = new Date(c.created_at);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        monthMap.set(key, (monthMap.get(key) || 0) + (c.estimated_annual_turnover ?? 0));
-      }
-
-      const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-      return Array.from(monthMap.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .slice(-12)
-        .map(([month, amount]) => {
-          const [year, m] = month.split('-');
-          return {
-            month,
-            label: `${MONTH_NAMES[parseInt(m, 10) - 1]} ${year.slice(2)}`,
-            amount,
-          };
-        });
+      return ((data as any[]) || []).map((r: any) => ({
+        month: r.month,
+        label: r.label,
+        amount: r.amount ?? 0,
+      }));
     },
     staleTime: 60_000,
   });

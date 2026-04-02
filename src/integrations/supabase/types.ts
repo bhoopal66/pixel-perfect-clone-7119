@@ -4043,6 +4043,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_executive_kpis: { Args: never; Returns: Json }
+      get_executive_lender_performance: { Args: never; Returns: Json }
+      get_executive_monthly_funding: { Args: never; Returns: Json }
+      get_executive_ops_activity: { Args: never; Returns: Json }
+      get_executive_pipeline: { Args: never; Returns: Json }
+      get_executive_risk_metrics: { Args: never; Returns: Json }
+      get_executive_top_deals: { Args: never; Returns: Json }
       has_admin_privileges: { Args: never; Returns: boolean }
       has_role: {
         Args: {
