@@ -3,18 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import {
   BarChart3, TrendingUp, ShieldCheck, Activity, Trophy, ArrowLeft,
   Briefcase, FileCheck, Send, CheckCircle2, DollarSign, Landmark,
-  AlertTriangle, Users, RefreshCw, Inbox
+  AlertTriangle, Users, RefreshCw, Inbox, FileText, ClipboardCheck, Building2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, Cell
 } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useExecutiveDashboard, type PipelineStage, type LenderPerformance } from '@/hooks/useExecutiveDashboard';
+
+// ── Google Font import for JetBrains Mono ───────────────────────────
+// Added via index.html or loaded here as a CSS class utility
 
 // ── Formatting helpers ──────────────────────────────────────────────
 
@@ -34,30 +36,40 @@ const fmtCurrencyFull = (n: number): string =>
 // ── Color constants ─────────────────────────────────────────────────
 
 const STAGE_COLORS = [
-  'hsl(222, 47%, 18%)',
-  'hsl(222, 47%, 32%)',
-  'hsl(173, 58%, 39%)',
-  'hsl(173, 58%, 52%)',
-  'hsl(152, 69%, 31%)',
-  'hsl(152, 69%, 48%)',
+  '#7c3aed', // purple
+  '#3b82f6', // blue
+  '#06b6d4', // cyan
+  '#f59e0b', // amber
+  '#f97316', // orange
+  '#10b981', // emerald
 ];
 
-const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  draft: { label: 'Draft', variant: 'secondary' },
-  in_progress: { label: 'In Progress', variant: 'outline' },
-  under_review: { label: 'Under Review', variant: 'outline' },
-  submitted: { label: 'Submitted', variant: 'default' },
-  approved: { label: 'Approved', variant: 'default' },
-  declined: { label: 'Declined', variant: 'destructive' },
-  closed: { label: 'Closed', variant: 'secondary' },
-  dropped: { label: 'Dropped', variant: 'destructive' },
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  draft: { label: 'Draft', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
+  in_progress: { label: 'In Progress', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+  under_review: { label: 'Under Review', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  submitted: { label: 'Submitted', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+  approved: { label: 'Approved', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+  declined: { label: 'Declined', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  closed: { label: 'Closed', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
+  dropped: { label: 'Dropped', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
 };
 
-// ── Empty state component ───────────────────────────────────────────
+// ── Glass card wrapper ──────────────────────────────────────────────
+
+function GlassCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 transition-all duration-200 hover:bg-white/[0.07] hover:border-white/15 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+// ── Empty state ─────────────────────────────────────────────────────
 
 function EmptyState({ message = 'No data available' }: { message?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+    <div className="flex flex-col items-center justify-center py-12 text-slate-500">
       <Inbox className="h-10 w-10 mb-3 opacity-40" />
       <p className="text-sm">{message}</p>
     </div>
@@ -67,94 +79,92 @@ function EmptyState({ message = 'No data available' }: { message?: string }) {
 // ── KPI Card ────────────────────────────────────────────────────────
 
 const KPICard = React.memo(function KPICard({
-  icon: Icon, title, value, subtitle, loading, tooltip,
+  icon: Icon, title, value, subtitle, loading, accentClass = 'text-cyan-400',
 }: {
   icon: React.ElementType;
   title: string;
   value: string;
   subtitle?: string;
   loading?: boolean;
-  tooltip?: string;
+  accentClass?: string;
 }) {
   if (loading) {
     return (
-      <Card className="min-h-[120px]">
-        <CardContent className="p-6">
-          <Skeleton className="h-4 w-24 mb-3" />
-          <Skeleton className="h-7 w-32 mb-1" />
-          <Skeleton className="h-3 w-20" />
-        </CardContent>
-      </Card>
+      <GlassCard>
+        <Skeleton className="h-3 w-20 mb-3 bg-white/10" />
+        <Skeleton className="h-7 w-28 mb-1 bg-white/10" />
+        <Skeleton className="h-3 w-16 bg-white/10" />
+      </GlassCard>
     );
   }
   return (
-    <Card className="min-h-[120px] hover:shadow-md transition-shadow" title={tooltip}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1 min-w-0 flex-1">
-            <p className="text-sm font-medium text-muted-foreground truncate">{title}</p>
-            <p className="text-2xl font-bold text-foreground truncate">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-          </div>
-          <div className="rounded-lg bg-primary/10 p-2.5 shrink-0">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
+    <GlassCard>
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1 min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-wider font-medium text-slate-400">{title}</p>
+          <p className={`text-2xl font-bold font-mono tabular-nums ${accentClass}`}>{value}</p>
+          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
         </div>
-      </CardContent>
-    </Card>
+        <div className="rounded-lg bg-cyan-500/10 p-2.5 shrink-0">
+          <Icon className="h-5 w-5 text-cyan-400" />
+        </div>
+      </div>
+    </GlassCard>
   );
 });
 
-// ── Pipeline Bar Chart ──────────────────────────────────────────────
+// ── Pipeline Funnel ─────────────────────────────────────────────────
 
-const PipelineChart = React.memo(function PipelineChart({
+const PipelineFunnel = React.memo(function PipelineFunnel({
   data, loading,
 }: {
   data?: PipelineStage[];
   loading: boolean;
 }) {
-  if (loading) return <Skeleton className="h-[320px] w-full rounded-lg" />;
+  if (loading) return <Skeleton className="h-[320px] w-full rounded-lg bg-white/10" />;
   if (!data || data.length === 0) return <EmptyState message="No pipeline data" />;
 
   const totalCases = data.reduce((s, d) => s + d.count, 0);
   if (totalCases === 0) return <EmptyState message="No cases in pipeline" />;
 
-  const chartData = data.map((d, i) => ({
-    ...d,
-    fill: STAGE_COLORS[i % STAGE_COLORS.length],
-  }));
+  const maxCount = Math.max(...data.map(d => d.count));
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-        <XAxis
-          type="number"
-          allowDecimals={false}
-          tick={{ fontSize: 12, fill: 'hsl(220, 9%, 46%)' }}
-        />
-        <YAxis
-          type="category"
-          dataKey="stage"
-          width={140}
-          tick={{ fontSize: 12, fill: 'hsl(220, 9%, 46%)' }}
-        />
-        <Tooltip
-          contentStyle={{ borderRadius: 8, border: '1px solid hsl(220, 13%, 91%)', fontSize: 13 }}
-          formatter={(value: number) => [value, 'Cases']}
-          cursor={{ fill: 'hsl(220, 13%, 91%, 0.3)' }}
-        />
-        <Bar dataKey="count" radius={[0, 6, 6, 0]}>
-          {chartData.map((entry, i) => (
-            <Cell key={`cell-${i}`} fill={entry.fill} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="space-y-3">
+      {data.map((stage, i) => {
+        const widthPct = maxCount > 0 ? Math.max(8, (stage.count / maxCount) * 100) : 8;
+        const prevCount = i > 0 ? data[i - 1].count : null;
+        const conversionPct = prevCount && prevCount > 0 ? Math.round((stage.count / prevCount) * 100) : null;
+
+        return (
+          <div key={stage.stage} className="flex items-center gap-3">
+            <div className="w-[130px] text-xs text-slate-400 text-right truncate shrink-0">
+              {stage.stage}
+            </div>
+            <div className="flex-1 h-8 relative">
+              <div
+                className="h-full rounded-md flex items-center px-3 transition-all duration-500"
+                style={{
+                  width: `${widthPct}%`,
+                  background: `linear-gradient(90deg, ${STAGE_COLORS[i % STAGE_COLORS.length]}cc, ${STAGE_COLORS[i % STAGE_COLORS.length]}66)`,
+                }}
+              >
+                <span className="text-xs font-mono font-bold text-white">{stage.count}</span>
+              </div>
+            </div>
+            <div className="w-[50px] text-right shrink-0">
+              {conversionPct !== null && (
+                <span className="text-xs font-mono text-slate-500">{conversionPct}%</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 });
 
-// ── Monthly Funding Line Chart ──────────────────────────────────────
+// ── Monthly Funding Chart ───────────────────────────────────────────
 
 const MonthlyFundingChart = React.memo(function MonthlyFundingChart({
   data, loading,
@@ -162,42 +172,52 @@ const MonthlyFundingChart = React.memo(function MonthlyFundingChart({
   data?: { month: string; label: string; amount: number }[];
   loading: boolean;
 }) {
-  if (loading) return <Skeleton className="h-[320px] w-full rounded-lg" />;
+  if (loading) return <Skeleton className="h-[320px] w-full rounded-lg bg-white/10" />;
   if (!data || data.length === 0) return <EmptyState message="No funding data yet" />;
 
   return (
     <ResponsiveContainer width="100%" height={320}>
-      <LineChart data={data} margin={{ left: 10, right: 20, top: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+      <BarChart data={data} margin={{ left: 10, right: 20, top: 10 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 11, fill: 'hsl(220, 9%, 46%)' }}
+          tick={{ fontSize: 11, fill: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}
           interval="preserveStartEnd"
+          axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+          tickLine={false}
         />
         <YAxis
           tickFormatter={fmtNumber}
-          tick={{ fontSize: 11, fill: 'hsl(220, 9%, 46%)' }}
+          tick={{ fontSize: 11, fill: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}
           width={65}
+          axisLine={false}
+          tickLine={false}
         />
         <Tooltip
           formatter={(v: number) => [fmtCurrencyFull(v), 'Funding']}
           labelFormatter={(label: string) => label}
-          contentStyle={{ borderRadius: 8, fontSize: 13 }}
+          contentStyle={{
+            borderRadius: 10,
+            fontSize: 13,
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#e2e8f0',
+            fontFamily: 'JetBrains Mono, monospace',
+          }}
         />
-        <Line
-          type="monotone"
-          dataKey="amount"
-          stroke="hsl(173, 58%, 39%)"
-          strokeWidth={2.5}
-          dot={{ r: 4, fill: 'hsl(173, 58%, 39%)' }}
-          activeDot={{ r: 6 }}
-        />
-      </LineChart>
+        <Bar dataKey="amount" radius={[6, 6, 0, 0]} fill="url(#tealGradient)" />
+        <defs>
+          <linearGradient id="tealGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.9} />
+            <stop offset="100%" stopColor="#0d9488" stopOpacity={0.5} />
+          </linearGradient>
+        </defs>
+      </BarChart>
     </ResponsiveContainer>
   );
 });
 
-// ── Lender Approval Bar Chart ───────────────────────────────────────
+// ── Lender Approval Horizontal Bar Chart ────────────────────────────
 
 const LenderApprovalChart = React.memo(function LenderApprovalChart({
   data, loading,
@@ -205,47 +225,83 @@ const LenderApprovalChart = React.memo(function LenderApprovalChart({
   data?: LenderPerformance[];
   loading: boolean;
 }) {
-  if (loading) return <Skeleton className="h-[320px] w-full rounded-lg" />;
+  if (loading) return <Skeleton className="h-[320px] w-full rounded-lg bg-white/10" />;
   if (!data || data.length === 0) return <EmptyState message="No lender data" />;
 
-  // Show top 8 lenders max for readability
   const top = data.slice(0, 8);
+
+  const getBarColor = (rate: number) => {
+    if (rate >= 75) return '#10b981';
+    if (rate >= 65) return '#f59e0b';
+    return '#ef4444';
+  };
 
   return (
     <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={top} margin={{ left: 10, right: 20, bottom: 50 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+      <BarChart data={top} layout="vertical" margin={{ left: 10, right: 30 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
         <XAxis
-          dataKey="lenderName"
-          tick={{ fontSize: 10, fill: 'hsl(220, 9%, 46%)' }}
-          angle={-30}
-          textAnchor="end"
-          interval={0}
-          height={60}
+          type="number"
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}
+          axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+          tickLine={false}
         />
         <YAxis
-          allowDecimals={false}
-          tick={{ fontSize: 11, fill: 'hsl(220, 9%, 46%)' }}
+          type="category"
+          dataKey="lenderName"
+          width={130}
+          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          axisLine={false}
+          tickLine={false}
         />
-        <Tooltip contentStyle={{ borderRadius: 8, fontSize: 13 }} />
-        <Legend wrapperStyle={{ paddingTop: 8 }} />
-        <Bar dataKey="casesSent" name="Cases Sent" fill="hsl(222, 47%, 18%)" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="approvals" name="Approvals" fill="hsl(152, 69%, 31%)" radius={[4, 4, 0, 0]} />
+        <Tooltip
+          contentStyle={{
+            borderRadius: 10,
+            fontSize: 13,
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#e2e8f0',
+          }}
+        />
+        <Legend wrapperStyle={{ paddingTop: 8, color: '#94a3b8' }} />
+        <Bar dataKey="casesSent" name="Cases Sent" fill="rgba(59,130,246,0.6)" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="approvals" name="Approvals" radius={[0, 4, 4, 0]}>
+          {top.map((entry, i) => (
+            <Cell key={`cell-${i}`} fill={getBarColor(entry.approvalRate)} />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
 });
 
-// ── Metric Item ─────────────────────────────────────────────────────
+// ── Metric Item (Risk / Ops) ────────────────────────────────────────
 
-function MetricItem({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+function MetricItem({ label, value, icon: Icon, warn }: { label: string; value: string; icon?: React.ElementType; warn?: boolean }) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-4 min-h-[72px]">
-      <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-      <p className={`text-lg font-semibold leading-tight ${warn ? 'text-destructive' : 'text-foreground'}`}>
-        {warn && <AlertTriangle className="inline h-4 w-4 mr-1 -mt-0.5" />}
+    <div className="rounded-lg bg-white/5 border border-white/10 p-4 min-h-[72px] transition-colors hover:bg-white/[0.07]">
+      <div className="flex items-center gap-2 mb-1">
+        {Icon && <Icon className="h-3.5 w-3.5 text-slate-500" />}
+        <p className="text-xs font-medium text-slate-400">{label}</p>
+      </div>
+      <p className={`text-lg font-bold font-mono tabular-nums leading-tight ${warn ? 'text-red-400' : 'text-slate-200'}`}>
+        {warn && <AlertTriangle className="inline h-4 w-4 mr-1 -mt-0.5 text-red-400" />}
         {value}
       </p>
+    </div>
+  );
+}
+
+// ── Section Header ──────────────────────────────────────────────────
+
+function SectionHeader({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description?: string }) {
+  return (
+    <div className="mb-4">
+      <h2 className="text-base font-semibold text-slate-200 flex items-center gap-2">
+        <Icon className="h-4.5 w-4.5 text-cyan-400" /> {title}
+      </h2>
+      {description && <p className="text-xs text-slate-500 mt-0.5 ml-7">{description}</p>}
     </div>
   );
 }
@@ -262,38 +318,53 @@ export default function ExecutiveDashboard() {
 
   const handleRefresh = useCallback(() => refetch(), [refetch]);
 
-  // Memoize approval rate to avoid recalculating on every render
   const approvalRate = useMemo(() => {
     if (!kpis || kpis.casesSubmitted === 0) return '0%';
     return `${Math.round((kpis.approvals / kpis.casesSubmitted) * 100)}%`;
   }, [kpis]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950">
+      {/* JetBrains Mono font */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="text-slate-400 hover:text-white hover:bg-white/10"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Executive Dashboard</h1>
-              <p className="text-sm text-muted-foreground">SME Lending Platform — Management Overview</p>
+              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                Executive Dashboard
+              </h1>
+              <p className="text-sm text-slate-500">TCAE — Management Overview</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleRefresh}
               disabled={isLoading}
-              className="gap-1.5"
+              className="gap-1.5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/10"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Badge variant="outline" className="text-xs hidden sm:inline-flex">Read-only</Badge>
+            <span className="text-xs text-slate-600 font-mono border border-white/10 rounded-md px-2 py-1 hidden sm:inline-flex">
+              Read-only
+            </span>
           </div>
         </div>
       </header>
@@ -301,7 +372,7 @@ export default function ExecutiveDashboard() {
       <main className="mx-auto max-w-[1440px] space-y-8 px-6 py-8">
         {/* Error banner */}
         {hasError && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-center gap-2">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             Some data failed to load. Click Refresh to retry.
           </div>
@@ -309,214 +380,72 @@ export default function ExecutiveDashboard() {
 
         {/* SECTION 1 — KPIs */}
         <section>
-          <h2 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" /> Key Performance Indicators
-          </h2>
+          <SectionHeader icon={BarChart3} title="Key Performance Indicators" />
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-            <KPICard icon={Briefcase} title="Total Cases" value={fmtNumber(kpis?.totalCases ?? 0)} loading={isLoading} />
-            <KPICard icon={Activity} title="Active Cases" value={fmtNumber(kpis?.activeCases ?? 0)} subtitle="Excl. approved/declined/closed" loading={isLoading} />
-            <KPICard icon={Send} title="Cases Submitted" value={fmtNumber(kpis?.casesSubmitted ?? 0)} loading={isLoading} />
-            <KPICard icon={CheckCircle2} title="Approvals" value={fmtNumber(kpis?.approvals ?? 0)} loading={isLoading} />
-            <KPICard icon={DollarSign} title="Funding Requested" value={fmtCurrency(kpis?.totalFundingRequested ?? 0)} loading={isLoading} tooltip={fmtCurrencyFull(kpis?.totalFundingRequested ?? 0)} />
-            <KPICard icon={Landmark} title="Funding Pipeline" value={fmtCurrency(kpis?.fundingPipeline ?? 0)} subtitle="Active cases only" loading={isLoading} tooltip={fmtCurrencyFull(kpis?.fundingPipeline ?? 0)} />
-            <KPICard icon={TrendingUp} title="Estimated Revenue" value={fmtCurrency(kpis?.estimatedRevenue ?? 0)} subtitle="2% × approved funding" loading={isLoading} tooltip={`Formula: 2% × Approved Funding = ${fmtCurrencyFull(kpis?.estimatedRevenue ?? 0)}`} />
-            <KPICard icon={FileCheck} title="Approval Rate" value={approvalRate} subtitle="Approvals / Submitted" loading={isLoading} />
+            <KPICard icon={Briefcase} title="Total Cases" value={fmtNumber(kpis?.totalCases ?? 0)} loading={isLoading} accentClass="text-white" />
+            <KPICard icon={Activity} title="Active Cases" value={fmtNumber(kpis?.activeCases ?? 0)} subtitle="Excl. terminal statuses" loading={isLoading} accentClass="text-cyan-400" />
+            <KPICard icon={Send} title="Cases Submitted" value={fmtNumber(kpis?.casesSubmitted ?? 0)} loading={isLoading} accentClass="text-blue-400" />
+            <KPICard icon={CheckCircle2} title="Approvals" value={fmtNumber(kpis?.approvals ?? 0)} subtitle={`Rate: ${approvalRate}`} loading={isLoading} accentClass="text-emerald-400" />
+            <KPICard icon={DollarSign} title="Funding Requested" value={fmtCurrency(kpis?.totalFundingRequested ?? 0)} loading={isLoading} accentClass="text-white" />
+            <KPICard icon={Landmark} title="Funding Pipeline" value={fmtCurrency(kpis?.fundingPipeline ?? 0)} subtitle="Active cases only" loading={isLoading} accentClass="text-amber-400" />
+            <KPICard icon={TrendingUp} title="Estimated Revenue" value={fmtCurrency(kpis?.estimatedRevenue ?? 0)} subtitle="2% × approved funding" loading={isLoading} accentClass="text-emerald-400" />
+            <KPICard icon={FileCheck} title="Approval Rate" value={approvalRate} subtitle="Approvals / Submitted" loading={isLoading} accentClass="text-cyan-400" />
           </div>
         </section>
 
-        {/* SECTION 2 — Pipeline & SECTION 6 — Monthly Trend */}
+        {/* SECTION 2 — Pipeline & Monthly Trend */}
         <section className="grid gap-6 lg:grid-cols-2">
-          <Card className="min-h-[420px]">
-            <CardHeader>
-              <CardTitle className="text-base">Pipeline Overview</CardTitle>
-              <CardDescription>Active case distribution (excl. declined/closed)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PipelineChart data={pipeline} loading={isLoading} />
-            </CardContent>
-          </Card>
+          <GlassCard>
+            <SectionHeader icon={BarChart3} title="Pipeline Overview" description="Active case distribution (excl. declined/closed)" />
+            <PipelineFunnel data={pipeline} loading={isLoading} />
+          </GlassCard>
 
-          <Card className="min-h-[420px]">
-            <CardHeader>
-              <CardTitle className="text-base">Monthly Funding Trend</CardTitle>
-              <CardDescription>Funding volume over last 12 months</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MonthlyFundingChart data={monthlyFunding} loading={isLoading} />
-            </CardContent>
-          </Card>
+          <GlassCard>
+            <SectionHeader icon={TrendingUp} title="Monthly Funding Trend" description="Funding volume over last 12 months" />
+            <MonthlyFundingChart data={monthlyFunding} loading={isLoading} />
+          </GlassCard>
         </section>
 
         {/* SECTION 3 — Lender Performance */}
         <section className="grid gap-6 lg:grid-cols-2">
-          <Card className="min-h-[420px]">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Landmark className="h-4 w-4" /> Lender Performance
-              </CardTitle>
-              <CardDescription>Approval Rate = Approvals ÷ Cases Sent × 100</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
-                  ))}
-                </div>
-              ) : !lenderPerformance || lenderPerformance.length === 0 ? (
-                <EmptyState message="No lender data available" />
-              ) : (
-                <div className="overflow-auto max-h-[340px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[140px]">Lender</TableHead>
-                        <TableHead className="text-right w-[80px]">Sent</TableHead>
-                        <TableHead className="text-right w-[80px]">Approved</TableHead>
-                        <TableHead className="text-right w-[90px]">Rate</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lenderPerformance.map((lp) => (
-                        <TableRow key={lp.lenderName}>
-                          <TableCell className="font-medium truncate max-w-[200px]" title={lp.lenderName}>
-                            {lp.lenderName}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{lp.casesSent}</TableCell>
-                          <TableCell className="text-right tabular-nums">{lp.approvals}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge
-                              variant={lp.approvalRate >= 70 ? 'default' : lp.approvalRate >= 40 ? 'secondary' : 'outline'}
-                              className="text-xs tabular-nums"
-                            >
-                              {lp.approvalRate}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="min-h-[420px]">
-            <CardHeader>
-              <CardTitle className="text-base">Lender Approval Comparison</CardTitle>
-              <CardDescription>Top lenders by volume</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LenderApprovalChart data={lenderPerformance} loading={isLoading} />
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* SECTION 4 — Risk Metrics & SECTION 5 — Ops */}
-        <section className="grid gap-6 lg:grid-cols-2">
-          <Card className="min-h-[280px]">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4" /> Risk Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[72px] w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : !riskMetrics ? (
-                <EmptyState message="Risk data unavailable" />
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <MetricItem label="Avg BBRS Score" value={`${riskMetrics.avgBBRSScore}/100`} />
-                  <MetricItem label="Avg Monthly Turnover" value={fmtCurrency(riskMetrics.avgMonthlyTurnover)} />
-                  <MetricItem label="Avg Loan Size" value={fmtCurrency(riskMetrics.avgLoanSize)} />
-                  <MetricItem label="High Risk Cases" value={fmtNumber(riskMetrics.highRiskCases)} warn={riskMetrics.highRiskCases > 0} />
-                  <MetricItem label="Fraud Alerts" value={fmtNumber(riskMetrics.fraudAlerts)} warn={riskMetrics.fraudAlerts > 0} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="min-h-[280px]">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="h-4 w-4" /> Today's Activity
-              </CardTitle>
-              <CardDescription>Operational metrics for {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[72px] w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : !opsActivity ? (
-                <EmptyState message="Activity data unavailable" />
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <MetricItem label="Cases Created" value={fmtNumber(opsActivity.casesToday)} />
-                  <MetricItem label="Reports Generated" value={fmtNumber(opsActivity.reportsToday)} />
-                  <MetricItem label="Bank Analyses Run" value={fmtNumber(opsActivity.analysesToday)} />
-                  <MetricItem label="Active Users" value={fmtNumber(opsActivity.activeUsers)} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* SECTION 7 — Top Deals */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Trophy className="h-4 w-4" /> Top Deals by Loan Amount
-            </CardTitle>
-            <CardDescription>Up to 10 largest deals</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <GlassCard>
+            <SectionHeader icon={Landmark} title="Lender Performance" description="Approval Rate = Approvals ÷ Cases Sent × 100" />
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
+                  <Skeleton key={i} className="h-10 w-full bg-white/10" />
                 ))}
               </div>
-            ) : !topDeals || topDeals.length === 0 ? (
-              <EmptyState message="No deals available" />
+            ) : !lenderPerformance || lenderPerformance.length === 0 ? (
+              <EmptyState message="No lender data available" />
             ) : (
-              <div className="overflow-auto">
+              <div className="overflow-auto max-h-[340px]">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">#</TableHead>
-                      <TableHead className="min-w-[160px]">Company</TableHead>
-                      <TableHead className="text-right min-w-[130px]">Loan Amount</TableHead>
-                      <TableHead className="min-w-[140px]">Recommended Lender</TableHead>
-                      <TableHead className="w-[110px]">Status</TableHead>
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="min-w-[140px] text-slate-400 text-xs uppercase tracking-wider">Lender</TableHead>
+                      <TableHead className="text-right w-[80px] text-slate-400 text-xs uppercase tracking-wider">Sent</TableHead>
+                      <TableHead className="text-right w-[80px] text-slate-400 text-xs uppercase tracking-wider">Approved</TableHead>
+                      <TableHead className="text-right w-[90px] text-slate-400 text-xs uppercase tracking-wider">Rate</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topDeals.map((deal, i) => {
-                      const statusInfo = STATUS_MAP[deal.status] || { label: deal.status, variant: 'outline' as const };
+                    {lenderPerformance.map((lp) => {
+                      const rateColor =
+                        lp.approvalRate >= 75 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                        lp.approvalRate >= 65 ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                        'bg-red-500/20 text-red-300 border-red-500/30';
                       return (
-                        <TableRow key={deal.id}>
-                          <TableCell className="font-medium text-muted-foreground">{i + 1}</TableCell>
-                          <TableCell className="font-medium truncate max-w-[250px]" title={deal.companyName}>
-                            {deal.companyName}
+                        <TableRow key={lp.lenderName} className="border-white/5 hover:bg-white/5 transition-colors">
+                          <TableCell className="font-medium text-slate-300 truncate max-w-[200px]" title={lp.lenderName}>
+                            {lp.lenderName}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums" title={fmtCurrencyFull(deal.loanAmount)}>
-                            {fmtCurrency(deal.loanAmount)}
-                          </TableCell>
-                          <TableCell className="truncate max-w-[180px]" title={deal.recommendedLender}>
-                            {deal.recommendedLender}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusInfo.variant} className="text-xs whitespace-nowrap">
-                              {statusInfo.label}
-                            </Badge>
+                          <TableCell className="text-right font-mono tabular-nums text-slate-300">{lp.casesSent}</TableCell>
+                          <TableCell className="text-right font-mono tabular-nums text-slate-300">{lp.approvals}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-mono font-semibold ${rateColor}`}>
+                              {lp.approvalRate}%
+                            </span>
                           </TableCell>
                         </TableRow>
                       );
@@ -525,8 +454,113 @@ export default function ExecutiveDashboard() {
                 </Table>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </GlassCard>
+
+          <GlassCard>
+            <SectionHeader icon={BarChart3} title="Lender Approval Comparison" description="Top lenders by volume" />
+            <LenderApprovalChart data={lenderPerformance} loading={isLoading} />
+          </GlassCard>
+        </section>
+
+        {/* SECTION 4 — Risk Metrics & SECTION 5 — Today's Activity */}
+        <section className="grid gap-6 lg:grid-cols-2">
+          <GlassCard>
+            <SectionHeader icon={ShieldCheck} title="Risk Metrics" />
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[72px] w-full rounded-lg bg-white/10" />
+                ))}
+              </div>
+            ) : !riskMetrics ? (
+              <EmptyState message="Risk data unavailable" />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <MetricItem icon={ShieldCheck} label="Avg BBRS Score" value={`${riskMetrics.avgBBRSScore}/100`} />
+                <MetricItem icon={TrendingUp} label="Avg Monthly Turnover" value={fmtCurrency(riskMetrics.avgMonthlyTurnover)} />
+                <MetricItem icon={DollarSign} label="Avg Loan Size" value={fmtCurrency(riskMetrics.avgLoanSize)} />
+                <MetricItem icon={AlertTriangle} label="High Risk Cases" value={fmtNumber(riskMetrics.highRiskCases)} warn={riskMetrics.highRiskCases > 0} />
+                <MetricItem icon={AlertTriangle} label="Fraud Alerts" value={fmtNumber(riskMetrics.fraudAlerts)} warn={riskMetrics.fraudAlerts > 0} />
+              </div>
+            )}
+          </GlassCard>
+
+          <GlassCard>
+            <SectionHeader
+              icon={Activity}
+              title="Today's Activity"
+              description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            />
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[72px] w-full rounded-lg bg-white/10" />
+                ))}
+              </div>
+            ) : !opsActivity ? (
+              <EmptyState message="Activity data unavailable" />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <MetricItem icon={FileText} label="Cases Created" value={fmtNumber(opsActivity.casesToday)} />
+                <MetricItem icon={ClipboardCheck} label="Reports Generated" value={fmtNumber(opsActivity.reportsToday)} />
+                <MetricItem icon={Building2} label="Bank Analyses Run" value={fmtNumber(opsActivity.analysesToday)} />
+                <MetricItem icon={Users} label="Active Users" value={fmtNumber(opsActivity.activeUsers)} />
+              </div>
+            )}
+          </GlassCard>
+        </section>
+
+        {/* SECTION 7 — Top Deals */}
+        <GlassCard>
+          <SectionHeader icon={Trophy} title="Top Deals by Loan Amount" description="Up to 10 largest deals" />
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full bg-white/10" />
+              ))}
+            </div>
+          ) : !topDeals || topDeals.length === 0 ? (
+            <EmptyState message="No deals available" />
+          ) : (
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/10 hover:bg-transparent">
+                    <TableHead className="w-[50px] text-slate-400 text-xs uppercase tracking-wider">#</TableHead>
+                    <TableHead className="min-w-[160px] text-slate-400 text-xs uppercase tracking-wider">Company</TableHead>
+                    <TableHead className="text-right min-w-[130px] text-slate-400 text-xs uppercase tracking-wider">Loan Amount</TableHead>
+                    <TableHead className="min-w-[140px] text-slate-400 text-xs uppercase tracking-wider">Recommended Lender</TableHead>
+                    <TableHead className="w-[110px] text-slate-400 text-xs uppercase tracking-wider">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topDeals.map((deal, i) => {
+                    const statusInfo = STATUS_MAP[deal.status] || { label: deal.status, color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' };
+                    return (
+                      <TableRow key={deal.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                        <TableCell className="font-mono text-slate-500">{i + 1}</TableCell>
+                        <TableCell className="font-medium text-slate-200 truncate max-w-[250px]" title={deal.companyName}>
+                          {deal.companyName}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold tabular-nums text-cyan-300" title={fmtCurrencyFull(deal.loanAmount)}>
+                          {fmtCurrency(deal.loanAmount)}
+                        </TableCell>
+                        <TableCell className="text-slate-400 truncate max-w-[180px]" title={deal.recommendedLender}>
+                          {deal.recommendedLender}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </GlassCard>
       </main>
     </div>
   );
