@@ -19,6 +19,14 @@ export default function ResetPassword() {
   const navigate = useNavigateOnce();
 
   useEffect(() => {
+    // Listen for PASSWORD_RECOVERY event from Supabase auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidSession(true);
+        setIsChecking(false);
+      }
+    });
+
     // Check if we have a recovery session from the URL hash
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
@@ -36,6 +44,8 @@ export default function ResetPassword() {
       }
       setIsChecking(false);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
